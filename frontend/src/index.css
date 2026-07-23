@@ -1,10 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
-  --font-eng: "Plus Jakarta Sans", sans-serif;
-  --font-thai: "Kanit", sans-serif;
+  --font-eng: 'Plus Jakarta Sans', sans-serif;
+  --font-thai: 'Kanit', sans-serif;
   --color-amalfilight: #e9eef8;
   --color-amalfilight-hover: #dde6f5;
   --color-amalfilight-active: #b9ccea;
@@ -35,10 +35,11 @@
   --color-seadark-hover: #477099;
   --color-seadark-active: #365473;
   --color-seadarker: #2a4159;
-  --color-btnactive: #A481F9;
-  
+  --color-btnactive: #a481f9;
 }
 
-html, body, #root {
-    height: 100%;
-  }
+html,
+body,
+#root {
+  height: 100%;
+}

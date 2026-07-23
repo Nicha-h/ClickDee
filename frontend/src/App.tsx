@@ -4,7 +4,7 @@ import Home from '@/pages/home'
 
 const App = () => {
   return (
-    <div className="w-full min-h-screen bg-gray-900">
+    <div className="min-h-screen w-full bg-gray-900">
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
