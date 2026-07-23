@@ -1,4 +1,43 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+@theme {
+  --font-eng: "Plus Jakarta Sans", sans-serif;
+  --font-thai: "Kanit", sans-serif;
+  --color-amalfilight: #e9eef8;
+  --color-amalfilight-hover: #dde6f5;
+  --color-amalfilight-active: #b9ccea;
+  --color-amalfi: #1e59bc;
+  --color-amalfihover: #1b50a9;
+  --color-amalfiactive: #184796;
+  --color-amalfidark: #17438d;
+  --color-amalfidark-hover: #123571;
+  --color-amalfidark-active: #0d2855;
+  --color-amalfidarker: #0b1f42;
+  --color-citrus-light: #fffbe8;
+  --color-citrus-light-hover: #fff9dc;
+  --color-citrus-light-active: #fff3b7;
+  --color-citrus: #fed717;
+  --color-citrushover: #e5c215;
+  --color-citrusactive: #cbac12;
+  --color-citrusdark: #bfa111;
+  --color-citrusdark-hover: #98810e;
+  --color-citrusdark-active: #72610a;
+  --color-citrusdarker: #594b08;
+  --color-sealight: #f1f8ff;
+  --color-sealight-hover: #ebf5ff;
+  --color-sealight-active: #d5eaff;
+  --color-sea: #77baff;
+  --color-seahover: #6ba7e6;
+  --color-seaactive: #5f95cc;
+  --color-seadark: #598cbf;
+  --color-seadark-hover: #477099;
+  --color-seadark-active: #365473;
+  --color-seadarker: #2a4159;
+  --color-btnactive: #A481F9;
+  
+}
 
 html, body, #root {
     height: 100%;
