@@ -21,15 +21,19 @@ function Navbar() {
   return (
     <nav className="bg-amalfi sticky top-0 flex h-screen w-79 flex-col justify-between gap-6">
       <div className="grid justify-start gap-3">
-        <div className="bg-amalfi h-30 w-79 p-3 text-4xl">
-          <div className="flex items-end justify-end p-3 pt-12 text-white font-jakarta text-4xl font-bold">
+        <div className="bg-amalfi h-25 w-79 p-3 text-4xl">
+          <NavLink to="/home" 
+          onClick={() => handleClick('home')}
+          className="flex items-end justify-end p-3 pt-5 text-white font-jakarta text-4xl font-bold">
             ClickDee
-          </div>
+        </NavLink>
         </div>
         <NavLink
           to="/home"
           onClick={() => handleClick('home')}
-          className={`mx-5 flex h-19 w-70 items-center justify-start rounded-2xl p-7 ${activeButton === 'home' ? 'bg-citrus-light' : 'bg-amalfi'} font-thai text-2xl font-semibold ${activeButton === 'home' ? 'text-black' : 'text-white'}`}
+          className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-colors duration-200 hover:-translate-x-0.5
+            ${activeButton === 'home' ? 'bg-citrus-light hover:bg-citrus-light-hover' : 'bg-amalfi hover:bg-amalfihover'} font-thai text-2xl font-semibold
+            ${activeButton === 'home' ? 'text-black' : 'text-white'}`}
         >
           <div className="flex items-center gap-6">
             <img
@@ -43,7 +47,8 @@ function Navbar() {
         <NavLink
           to="/campaign"
           onClick={() => handleClick('campaign')}
-          className={`mx-5 flex h-19 w-70 items-center justify-start rounded-2xl p-7 ${activeButton === 'campaign' ? 'bg-citrus-light' : 'bg-amalfi'} font-thai text-semibold text-2xl ${activeButton === 'campaign' ? 'text-black' : 'text-white'}`}
+          className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-colors duration-200 hover:-translate-x-0.5
+            ${activeButton === 'campaign' ? 'bg-citrus-light hover:bg-citrus-light-hover' : 'bg-amalfi hover:bg-amalfihover'} font-thai font-semibold text-2xl ${activeButton === 'campaign' ? 'text-black' : 'text-white'}`}
         >
           <div className="flex items-center gap-6">
             <img
@@ -57,7 +62,8 @@ function Navbar() {
         <NavLink
           to="/ai"
           onClick={() => handleClick('ai')}
-          className={`mx-5 flex h-19 w-70 items-center justify-start rounded-2xl p-7 ${activeButton === 'ai' ? 'bg-citrus-light' : 'bg-amalfi'} font-thai text-semibold text-2xl ${activeButton === 'ai' ? 'text-black' : 'text-white'}`}
+          className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-colors duration-200 hover:-translate-x-0.5
+            ${activeButton === 'ai' ? 'bg-citrus-light hover:bg-citrus-light-hover' : 'bg-amalfi hover:bg-amalfihover'} font-thai font-semibold text-2xl ${activeButton === 'ai' ? 'text-black' : 'text-white'}`}
         >
           <div className="flex items-center gap-6">
             <img
@@ -71,7 +77,8 @@ function Navbar() {
         <NavLink
           to="/overview"
           onClick={() => handleClick('overview')}
-          className={`mx-5 flex h-19 w-70 items-center justify-start rounded-2xl p-7 ${activeButton === 'overview' ? 'bg-citrus-light' : 'bg-amalfi'} font-thai text-semibold text-2xl ${activeButton === 'overview' ? 'text-black' : 'text-white'}`}
+          className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-colors duration-200 hover:-translate-x-0.5
+            ${activeButton === 'overview' ? 'bg-citrus-light hover:bg-citrus-light-hover' : 'bg-amalfi hover:bg-amalfihover'} font-thai font-semibold text-2xl ${activeButton === 'overview' ? 'text-black' : 'text-white'}`}
         >
           <div className="flex items-center gap-6">
             <img
@@ -85,7 +92,8 @@ function Navbar() {
         <NavLink
           to="/integration"
           onClick={() => handleClick('integration')}
-          className={`mx-5 flex h-19 w-70 items-center justify-start rounded-2xl p-7 ${activeButton === 'integration' ? 'bg-citrus-light' : 'bg-amalfi'} font-thai text-semibold text-2xl ${activeButton === 'integration' ? 'text-black' : 'text-white'}`}
+          className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-colors duration-200 hover:-translate-x-0.5
+            ${activeButton === 'integration' ? 'bg-citrus-light hover:bg-citrus-light-hover' : 'bg-amalfi hover:bg-amalfihover'} font-thai font-semibold text-2xl ${activeButton === 'integration' ? 'text-black' : 'text-white'}`}
         >
           <div className="flex items-center gap-6">
             <img
@@ -97,7 +105,7 @@ function Navbar() {
           </div>
         </NavLink>
       </div>
-      <div className="grid items-end justify-center gap-3 p-6">
+      <div className="grid items-end justify-center gap-5 p-6 mb-5">
         {/* Todo: this AI token thing should be clickable and lead to a page where the user can manage their AI tokens. */}
         <div className="mx-5 h-50 w-70 items-center justify-start rounded-2xl border-3 border-white/30 bg-white/10 p-7 font-thai text-2xl text-white shadow-lg backdrop-blur-md">
           <div>
@@ -107,6 +115,7 @@ function Navbar() {
             </div>
             <div className="text-lg font-semibold">เหลือ {AI_TOKEN} / {AI_TOKEN_MAX} tokens</div>
             <div className="py-2 text-lg font-bold">เดือนนี้ใช้งานไปแล้ว</div>
+
             {/* TODO: come fix this later */}
             <div className="h-2 w-full rounded-full bg-white/20">
               <div
@@ -119,13 +128,14 @@ function Navbar() {
         <NavLink
           to="/logout"
           onClick={() => handleClick('logout')}
-          className={`mx-5 flex h-19 w-70 items-center justify-start rounded-2xl p-7 ${activeButton === 'logout' ? 'bg-citrus-light' : 'bg-amalfi'} font-thai text-2xl text-white`}
+          className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-transform duration-200 hover:-translate-x-0.5
+            font-thai text-2xl text-white`}
         >
-          <div className="flex items-center gap-6">
+          <div className="flex pt-5 items-center gap-6">
             <img
               src={logout}
               alt="Logout"
-              className={`h-8 w-8 ${activeButton === 'logout' ? 'brightness-0' : ''}`}
+              className={`h-8 w-8 ${activeButton === 'logout' ? 'brightness-0' : ''} `}
             />
             ออกจากระบบ
           </div>
