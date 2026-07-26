@@ -281,7 +281,7 @@ function Home() {
               <div className="relative" ref={salesRangeRef}>
                 <button
                   onClick={() => setIsSalesRangeOpen((prev) => !prev)}
-                  className="font-thai flex items-center gap-1 rounded-full border border-[#8E98A8] px-4 py-1 text-base text-black"
+                  className="font-thai border-amalfi bg-amalfilight hover:bg-amalfilight-hover flex items-center gap-1 rounded-full border px-4 py-1 text-base text-black transition-all duration-200 ease-in-out hover:scale-105 hover:cursor-pointer"
                 >
                   {salesRange.label}
                   <ChevronDown className="h-4 w-4" />
