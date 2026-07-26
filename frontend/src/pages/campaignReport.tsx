@@ -12,8 +12,9 @@ import {
   Square,
 } from 'lucide-react'
 import cash from '@/assets/cash.svg'
+import DonutChart from '@/components/donutChart'
 import { campaigns, platformBadgeStyles } from '@/data/campaigns'
-import type { Creative, ChannelReach } from '@/data/campaigns'
+import type { Creative } from '@/data/campaigns'
 
 type ReportStatus = 'active' | 'paused' | 'stopped'
 
@@ -48,62 +49,6 @@ function MetricCard({
       <p className="font-thai mt-2 text-base font-semibold text-black">
         {caption}
       </p>
-    </div>
-  )
-}
-
-function DonutChart({ channelReach }: { channelReach: ChannelReach[] }) {
-  const total = channelReach.reduce((sum, c) => sum + c.reach, 0)
-  const segments = channelReach.reduce<
-    { color: string; startDeg: number; endDeg: number }[]
-  >((acc, c) => {
-    const startDeg = acc.length > 0 ? acc[acc.length - 1].endDeg : 0
-    const endDeg = startDeg + (c.reach / total) * 360
-    acc.push({ color: platformBadgeStyles[c.platform].chartColor, startDeg, endDeg })
-    return acc
-  }, [])
-  const gradientStops = segments
-    .map((s) => `${s.color} ${s.startDeg}deg ${s.endDeg}deg`)
-    .join(', ')
-
-  return (
-    <div className="mt-4 flex w-full flex-col items-center gap-5">
-      <div
-        className="relative aspect-square w-full max-w-56 rounded-full"
-        style={{ background: `conic-gradient(${gradientStops})` }}
-      >
-        <div className="absolute inset-[14%] flex flex-col items-center justify-center rounded-full bg-white text-center">
-          <p className="text-3xl font-bold text-black">100%</p>
-          <p className="font-thai text-base text-black">การเข้าถึง</p>
-        </div>
-      </div>
-      <div className="flex w-full items-start justify-around">
-        {channelReach.map((c) => {
-          const badge = platformBadgeStyles[c.platform]
-          return (
-            <div
-              key={c.platform}
-              className="flex flex-col items-center gap-1"
-            >
-              <div className="flex items-center gap-1.5">
-                <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: badge.chartColor }}
-                />
-                <p className="font-thai text-lg font-semibold text-black">
-                  {badge.label}
-                </p>
-              </div>
-              <p className="text-base text-[#8E98A8]">
-                {c.reach.toLocaleString()}
-              </p>
-              <p className="text-lg font-bold text-black">
-                {Math.round((c.reach / total) * 100)}%
-              </p>
-            </div>
-          )
-        })}
-      </div>
     </div>
   )
 }
@@ -195,7 +140,7 @@ function CampaignReportView({
           {status === 'active' && (
             <button
               onClick={() => setStatus('paused')}
-              className="flex items-center gap-2 text-[#8E98A8] hover:text-amalfidark hover:font-semibold hover:cursor-pointer"
+              className="hover:text-amalfidark flex items-center gap-2 text-[#8E98A8] hover:cursor-pointer hover:font-semibold"
             >
               <Play className="h-6 w-6" />
               กำลังทำงาน
@@ -205,15 +150,14 @@ function CampaignReportView({
             <>
               <button
                 onClick={() => setStatus('active')}
-                className="flex items-center gap-2 text-[#8E98A8] hover:font-semibold hover:cursor-pointer"
+                className="flex items-center gap-2 text-[#8E98A8] hover:cursor-pointer hover:font-semibold"
               >
                 <Pause className="h-6 w-6" />
                 หยุดชั่วคราว
               </button>
               <button
                 onClick={() => setStatus('stopped')}
-                className="flex items-center gap-1 rounded-[15px] border border-[] px-3 py-1 text-lg text-[#be2c2c]
-                 hover:font-semibold hover:cursor-pointer"
+                className="border-[] flex items-center gap-1 rounded-[15px] border px-3 py-1 text-lg text-[#be2c2c] hover:cursor-pointer hover:font-semibold"
               >
                 <Square className="h-4 w-4" />
                 หยุดแคมเปญ
@@ -223,7 +167,7 @@ function CampaignReportView({
           {status === 'stopped' && (
             <button
               onClick={() => setStatus('active')}
-              className="flex items-center gap-2 text-amalfi hover:text-amalfidark hover:font-semibold hover:cursor-pointer"
+              className="text-amalfi hover:text-amalfidark flex items-center gap-2 hover:cursor-pointer hover:font-semibold"
             >
               <Play className="h-6 w-6" />
               เริ่มแคมเปญใหม่
@@ -341,7 +285,16 @@ function CampaignReportView({
           <h3 className="font-thai text-amalfidark text-2xl font-bold">
             ช่องทางที่ทำงาน
           </h3>
-          <DonutChart channelReach={campaign.channelReach} />
+          <DonutChart
+            centerLabel="100%"
+            centerSublabel="การเข้าถึง"
+            segments={campaign.channelReach.map((c) => ({
+              key: c.platform,
+              label: platformBadgeStyles[c.platform].label,
+              value: c.reach,
+              color: platformBadgeStyles[c.platform].chartColor,
+            }))}
+          />
         </div>
       </div>
 
@@ -357,8 +310,7 @@ function CampaignReportView({
             </p>
           </div>
           {/* TODO: implement real creative creation flow */}
-          <button className="bg-seaactive font-thai flex items-center gap-1 rounded-[15px] px-4 py-2 text-base text-white
-          hover:bg-seadark hover:cursor-pointer hover:scale-105 transition-all">
+          <button className="bg-seaactive font-thai hover:bg-seadark flex items-center gap-1 rounded-[15px] px-4 py-2 text-base text-white transition-all hover:scale-105 hover:cursor-pointer">
             <Plus className="h-5 w-5" />
             สร้างครีเอทีฟใหม่
           </button>

@@ -172,7 +172,7 @@ function QuickActionCard({
         </p>
         <p className="font-thai text-base text-black">{action.description}</p>
       </div>
-      <ChevronRight className="text-amalfidark mt-1 h-5 w-5 shrink-0 5" />
+      <ChevronRight className="text-amalfidark 5 mt-1 h-5 w-5 shrink-0" />
     </button>
   )
 }
@@ -225,18 +225,15 @@ function Ai() {
           <button
             type="button"
             onClick={() => setQuickActionsOpen((open) => !open)}
-            className="absolute top-8 -left-4 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-[#8E98A8] bg-white shadow-md
-            hover:cursor-pointer hover:scale-115 transition-all"
+            className="absolute top-8 -left-4 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-[#8E98A8] bg-white shadow-md transition-all hover:scale-115 hover:cursor-pointer"
           >
             <ChevronRight
-              className={`h-5 w-5 transition-transform ${quickActionsOpen ? 'rotate-180 ' : ''}`}
+              className={`h-5 w-5 transition-transform ${quickActionsOpen ? 'rotate-180' : ''}`}
             />
           </button>
           <div
             className={`bg-citrus-light-active overflow-x-clip overflow-y-scroll rounded-[10px] transition-all duration-200 ${
-              quickActionsOpen
-                ? 'w-105 p-6 opacity-100'
-                : 'w-0 p-0 opacity-0'
+              quickActionsOpen ? 'w-105 p-6 opacity-100' : 'w-0 p-0 opacity-0'
             }`}
           >
             <div className="border-citrusdark flex w-91 items-center gap-2 border-b-2 pb-3">

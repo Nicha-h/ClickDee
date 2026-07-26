@@ -283,7 +283,7 @@ function Overview() {
             </h3>
             <Link
               to="/campaign"
-              className="font-thai text-seadark-hover flex items-center gap-1 text-base font-semibold hover:text-seadarker"
+              className="font-thai text-seadark-hover hover:text-seadarker flex items-center gap-1 text-base font-semibold"
             >
               ดูทั้งหมด
               <ArrowRight className="h-4 w-4" />
