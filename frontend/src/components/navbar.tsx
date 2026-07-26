@@ -28,10 +28,10 @@ function Navbar() {
           <NavLink
             to="/home"
             onClick={() => handleClick('home')}
-            className="font-jakarta flex items-end justify-center p-3 pt-5 text-4xl font-bold text-white"
+            className="font-jakarta flex items-center justify-center gap-4 p-3 pt-5 text-4xl font-bold text-white"
           >
             <img src={logo} alt="ClickDee" className="h-16 w-16" />
-            ClickDee
+            <p className="text-white">ClickDee</p>
           </NavLink>
           {/** navigation btns */}
         </div>

@@ -7,7 +7,7 @@ function Topbar() {
     setActiveButton(buttonName)
   }
   return (
-    <div className="sticky top-1 flex h-20 w-full flex-row items-center justify-end bg-white px-2">
+    <div className="sticky top-0 flex h-20 w-full flex-row items-center justify-end bg-white px-2">
       <div className="mr-11 flex flex-row items-center justify-end gap-10 pt-4">
         <NavLink to="/notification" onClick={() => handleClick('bell')}>
           {/* TODO: notification gonna be a modal. Dont forget to fix the notification */}
