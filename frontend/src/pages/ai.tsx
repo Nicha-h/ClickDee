@@ -108,13 +108,13 @@ function AiBubble({ message }: { message: ChatMessage }) {
       <img
         src={aiMascot}
         alt="น้องดี"
-        className="h-9 w-9 shrink-0 rounded-full"
+        className="h-15 w-15 shrink-0 rounded-full"
       />
       <div>
         <div className="bg-sealight-hover max-w-xl rounded-tr-xl rounded-br-xl rounded-bl-xl border border-[#8E98A8] p-4">
-          <p className="font-thai text-sm text-black">{message.text}</p>
+          <p className="font-thai text-base text-black">{message.text}</p>
           {message.list && (
-            <div className="font-thai mt-2 text-sm text-black">
+            <div className="font-thai mt-2 text-base text-black">
               <p>ข้อแนะนำ:</p>
               <ul className="list-disc pl-6">
                 {message.list.map((item) => (
@@ -124,7 +124,7 @@ function AiBubble({ message }: { message: ChatMessage }) {
             </div>
           )}
           {message.closing && (
-            <p className="font-thai mt-2 text-sm text-black">
+            <p className="font-thai mt-2 text-base text-black">
               {message.closing}
             </p>
           )}
@@ -140,13 +140,13 @@ function UserBubble({ message }: { message: ChatMessage }) {
     <div className="flex flex-row items-start justify-end gap-3">
       <div className="items-end">
         <div className="max-w-xl rounded-tl-xl rounded-br-xl rounded-bl-xl border border-[#8E98A8] bg-white p-4">
-          <p className="font-thai text-sm text-black">{message.text}</p>
+          <p className="font-thai text-base text-black">{message.text}</p>
         </div>
         <p className="font-thai mt-1 text-right text-xs text-[#8E98A8]">
           {message.time}
         </p>
       </div>
-      <CircleUserRound className="h-9 w-9 shrink-0 text-[#8E98A8]" />
+      <CircleUserRound className="h-15 w-15 shrink-0 text-[#8E98A8]" />
     </div>
   )
 }
@@ -170,9 +170,9 @@ function QuickActionCard({
         <p className="font-thai text-amalfidark text-lg font-bold">
           {action.title}
         </p>
-        <p className="font-thai text-sm text-black">{action.description}</p>
+        <p className="font-thai text-base text-black">{action.description}</p>
       </div>
-      <ChevronRight className="text-amalfidark mt-1 h-5 w-5 shrink-0" />
+      <ChevronRight className="text-amalfidark mt-1 h-5 w-5 shrink-0 5" />
     </button>
   )
 }
@@ -209,7 +209,7 @@ function Ai() {
               onChange={(e) => setInputValue(e.target.value)}
               type="text"
               placeholder="พิมพ์คำถามของคุณ..."
-              className="font-thai flex-1 text-sm outline-none"
+              className="font-thai flex-1 text-base outline-none"
             />
             <button
               type="submit"
@@ -225,26 +225,27 @@ function Ai() {
           <button
             type="button"
             onClick={() => setQuickActionsOpen((open) => !open)}
-            className="absolute top-8 -left-4 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-[#8E98A8] bg-white shadow-md"
+            className="absolute top-8 -left-4 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-[#8E98A8] bg-white shadow-md
+            hover:cursor-pointer hover:scale-115 transition-all"
           >
             <ChevronRight
-              className={`h-5 w-5 transition-transform ${quickActionsOpen ? 'rotate-180' : ''}`}
+              className={`h-5 w-5 transition-transform ${quickActionsOpen ? 'rotate-180 ' : ''}`}
             />
           </button>
           <div
-            className={`bg-citrus-light-active overflow-hidden rounded-[10px] transition-all duration-200 ${
+            className={`bg-citrus-light-active overflow-x-clip overflow-y-scroll rounded-[10px] transition-all duration-200 ${
               quickActionsOpen
-                ? 'w-[412px] p-6 opacity-100'
+                ? 'w-105 p-6 opacity-100'
                 : 'w-0 p-0 opacity-0'
             }`}
           >
-            <div className="border-citrusdark flex w-[364px] items-center gap-2 border-b-2 pb-3">
+            <div className="border-citrusdark flex w-91 items-center gap-2 border-b-2 pb-3">
               <Zap className="text-amalfidark h-6 w-6" />
-              <h2 className="font-thai text-amalfidark text-xl font-bold">
+              <h2 className="font-thai text-amalfidark text-2xl font-bold">
                 Quick Actions
               </h2>
             </div>
-            <div className="mt-4 flex w-[364px] flex-col gap-3">
+            <div className="mt-4 flex w-91 flex-col gap-3">
               {quickActions.map((action) => (
                 <QuickActionCard
                   key={action.id}

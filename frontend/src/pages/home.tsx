@@ -66,12 +66,12 @@ function Home() {
         <div className="shrink-0">
           <button
             onClick={() => handleClick()}
-            className="bg-seaactive hover:bg-seadark font-thai rounded-[19px] px-12 py-6 text-2xl font-semibold text-white shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:cursor-pointer hover:shadow-lg"
+            className="bg-citrus hover:bg-citrushover font-thai rounded-[19px] px-12 py-6 text-2xl font-semibold text-black shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:cursor-pointer hover:shadow-lg"
           >
             <img
               src={rocket}
               alt="Rocket"
-              className="mr-4 -ml-2 inline-block h-10 w-10 text-white"
+              className="mr-4 -ml-2 inline-block h-10 w-10 brightness-0"
             />
             สร้างแคมเปญใหม่
           </button>
