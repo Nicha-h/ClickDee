@@ -8,8 +8,7 @@ import increase from '@/assets/increase.svg'
 import starcircle from '@/assets/starcircle.svg'
 import overviewLineChart from '@/assets/overview-line-chart.png'
 import overviewLineChartLegend from '@/assets/overview-line-chart-legend.png'
-import overviewChannelChart from '@/assets/overview-channel-chart.png'
-import overviewAudienceSegments from '@/assets/overview-audience-segments.png'
+import DonutChart from '@/components/donutChart'
 
 {
   /** Summary data PLACEHOLDER*/
@@ -18,6 +17,20 @@ const reach = 12450
 const clickNum = 842
 const usedBudget = 12400
 const ROI = 11.5
+
+const channelReach = [
+  { key: 'facebook', label: 'Facebook', value: 5220, color: '#1877F2' },
+  { key: 'instagram', label: 'Instagram', value: 3486, color: '#C13584' },
+  { key: 'tiktok', label: 'TikTok', value: 2739, color: '#000000' },
+  { key: 'line', label: 'LINE', value: 1005, color: '#06C755' },
+]
+
+const audienceSegments = [
+  { key: '18-24', label: '18–24 ปี', value: 2890, color: '#77BAFF' },
+  { key: '25-34', label: '25–34 ปี', value: 5340, color: '#1E59BC' },
+  { key: '35-44', label: '35–44 ปี', value: 2960, color: '#FED717' },
+  { key: '45+', label: '45 ปีขึ้นไป', value: 1260, color: '#A481F9' },
+]
 
 type DateRange = { key: string; label: string }
 
@@ -85,7 +98,7 @@ function Overview() {
       {/** Header */}
       <div className="font-thai flex flex-col gap-1 font-semibold">
         <h1 className="text-amalfidark text-4xl font-bold">รายงานผลสรุป</h1>
-        <p className="text-sm font-bold text-black">
+        <p className="text-base font-bold text-black">
           ภาพรวมประสิทธิภาพแคมเปญทั้งหมด · {rangeSubtitles[activeRange]}
         </p>
       </div>
@@ -97,7 +110,7 @@ function Overview() {
           <button
             key={range.key}
             onClick={() => setActiveRange(range.key)}
-            className={`font-thai rounded-[15px] px-4 py-1 text-sm transition-colors ${
+            className={`font-thai rounded-[15px] px-4 py-1 text-base transition-colors ${
               activeRange === range.key
                 ? 'bg-seadark-hover text-white'
                 : 'bg-sealight-active text-seadark-hover hover:bg-sealight-hover'
@@ -110,7 +123,7 @@ function Overview() {
 
       {/** Stat cards */}
       <div className="mt-6 flex flex-row items-stretch gap-5">
-        <div className="w-65 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+        <div className="w-65 rounded-xl border-2 border-[#8E98A8] px-4 py-1 pb-4 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
           <div className="font-thai text-amalfi flex flex-row items-center p-4 text-xl font-semibold">
             <img src={ppl} alt="People" className="mr-2 inline-block h-9 w-9" />
             <h2 className="font-thai text-amalfi font-semibold">ยอดเข้าถึง</h2>
@@ -131,7 +144,7 @@ function Overview() {
             </div>
           </div>
           <div className="px-4">
-            <p className="font-thai mt-2 text-sm font-semibold text-black">
+            <p className="font-thai mt-2 text-base font-semibold text-black">
               คนเห็นโฆษณาของคุณ
             </p>
           </div>
@@ -161,7 +174,7 @@ function Overview() {
             </div>
           </div>
           <div className="px-4">
-            <p className="font-thai mt-2 text-sm font-semibold text-black">
+            <p className="font-thai mt-2 text-base font-semibold text-black">
               คนที่สนใจและกดดูร้าน
             </p>
           </div>
@@ -183,7 +196,7 @@ function Overview() {
             </p>
           </div>
           <div className="px-4">
-            <p className="font-thai mt-2 text-sm font-semibold text-black">
+            <p className="font-thai mt-2 text-base font-semibold text-black">
               ของงบรายเดือน
             </p>
           </div>
@@ -197,7 +210,7 @@ function Overview() {
             <p className="text-3xl font-bold text-white">{ROI.toFixed(1)}x</p>
           </div>
           <div className="px-4">
-            <p className="font-thai mt-2 text-sm font-semibold text-white">
+            <p className="font-thai mt-2 text-base font-semibold text-white">
               ผลตอบแทนดีเยี่ยม
             </p>
           </div>
@@ -207,13 +220,13 @@ function Overview() {
       {/** Charts */}
       <div className="mt-6 flex flex-row gap-5">
         {/* TODO: replace with a real chart (reach/spend trend, channel split) once a charting library and live data are wired up */}
-        <div className="flex-1 rounded-[12px] border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+        <div className="flex-1 rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
           <div className="flex flex-row items-center justify-between">
             <div>
-              <h3 className="font-thai text-amalfidark text-lg font-bold">
+              <h3 className="font-thai text-amalfidark text-2xl font-bold">
                 แนวโน้มรายวัน
               </h3>
-              <p className="font-thai text-sm text-black">
+              <p className="font-thai text-base text-black">
                 การเข้าถึง vs. งบที่ใช้
               </p>
             </div>
@@ -225,14 +238,14 @@ function Overview() {
             className="mt-4 w-full"
           />
         </div>
-        <div className="w-96 rounded-[12px] border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
-          <h3 className="font-thai text-amalfidark text-lg font-bold">
+        <div className="w-96 rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+          <h3 className="font-thai text-amalfidark text-2xl font-bold">
             ช่องทางที่ทำงาน
           </h3>
-          <img
-            src={overviewChannelChart}
-            alt="สัดส่วนช่องทาง"
-            className="mt-4 w-full"
+          <DonutChart
+            centerLabel="100%"
+            centerSublabel="การเข้าถึง"
+            segments={channelReach}
           />
         </div>
       </div>
@@ -240,22 +253,22 @@ function Overview() {
       {/** AI insights */}
       {/* TODO: replace with real AI-generated insights once backend/AI integration exists */}
       <div className="border-seadark-hover bg-sealight mt-6 rounded-[10px] border p-6">
-        <h3 className="font-thai text-amalfidark text-lg font-bold">
+        <h3 className="font-thai text-amalfidark text-2xl font-bold">
           น้องดี AI สรุปให้
         </h3>
-        <p className="font-thai mt-1 text-sm text-black">
+        <p className="font-thai mt-1 text-base text-black">
           3 ข้อสำคัญที่คุณควรรู้จากรายงานนี้
         </p>
         <div className="mt-4 flex flex-row gap-4">
           {aiInsights.map((insight, i) => (
             <div
               key={insight}
-              className="border-seadark-hover flex flex-1 gap-2 rounded-[12px] border bg-white p-3"
+              className="border-seadark-hover flex flex-1 gap-2 rounded-xl border bg-white p-3"
             >
               <span className="bg-sealight-active text-amalfidark flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold">
                 {i + 1}
               </span>
-              <p className="font-thai text-xs text-black">{insight}</p>
+              <p className="font-thai text-base text-black">{insight}</p>
             </div>
           ))}
         </div>
@@ -263,24 +276,24 @@ function Overview() {
 
       {/** Bottom row: top campaigns + audience segments */}
       <div className="mt-6 flex flex-row gap-5">
-        <div className="flex-1 rounded-[12px] border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+        <div className="flex-1 rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
           <div className="flex flex-row items-center justify-between">
-            <h3 className="font-thai text-amalfidark text-lg font-bold">
+            <h3 className="font-thai text-amalfidark text-2xl font-bold">
               แคมเปญที่ทำงานดีที่สุด
             </h3>
             <Link
               to="/campaign"
-              className="font-thai text-seadark-hover flex items-center gap-1 text-sm font-semibold"
+              className="font-thai text-seadark-hover flex items-center gap-1 text-base font-semibold hover:text-seadarker"
             >
               ดูทั้งหมด
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
           {/* TODO: compute real top-campaigns ranking from live performance data */}
-          <div className="mt-4 flex flex-row justify-between px-2 text-xs font-bold text-black">
-            <span className="font-thai">แคมเปญ</span>
+          <div className="mt-4 flex flex-row justify-between px-2 text-base font-bold text-black">
+            <span className="font-thai text-base">แคมเปญ</span>
             <div className="flex flex-row gap-10">
-              <span className="font-thai w-16 text-right">การเข้าถึง</span>
+              <span className="font-thai w-20 text-right">การเข้าถึง</span>
               <span className="font-thai w-14 text-right">ออเดอร์</span>
               <span className="font-thai w-12 text-right">ROI</span>
             </div>
@@ -289,17 +302,17 @@ function Overview() {
             {topCampaigns.map((c) => (
               <div
                 key={c.rank}
-                className="border-seadark-hover flex flex-row items-center justify-between rounded-[12px] border px-3 py-3"
+                className="border-seadark-hover flex flex-row items-center justify-between rounded-xl border px-3 py-3"
               >
                 <div className="flex flex-row items-center gap-3">
                   <span
-                    className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${c.badgeClass}`}
+                    className={`flex h-8 w-8 items-center justify-center rounded-full text-base font-semibold ${c.badgeClass}`}
                   >
                     {c.rank}
                   </span>
-                  <p className="font-thai text-sm text-black">{c.name}</p>
+                  <p className="font-thai text-base text-black">{c.name}</p>
                 </div>
-                <div className="flex flex-row gap-10 text-sm text-black">
+                <div className="flex flex-row gap-10 text-base text-black">
                   <span className="w-16 text-right">
                     {c.reach.toLocaleString()}
                   </span>
@@ -316,17 +329,18 @@ function Overview() {
         </div>
 
         {/* TODO: replace with a real customer-segment breakdown chart computed from audience data */}
-        <div className="w-108 rounded-[12px] border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
-          <h3 className="font-thai text-amalfidark text-lg font-bold">
+        <div className="w-108 rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+          <h3 className="font-thai text-amalfidark text-2xl font-bold">
             กลุ่มลูกค้าที่กดดู
           </h3>
-          <img
-            src={overviewAudienceSegments}
-            alt="กลุ่มลูกค้าที่กดดู"
-            className="mt-4 w-full"
+          <DonutChart
+            centerLabel="100%"
+            centerSublabel="กลุ่มอายุ"
+            segments={audienceSegments}
           />
         </div>
       </div>
+      <div className="h-24 w-full shrink-0"></div>
     </div>
   )
 }
