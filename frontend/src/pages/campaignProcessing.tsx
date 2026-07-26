@@ -1,0 +1,65 @@
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ChevronLeft, Sparkles } from 'lucide-react'
+import StepIndicator from '@/components/stepIndicator'
+
+const PROCESSING_DELAY_MS = 3500
+
+function CampaignProcessing() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      navigate('/campaign/new/review', { replace: true })
+    }, PROCESSING_DELAY_MS)
+    return () => clearTimeout(timeout)
+  }, [navigate])
+
+  return (
+    <div className="min-h-full min-w-full p-10">
+      {/** Header */}
+      <div className="flex items-center gap-4">
+        <button
+          type="button"
+          onClick={() => navigate('/campaign/new')}
+          className="border-amalfidark flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2"
+        >
+          <ChevronLeft className="text-amalfidark h-7 w-7" />
+        </button>
+        <div className="font-thai flex flex-col gap-1">
+          <h1 className="text-amalfidark text-4xl font-bold">
+            AI กำลังคิดให้คุณอยู่...
+          </h1>
+          <p className="text-base font-semibold text-black">
+            พิมพ์สิ่งที่คุณต้องการเป็นภาษาธรรมดา น้องดี AI
+            จะวางแผนแคมเปญและคำนวณตลาดให้อัตโนมัติ
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <StepIndicator currentStep={2} />
+      </div>
+
+      <div className="bg-sealight mt-6 flex h-113 flex-col items-center justify-center rounded-xl shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+        <div className="relative flex h-35 w-35 items-center justify-center">
+          <span className="bg-sea absolute inline-flex h-28 w-28 animate-ping rounded-full opacity-60" />
+          <span className="bg-sea absolute inline-flex h-28 w-28 animate-ping rounded-full opacity-60 [animation-delay:0.5s]" />
+          <span className="bg-sea relative flex h-28 w-28 animate-[breathe_2.4s_ease-in-out_infinite] items-center justify-center rounded-full shadow-lg">
+            <Sparkles className="h-14 w-14 animate-[spin_6s_linear_infinite] text-white" />
+          </span>
+        </div>
+        <h2 className="font-thai text-amalfidark mt-6 text-3xl font-bold">
+          น้องดีกำลังคิดให้คุณอยู่...
+        </h2>
+        <p className="font-thai mt-2 text-xl text-[#8e98a8]">
+          จากบรีฟของคุณ AI กำลังวิเคราะห์พฤติกรรมลูกค้า เทรนด์ในพื้นที่ และ
+          แคมเปญที่คล้ายกันในอุตสหกรรม
+        </p>
+      </div>
+      <div className="h-24 w-full shrink-0"></div>
+    </div>
+  )
+}
+
+export default CampaignProcessing
