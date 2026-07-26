@@ -26,7 +26,7 @@ function Navbar() {
         {/** logo */}
         <div className="bg-amalfi flex h-20 w-79 p-3 text-4xl">
           <NavLink
-            to="/home"
+            to="/"
             onClick={() => handleClick('home')}
             className="font-jakarta flex items-center justify-center gap-4 p-3 pt-5 text-4xl font-bold text-white"
           >
