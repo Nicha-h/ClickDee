@@ -100,8 +100,8 @@ function CampaignCreate() {
             <button
               type="submit"
               disabled={!prompt.trim()}
-              className="bg-citrus hover:bg-citrushover font-thai flex items-center gap-2 rounded-2xl px-6 py-3 
-              text-lg font-semibold text-black shadow-md transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              className="bg-citrus hover:bg-citrushover hover:cursor-pointer hover:scale-105 font-thai flex items-center gap-2 rounded-2xl px-6 py-3 
+              text-lg font-semibold text-black shadow-md transition-all disabled:cursor-not-allowed disabled:opacity-50 "
             >
               <img src={sparklebold} alt="" className="h-5 w-5" />
               สร้างแคมเปญด้วย AI
