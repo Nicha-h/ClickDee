@@ -24,7 +24,7 @@ function Navbar() {
     <nav className="bg-amalfi sticky top-0 flex h-screen w-80 flex-col justify-between gap-6">
       <div className="grid justify-start gap-3">
         {/** logo */}
-        <div className="bg-amalfi h-25 w-79 p-3 text-4xl">
+        <div className="bg-amalfi flex h-20 w-79 p-3 text-4xl">
           <NavLink
             to="/home"
             onClick={() => handleClick('home')}
@@ -38,7 +38,11 @@ function Navbar() {
         <NavLink
           to="/"
           onClick={() => handleClick('home')}
-          className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-colors duration-200 hover:-translate-x-0.5 ${activeButton === 'home' ? 'bg-citrus-light hover:bg-citrus-light-hover' : 'bg-amalfi hover:bg-amalfihover'} font-thai text-xl font-semibold ${activeButton === 'home' ? 'text-black' : 'text-white'}`}
+          className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-colors duration-200 hover:-translate-x-0.5 ${
+            activeButton === 'home'
+              ? 'bg-citrus-light hover:bg-citrus-light-hover'
+              : 'bg-amalfi hover:bg-amalfihover'
+          } font-thai text-xl font-semibold ${activeButton === 'home' ? 'text-black' : 'text-white'}`}
         >
           <div className="flex items-center gap-6">
             <img
@@ -106,7 +110,7 @@ function Navbar() {
           </div>
         </NavLink>
       </div>
-      <div className="mb-5 grid items-end justify-center gap-5 p-6">
+      <div className="mb-5 grid items-end justify-center gap-2 p-4">
         {/* Todo: this AI token thing should be clickable and lead to a page where the user can manage their AI tokens. */}
         <div className="font-thai mx-5 h-50 w-70 items-center justify-start rounded-2xl border-3 border-white/30 bg-white/10 p-7 text-2xl text-white shadow-lg backdrop-blur-md">
           <div>
@@ -114,10 +118,10 @@ function Navbar() {
               <img src={sparklebold} alt="Sparkle" className="h-6 w-6" />
               AI Token
             </div>
-            <div className="text-lg font-semibold">
+            <div className="text-base font-semibold">
               เหลือ {AI_TOKEN} / {AI_TOKEN_MAX} tokens
             </div>
-            <div className="py-2 text-lg font-bold">เดือนนี้ใช้งานไปแล้ว</div>
+            <div className="py-2 text-base font-bold">เดือนนี้ใช้งานไปแล้ว</div>
 
             {/* TODO: come fix this later */}
             <div className="h-2 w-full rounded-full bg-white/20">
@@ -133,13 +137,13 @@ function Navbar() {
         <NavLink
           to="/logout"
           onClick={() => handleClick('logout')}
-          className={`font-thai mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 text-2xl text-white transition-transform duration-200 hover:-translate-x-0.5`}
+          className={`font-thai mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 text-xl text-white transition-transform duration-200 hover:-translate-x-0.5`}
         >
           <div className="flex items-center gap-6 pt-5">
             <img
               src={logout}
               alt="Logout"
-              className={`h-8 w-8 ${activeButton === 'logout' ? 'brightness-0' : ''} `}
+              className={`h-5 w-5 ${activeButton === 'logout' ? 'brightness-0' : ''} `}
             />
             ออกจากระบบ
           </div>
