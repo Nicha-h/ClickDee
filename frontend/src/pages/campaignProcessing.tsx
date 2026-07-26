@@ -22,7 +22,7 @@ function CampaignProcessing() {
         <button
           type="button"
           onClick={() => navigate('/campaign/new')}
-          className="border-amalfidark flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2"
+          className="border-amalfidark flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 hover:scale-105 transition-all"
         >
           <ChevronLeft className="text-amalfidark h-7 w-7" />
         </button>
@@ -30,7 +30,7 @@ function CampaignProcessing() {
           <h1 className="text-amalfidark text-4xl font-bold">
             AI กำลังคิดให้คุณอยู่...
           </h1>
-          <p className="text-base font-semibold text-black">
+          <p className="text-lg font-semibold text-black">
             พิมพ์สิ่งที่คุณต้องการเป็นภาษาธรรมดา น้องดี AI
             จะวางแผนแคมเปญและคำนวณตลาดให้อัตโนมัติ
           </p>
