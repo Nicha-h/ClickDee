@@ -24,12 +24,12 @@ function Integration() {
             <p className="font-eng text-3xl font-semibold text-black">
               Facebook
             </p>
-            <p className="font-thai text-amalfidark mt-1 text-base font-semibold">
+            <p className="font-thai text-amalfidark mt-1 text-lg font-semibold">
               ซิงค์เพจและบัญชีโฆษณา
             </p>
           </div>
         </div>
-        <p className="font-thai absolute top-6 right-6 text-xl font-semibold text-[#519b5c]">
+        <p className="font-thai absolute top-6 right-6 text-2xl font-semibold text-[#519b5c]">
           เชื่อมต่อแล้ว
         </p>
         <button
