@@ -32,7 +32,7 @@ function Home() {
   const usedBudget = 12400
   const ROI = 11.5
   const handleClick = () => {
-    navigate('/campaign')
+    navigate('/campaign/new')
   }
   const [salesRange, setSalesRange] = useState(salesRangeOptions[0])
   const [isSalesRangeOpen, setIsSalesRangeOpen] = useState(false)
@@ -51,7 +51,7 @@ function Home() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
   return (
-    <div className="min-h-full min-w-full pb-10">
+    <div className="min-h-full w-full pb-10">
       {/** Welcome Message + create campaign btn*/}
       <div className="flex flex-row items-center justify-between gap-5 p-10">
         <div className="font-thai flex flex-col items-start justify-start gap-2 font-semibold">
@@ -266,13 +266,13 @@ function Home() {
 
           {/** Sales overview */}
           {/* TODO: replace with a real sales chart once analytics data is available */}
-          <div className="mt-8 w-full rounded-xl border-2 border-[#8E98A8] p-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+          <div className="mt-8 w-full rounded-xl border-2 border-[#8E98A8] px-10 py-6 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
             <div className="flex flex-row items-center justify-between">
               <div>
                 <h2 className="font-thai text-amalfidark text-2xl font-semibold">
                   ภาพรวมยอดขาย
                 </h2>
-                <p className="font-thai mt-1 text-sm text-[#8E98A8]">
+                <p className="font-thai mt-1 text-lg text-[#8E98A8]">
                   เทียบกับสัปดาห์ก่อน{' '}
                   <span className="font-semibold text-[#519b5c]">+18.4%</span>
                 </p>
@@ -281,7 +281,7 @@ function Home() {
               <div className="relative" ref={salesRangeRef}>
                 <button
                   onClick={() => setIsSalesRangeOpen((prev) => !prev)}
-                  className="font-thai flex items-center gap-1 rounded-full border border-[#8E98A8] px-4 py-1 text-sm text-black"
+                  className="font-thai flex items-center gap-1 rounded-full border border-[#8E98A8] px-4 py-1 text-base text-black"
                 >
                   {salesRange.label}
                   <ChevronDown className="h-4 w-4" />
@@ -308,11 +308,11 @@ function Home() {
           </div>
 
           {/** Connected channels */}
-          <div className="w-full rounded-xl border-2 border-[#8E98A8] p-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30 ">
+          <div className="w-full rounded-xl border-2 border-[#8E98A8] p-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
             <h2 className="font-thai text-amalfidark text-2xl font-semibold">
               ช่องทางที่เชื่อมต่อ
             </h2>
-            <p className="font-thai mt-1 text-sm text-black">
+            <p className="font-thai mt-1 text-base text-black">
               ClickDee ส่งโฆษณาออกไปยังแพลตฟอร์มเหล่านี้ให้คุณอัตโนมัติ
             </p>
             <div className="mt-4 flex w-58 flex-row items-center gap-3 rounded-[10px] border border-[#8E98A8] p-4">
@@ -331,78 +331,80 @@ function Home() {
                     <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500"></span>
                   </span>
                 </div>
-                <p className="font-thai text-xs text-[#787878]">12 แคมเปญ</p>
+                <p className="font-thai text-base text-[#787878]">12 แคมเปญ</p>
               </div>
             </div>
           </div>
         </div>
 
         {/** Right column */}
-        <div className="flex w-100 flex-col gap-5">
+        <div className="mr-10 flex w-150 flex-col gap-5">
           {/** AI recommendations */}
           <div className="w-full rounded-xl border-2 border-[#8E98A8] p-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
             <div className="flex flex-row items-center gap-3">
-              <div className="bg-citrus rounded-xl p-2 shadow-md">
+              <div className="bg-citrus rounded-xl p-3 shadow-md">
                 <img src={sparklebold} alt="Sparkle" className="h-7 w-7" />
               </div>
               <div>
-                <h2 className="font-thai text-amalfidark text-xl font-semibold">
+                <h2 className="font-thai text-amalfidark text-2xl font-semibold">
                   น้องดีแนะนำให้คุณ
                 </h2>
-                <p className="font-thai text-xs text-black">
+                <p className="font-thai text-base text-black">
                   2 สิ่งที่ทำได้ใน 30 วินาที
                 </p>
               </div>
             </div>
             <div className="mt-4 flex flex-col gap-3">
-              <div className="rounded-[10px] border border-[#8E98A8] p-3">
-                <p className="font-thai text-sm font-semibold text-black">
+              <div className="rounded-[10px] border border-[#8E98A8] px-5 py-4">
+                <p className="font-thai text-xl font-semibold text-black">
                   ครีเอทีฟใหม่พร้อมทดสอบ
                 </p>
-                <p className="font-thai mt-1 text-xs text-black">
+                <p className="font-thai mt-1 text-base text-black">
                   AI สร้าง 3 ภาพใหม่สำหรับเมนูลาเต้คาราเมล กดดูและเริ่ม A/B Test
                   ได้เลย
                 </p>
                 {/* TODO: wire up real action once backend exists */}
-                <button className="bg-sealight-hover border-seadark text-seadark font-thai mt-2 flex items-center gap-1 rounded-full border px-3 py-1 text-xs">
+                <button className="bg-sealight-hover border-seadark text-seadark font-thai mt-5 flex items-center gap-1 rounded-full border px-7 py-1 text-base">
                   เริ่มเลย
-                  <ArrowRight className="h-3 w-3" />
+                  <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
-              <div className="rounded-[10px] border border-[#8E98A8] p-3">
-                <p className="font-thai text-sm font-semibold text-black">
+              <div className="rounded-[10px] border border-[#8E98A8] px-5 py-4">
+                <p className="font-thai text-xl font-semibold text-black">
                   งบใกล้หมดสำหรับโปรไมโล
                 </p>
-                <p className="font-thai mt-1 text-xs text-black">
+                <p className="font-thai mt-1 text-base text-black">
                   ใช้ไป 90% แล้ว — AI แนะนำให้เพิ่ม ฿2,000 เพื่อให้รันต่ออีก 3
                   วัน
                 </p>
                 {/* TODO: wire up real action once backend exists */}
-                <button className="bg-sealight-hover border-seadark text-seadark font-thai mt-2 flex items-center gap-1 rounded-full border px-3 py-1 text-xs">
+                <button className="bg-sealight-hover border-seadark text-seadark font-thai mt-5 flex items-center gap-1 rounded-full border px-7 py-1 text-base">
                   เพิ่มงบ
-                  <ArrowRight className="h-3 w-3" />
+                  <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
             </div>
           </div>
 
           {/** Local trend */}
-          <div className="w-full rounded-xl border-2 border-[#8E98A8] p-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
-            <p className="font-thai text-sm font-semibold text-black">
+          <div className="w-full rounded-xl border-2 border-[#8E98A8] p-5 pb-8 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+            <p className="font-thai text-xl font-semibold text-black">
               เทรนด์ในย่านของคุณ
             </p>
-            <p className="font-thai text-amalfidark mt-2 text-base font-bold">
+            <p className="font-thai text-amalfidark mt-2 text-lg font-bold italic">
               ลูกค้าในเขตสีลม-สาทร ค้นหาคำว่า "คาเฟ่ใกล้ฉัน" เพิ่มขึ้น +47%
               สัปดาห์นี้
             </p>
-            {/* TODO: wire up real action once backend exists */}
-            <button className="bg-seadark font-thai mt-3 flex items-center gap-1 rounded-full px-4 py-2 text-sm text-white">
-              คว้าโอกาส
-              <ArrowRight className="h-4 w-4" />
-            </button>
+            <div className="mt-4 flex justify-end gap-3">
+              {/* TODO: wire up real action once backend exists */}
+              <button className="bg-seadark font-thai mt-3 flex h-12 w-36 items-center gap-1 rounded-full px-7 py-1 text-xl text-white">
+                คว้าโอกาส
+              </button>
+            </div>
           </div>
         </div>
       </div>
+      <div className="h-24 w-full shrink-0"></div>
     </div>
   )
 }
