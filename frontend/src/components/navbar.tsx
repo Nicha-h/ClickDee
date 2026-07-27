@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import home from '@/assets/home.svg'
 import robot from '@/assets/robot.svg'
@@ -8,17 +8,52 @@ import account from '@/assets/account.svg'
 import logout from '@/assets/logout.svg'
 import sparklebold from '@/assets/sparklebold.svg'
 import logo from '@/assets/logo.svg'
+import CreditPanel, { type CreditUsage } from '@/components/creditPanel'
+import Portal from '@/components/portal'
 {
   /* placeholder for AI token management */
 }
 const AI_TOKEN = 100
 const AI_TOKEN_MAX = 200
 
+{
+  /** Credit usage breakdown PLACEHOLDER */
+}
+const creditUsage: CreditUsage[] = [
+  { label: 'สร้างแคมเปญ (Campaign generation)', used: 68, total: 100 },
+  { label: 'สร้างภาพโฆษณา (Image generation)', used: 54, total: 70 },
+  { label: 'สร้างวิดีโอ (Video generation)', used: 20, total: 30 },
+]
+
+const CREDIT_PANEL_GAP = 8
+const CREDIT_PANEL_MARGIN = 16
+
 function Navbar() {
   const [activeButton, setActiveButton] = useState('Home')
+  const [creditOpen, setCreditOpen] = useState(false)
+  const [creditPos, setCreditPos] = useState({ top: 0, left: 0 })
+  const creditTriggerRef = useRef<HTMLDivElement>(null)
+  const creditPanelRef = useRef<HTMLDivElement>(null)
   const handleClick = (buttonName: string) => {
     setActiveButton(buttonName)
   }
+
+  // Anchor the popover to the trigger's real screen position (rather than
+  // flowing it via absolute/relative CSS) so it stays beside the AI Token
+  // card wherever that card ends up, instead of getting clipped by the
+  // sidebar's fixed h-screen height when the popover would render below it.
+  useLayoutEffect(() => {
+    if (!creditOpen) return
+    const trigger = creditTriggerRef.current
+    if (!trigger) return
+    const triggerRect = trigger.getBoundingClientRect()
+    const panelHeight = creditPanelRef.current?.offsetHeight ?? 0
+    const maxTop = window.innerHeight - panelHeight - CREDIT_PANEL_MARGIN
+    setCreditPos({
+      top: Math.min(triggerRect.top, Math.max(CREDIT_PANEL_MARGIN, maxTop)),
+      left: triggerRect.right + CREDIT_PANEL_GAP,
+    })
+  }, [creditOpen])
 
   return (
     <nav className="bg-amalfi sticky top-0 flex h-screen w-80 flex-col justify-between gap-6">
@@ -111,26 +146,50 @@ function Navbar() {
         </NavLink>
       </div>
       <div className="mb-5 grid items-end justify-center gap-2 p-4">
-        {/* Todo: this AI token thing should be clickable and lead to a page where the user can manage their AI tokens. */}
-        <div className="font-thai mx-5 h-50 w-70 items-center justify-start rounded-2xl border-3 border-white/30 bg-white/10 p-7 text-2xl text-white shadow-lg backdrop-blur-md">
-          <div>
-            <div className="text-2lg mb-2 flex items-center gap-2 font-semibold">
-              <img src={sparklebold} alt="Sparkle" className="h-6 w-6" />
-              AI Token
-            </div>
-            <div className="text-base font-semibold">
-              เหลือ {AI_TOKEN} / {AI_TOKEN_MAX} tokens
-            </div>
-            <div className="py-2 text-base font-bold">เดือนนี้ใช้งานไปแล้ว</div>
+        <div className="relative mx-5 w-70">
+          <div
+            ref={creditTriggerRef}
+            onClick={() => setCreditOpen((open) => !open)}
+            className="font-thai h-50 w-70 cursor-pointer items-center justify-start rounded-2xl border-3 border-white/30 bg-white/10 p-7 text-2xl text-white shadow-lg backdrop-blur-md"
+          >
+            <div>
+              <div className="text-2lg mb-2 flex items-center gap-2 font-semibold">
+                <img src={sparklebold} alt="Sparkle" className="h-6 w-6" />
+                AI Token
+              </div>
+              <div className="text-base font-semibold">
+                เหลือ {AI_TOKEN} / {AI_TOKEN_MAX} tokens
+              </div>
+              <div className="py-2 text-base font-bold">
+                เดือนนี้ใช้งานไปแล้ว
+              </div>
 
-            {/* TODO: come fix this later */}
-            <div className="h-2 w-full rounded-full bg-white/20">
-              <div
-                className="bg-citrus h-2 rounded-full"
-                style={{ width: `${(AI_TOKEN / AI_TOKEN_MAX) * 100}%` }}
-              />
+              {/* TODO: come fix this later */}
+              <div className="h-2 w-full rounded-full bg-white/20">
+                <div
+                  className="bg-citrus h-2 rounded-full"
+                  style={{ width: `${(AI_TOKEN / AI_TOKEN_MAX) * 100}%` }}
+                />
+              </div>
             </div>
           </div>
+          {creditOpen && (
+            <Portal>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setCreditOpen(false)}
+              />
+              <CreditPanel
+                usage={creditUsage}
+                panelRef={creditPanelRef}
+                style={{
+                  top: creditPos.top,
+                  left: creditPos.left,
+                  zIndex: 50,
+                }}
+              />
+            </Portal>
+          )}
         </div>
         {/** logout btn */}
         {/** Todo: create logout functionality */}

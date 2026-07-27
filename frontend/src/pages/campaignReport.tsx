@@ -99,7 +99,7 @@ function CampaignReport() {
 
   if (!campaign) {
     return (
-      <div className="flex min-h-full min-w-full flex-col items-center justify-center gap-4 p-10">
+      <div className="flex min-h-full min-w-full flex-col items-center justify-center gap-4 py-10">
         <p className="font-thai text-xl text-black">ไม่พบแคมเปญนี้</p>
         <Link to="/campaign" className="font-thai text-amalfi underline">
           กลับไปหน้าแคมเปญ
@@ -125,7 +125,7 @@ function CampaignReportView({
   const [status, setStatus] = useState<ReportStatus>(campaign.status)
 
   return (
-    <div className="min-h-full min-w-full p-10">
+    <div className="min-h-full min-w-full py-10">
       {/** Header */}
       <div className="flex flex-row items-center justify-between">
         <div className="font-thai flex flex-col gap-2 font-semibold">

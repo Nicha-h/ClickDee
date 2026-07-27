@@ -16,13 +16,13 @@ function CampaignProcessing() {
   }, [navigate])
 
   return (
-    <div className="min-h-full min-w-full p-10">
+    <div className="min-h-full min-w-full py-10">
       {/** Header */}
       <div className="flex items-center gap-4">
         <button
           type="button"
           onClick={() => navigate('/campaign/new')}
-          className="border-amalfidark flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 hover:scale-105 transition-all"
+          className="border-amalfidark flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 transition-all hover:scale-105"
         >
           <ChevronLeft className="text-amalfidark h-7 w-7" />
         </button>

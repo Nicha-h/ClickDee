@@ -20,9 +20,6 @@ const ROI = 11.5
 
 const channelReach = [
   { key: 'facebook', label: 'Facebook', value: 5220, color: '#1877F2' },
-  { key: 'instagram', label: 'Instagram', value: 3486, color: '#C13584' },
-  { key: 'tiktok', label: 'TikTok', value: 2739, color: '#000000' },
-  { key: 'line', label: 'LINE', value: 1005, color: '#06C755' },
 ]
 
 const audienceSegments = [
@@ -94,11 +91,11 @@ function Overview() {
   const [activeRange, setActiveRange] = useState('week')
 
   return (
-    <div className="min-h-full min-w-full p-10">
+    <div className="min-h-full min-w-full py-10">
       {/** Header */}
       <div className="font-thai flex flex-col gap-1 font-semibold">
         <h1 className="text-amalfidark text-4xl font-bold">รายงานผลสรุป</h1>
-        <p className="text-base font-bold text-black">
+        <p className="text-lg font-bold text-black">
           ภาพรวมประสิทธิภาพแคมเปญทั้งหมด · {rangeSubtitles[activeRange]}
         </p>
       </div>
@@ -110,11 +107,11 @@ function Overview() {
           <button
             key={range.key}
             onClick={() => setActiveRange(range.key)}
-            className={`font-thai rounded-[15px] px-4 py-1 text-base transition-colors ${
+            className={`font-thai rounded-[15px] px-5 py-1 text-lg transition-colors ${
               activeRange === range.key
                 ? 'bg-seadark-hover text-white'
                 : 'bg-sealight-active text-seadark-hover hover:bg-sealight-hover'
-            }`}
+            } hover:cursor-pointer *:transition-all hover:scale-105`}
           >
             {range.label}
           </button>
@@ -144,7 +141,7 @@ function Overview() {
             </div>
           </div>
           <div className="px-4">
-            <p className="font-thai mt-2 text-base font-semibold text-black">
+            <p className="font-thai mt-2 text-lg font-semibold text-black">
               คนเห็นโฆษณาของคุณ
             </p>
           </div>
@@ -174,7 +171,7 @@ function Overview() {
             </div>
           </div>
           <div className="px-4">
-            <p className="font-thai mt-2 text-base font-semibold text-black">
+            <p className="font-thai mt-2 text-lg font-semibold text-black">
               คนที่สนใจและกดดูร้าน
             </p>
           </div>
@@ -196,7 +193,7 @@ function Overview() {
             </p>
           </div>
           <div className="px-4">
-            <p className="font-thai mt-2 text-base font-semibold text-black">
+            <p className="font-thai mt-2 text-lg font-semibold text-black">
               ของงบรายเดือน
             </p>
           </div>
@@ -210,7 +207,7 @@ function Overview() {
             <p className="text-3xl font-bold text-white">{ROI.toFixed(1)}x</p>
           </div>
           <div className="px-4">
-            <p className="font-thai mt-2 text-base font-semibold text-white">
+            <p className="font-thai mt-2 text-lg font-semibold text-white">
               ผลตอบแทนดีเยี่ยม
             </p>
           </div>

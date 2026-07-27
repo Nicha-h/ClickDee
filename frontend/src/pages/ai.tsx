@@ -86,11 +86,11 @@ const quickActions: QuickAction[] = [
     prompt: 'มีวิธีลดค่า CPA ของแคมเปญปัจจุบันยังไงบ้าง',
   },
   {
-    id: 'tiktok-script',
+    id: 'facebook-ad-copy',
     icon: PenTool,
-    title: 'เขียนสคริปต์ TikTok',
+    title: 'เขียนแคปชั่นโฆษณา Facebook',
     description: 'แนวคิดเนื้อหาเพื่อสร้างกระแสความนิยม',
-    prompt: 'ช่วยเขียนสคริปต์ TikTok ให้ร้านของฉันหน่อย',
+    prompt: 'ช่วยเขียนแคปชั่นโฆษณา Facebook ให้ร้านของฉันหน่อย',
   },
   {
     id: 'daily-insight',
@@ -112,9 +112,9 @@ function AiBubble({ message }: { message: ChatMessage }) {
       />
       <div>
         <div className="bg-sealight-hover max-w-xl rounded-tr-xl rounded-br-xl rounded-bl-xl border border-[#8E98A8] p-4">
-          <p className="font-thai text-base text-black">{message.text}</p>
+          <p className="font-thai text-xl text-black">{message.text}</p>
           {message.list && (
-            <div className="font-thai mt-2 text-base text-black">
+            <div className="font-thai mt-2 text-lg text-black">
               <p>ข้อแนะนำ:</p>
               <ul className="list-disc pl-6">
                 {message.list.map((item) => (
@@ -124,12 +124,12 @@ function AiBubble({ message }: { message: ChatMessage }) {
             </div>
           )}
           {message.closing && (
-            <p className="font-thai mt-2 text-base text-black">
+            <p className="font-thai mt-2 text-xl text-black">
               {message.closing}
             </p>
           )}
         </div>
-        <p className="font-thai mt-1 text-xs text-[#8E98A8]">{message.time}</p>
+        <p className="font-thai mt-1 text-sm text-[#8E98A8]">{message.time}</p>
       </div>
     </div>
   )
@@ -140,9 +140,9 @@ function UserBubble({ message }: { message: ChatMessage }) {
     <div className="flex flex-row items-start justify-end gap-3">
       <div className="items-end">
         <div className="max-w-xl rounded-tl-xl rounded-br-xl rounded-bl-xl border border-[#8E98A8] bg-white p-4">
-          <p className="font-thai text-base text-black">{message.text}</p>
+          <p className="font-thai text-lg text-black">{message.text}</p>
         </div>
-        <p className="font-thai mt-1 text-right text-xs text-[#8E98A8]">
+        <p className="font-thai mt-1 text-right text-sm text-[#8E98A8]">
           {message.time}
         </p>
       </div>
@@ -182,7 +182,7 @@ function Ai() {
   const [quickActionsOpen, setQuickActionsOpen] = useState(true)
 
   return (
-    <div className="flex h-[calc(100vh-5rem)] min-w-full flex-col p-10">
+    <div className="flex h-[calc(100vh-5rem)] min-w-full flex-col py-10">
       <h1 className="text-amalfidark font-thai text-4xl font-bold">
         ที่ปรึกษา AI
       </h1>
@@ -209,13 +209,14 @@ function Ai() {
               onChange={(e) => setInputValue(e.target.value)}
               type="text"
               placeholder="พิมพ์คำถามของคุณ..."
-              className="font-thai flex-1 text-base outline-none"
+              className="font-thai flex-1 text-lg outline-none"
             />
             <button
               type="submit"
-              className="bg-sealight-hover flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+              className="bg-sealight-hover flex h-12 w-10 shrink-0 items-center justify-center rounded-full 
+              hover:scale-105 hover:*:cursor-pointer *:transition-all"
             >
-              <Send className="text-amalfidark h-5 w-5" />
+              <Send className="text-amalfidark h-6 w-6" />
             </button>
           </form>
         </div>

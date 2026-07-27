@@ -5,7 +5,7 @@ function Integration() {
   const navigate = useNavigate()
 
   return (
-    <div className="min-h-full min-w-full p-10">
+    <div className="min-h-full min-w-full py-10">
       <h1 className="font-thai text-amalfidark text-4xl font-bold">
         การเชื่อมต่อ
       </h1>
@@ -35,8 +35,7 @@ function Integration() {
         <button
           type="button"
           onClick={() => navigate('/integration/facebook')}
-          className="font-thai border-seadark bg-sealight-hover text-seadark absolute right-6 bottom-6 h-12.5 w-32.75 
-          rounded-full border-2 text-2xl font-semibold hover:bg-sealight-active hover:scale-105 hover:cursor-pointer transition-all"
+          className="font-thai border-seadark bg-sealight-hover text-seadark hover:bg-sealight-active absolute right-6 bottom-6 h-12.5 w-32.75 rounded-full border-2 text-2xl font-semibold transition-all hover:scale-105 hover:cursor-pointer"
         >
           แก้ไข
         </button>

@@ -45,10 +45,10 @@ function IntegrationFacebook() {
   }
 
   return (
-    <div className="min-h-full min-w-full p-10">
+    <div className="min-h-full min-w-full py-10">
       <Link
         to="/integration"
-        className="font-thai text-amalfidark flex w-fit items-center gap-1 text-2xl font-medium hover:text-amalfidarker"
+        className="font-thai text-amalfidark hover:text-amalfidarker flex w-fit items-center gap-1 text-2xl font-medium"
       >
         <ChevronLeft className="h-9 w-9" />
         กลับไปหน้า การเชื่อมต่อ

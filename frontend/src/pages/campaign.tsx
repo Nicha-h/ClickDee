@@ -30,6 +30,9 @@ const roi = 11.5
 
 type FilterTab = { key: string; label: string; count: number }
 
+{
+  /** Filter tabs PLACEHOLDER fix this to reflect actual filter logic */
+}
 const filterTabs: FilterTab[] = [
   { key: 'all', label: 'ทั้งหมด', count: 12 },
   { key: 'active', label: 'กำลังทำงาน', count: 8 },
@@ -53,7 +56,7 @@ function CampaignCard({ campaign }: { campaign: CampaignItem }) {
           </h3>
           <div className="flex flex-row items-center gap-2">
             <span className="font-thai flex items-center gap-1 rounded-full bg-[#caf3d0] px-3 py-1 text-base font-medium text-[#519b5c]">
-              {/** Status badge FLAGGED*/}
+              {/** Status badge FLAGGED wrong status. Add a campaign that has a different status later*/}
               <span className="h-2 w-2 rounded-full bg-[#519b5c]" />
               กำลังทำงาน
             </span>
@@ -73,9 +76,9 @@ function CampaignCard({ campaign }: { campaign: CampaignItem }) {
               return (
                 <span
                   key={platform}
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-medium ${badge.bg} ${badge.textColor}`}
+                  className={`inline-flex items-center gap-1 rounded-full px-6 py-2 text-base font-medium ${badge.bg} ${badge.textColor}`}
                 >
-                  <img src={badge.icon} alt="" className="h-3 w-3" />
+                  <img src={badge.icon} alt="" className="h-5 w-5" />
                   {badge.label}
                 </span>
               )
@@ -133,24 +136,24 @@ function CampaignCard({ campaign }: { campaign: CampaignItem }) {
       <div className="flex w-45 shrink-0 flex-col items-end justify-between border-l border-[#D9D9D9] p-5">
         <Link
           to={`/campaign/${campaign.id}/report`}
-          className="border-seadark bg-sealight-hover font-semibold font-thai text-seadark-hover hover:bg-sealight-active flex items-center gap-1 rounded-[19px] border px-4 py-2 text-base"
+          className="border-seadark bg-sealight-hover font-thai text-seadark-hover hover:bg-sealight-active flex items-center gap-1 rounded-[19px] border px-4 py-2 text-base font-semibold"
         >
           ดูรายงาน
           <ChevronRight className="h-4 w-4" />
         </Link>
-        <div className="flex flex-col items-end gap-4 ">
+        <div className="flex flex-col items-end gap-4">
           {campaign.status === 'active' ? (
-            <button className="font-thai text-amalfi hover:text-amalfidark hover:font-semibold flex items-center gap-2 text-base hover:cursor-pointer">
+            <button className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold">
               <Pause className="h-5 w-5" />
               หยุดชั่วคราว
             </button>
           ) : (
-            <button className="font-thai text-amalfi hover:text-amalfidark hover:font-semibold flex items-center gap-2 text-base hover:cursor-pointer">
+            <button className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold">
               <Play className="h-5 w-5" />
               เริ่มแคมเปญ
             </button>
           )}
-          <button className="font-thai text-amalfi hover:text-amalfidark hover:font-semibold flex items-center gap-2 text-base hover:cursor-pointer">
+          <button className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold">
             <Pencil className="h-5 w-5" />
             แก้ไข
           </button>
@@ -165,7 +168,7 @@ function Campaign() {
   const [activeFilter, setActiveFilter] = useState('all')
 
   return (
-    <div className="min-h-full min-w-full p-10">
+    <div className="min-h-full min-w-full py-10">
       {/** Header */}
       <div className="font-thai flex flex-col gap-2 font-semibold">
         <h1 className="text-amalfidark text-4xl font-semibold">แคมเปญของฉัน</h1>
@@ -179,7 +182,7 @@ function Campaign() {
       <div className="mt-6">
         <button
           onClick={() => navigate('/campaign/new')}
-          className="bg-citrus font-thai hover:bg-citrushover rounded-[19px] px-8 py-4 text-xl font-bold text-black shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:cursor-pointer hover:shadow-lg"
+          className="bg-citrus font-thai hover:bg-citrushover rounded-[19px] px-12 py-6 text-2xl font-semibold text-black shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:cursor-pointer hover:shadow-lg"
         >
           <img
             src={rocket}
@@ -199,7 +202,7 @@ function Campaign() {
               alt="Campaigns"
               className="mr-2 inline-block h-9 w-9 brightness-0"
             />
-            <h2 className="font-thai text-amalfi text-xl font-semibold">
+            <h2 className="font-thai text-amalfi text-2xl font-semibold">
               แคมเปญที่กำลังทำงาน
             </h2>
           </div>
@@ -210,10 +213,10 @@ function Campaign() {
             จาก {totalCampaigns} แคมเปญทั้งหมด
           </p>
         </div>
-        <div className="w-72 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+        <div className="w-85 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
           <div className="flex flex-row items-center p-4">
             <img src={cash} alt="Spend" className="mr-2 inline-block h-9 w-9" />
-            <h2 className="font-thai text-amalfi text-xl font-semibold">
+            <h2 className="font-thai text-amalfi text-2xl font-semibold">
               ใช้จ่ายรวมเดือนนี้
             </h2>
           </div>
@@ -225,10 +228,10 @@ function Campaign() {
             {remainingBudget.toLocaleString()}
           </p>
         </div>
-        <div className="w-72 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+        <div className="w-85 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
           <div className="flex flex-row items-center p-4">
             <ShoppingCart className="text-amalfi mr-2 inline-block h-9 w-9" />
-            <h2 className="font-thai text-amalfi text-xl font-semibold">
+            <h2 className="font-thai text-amalfi text-2xl font-semibold">
               ออเดอร์รวม
             </h2>
           </div>
@@ -239,9 +242,9 @@ function Campaign() {
             +{ordersDelta} จากเมื่อวาน
           </p>
         </div>
-        <div className="bg-amalfi w-72 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+        <div className="bg-amalfi w-85 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
           <div className="flex flex-row justify-between p-4">
-            <h2 className="font-thai text-xl font-semibold text-white">ROI</h2>
+            <h2 className="font-thai text-2xl font-semibold text-white">ROI</h2>
             <img src={starcircle} alt="ROI" className="inline-block h-9 w-9" />
           </div>
           <p className="px-4 text-3xl font-bold text-white">
@@ -262,9 +265,9 @@ function Campaign() {
             onClick={() => setActiveFilter(tab.key)}
             className={`font-thai rounded-[19px] px-5 py-2 text-base font-semibold transition-colors ${
               activeFilter === tab.key
-                ? 'bg-seaactive text-white hover:bg-seadark-hover'
+                ? 'bg-seaactive hover:bg-seadark-hover text-white'
                 : 'bg-sealight-active text-seadark-hover hover:bg-sea'
-            } hover:cursor-pointer hover:shadow-md transition-all`}
+            } transition-all hover:cursor-pointer hover:shadow-md`}
           >
             {tab.label} ({tab.count})
           </button>
@@ -305,9 +308,8 @@ function Campaign() {
             30 วินาที
           </p>
         </div>
-        
-        <button className="bg-amalfihover font-thai hover:bg-amalfiactive flex shrink-0 items-center gap-1 rounded-[19px] 
-        px-6 py-2 text-lg font-semibold text-white transition-all duration-200 ease-in-out hover:scale-105 hover:cursor-pointer hover:shadow-lg">
+
+        <button className="bg-amalfihover font-thai hover:bg-amalfiactive flex shrink-0 items-center gap-1 rounded-[19px] px-6 py-2 text-lg font-semibold text-white transition-all duration-200 ease-in-out hover:scale-105 hover:cursor-pointer hover:shadow-lg">
           สร้างเลย
           <ChevronRight className="h-4 w-4" />
         </button>

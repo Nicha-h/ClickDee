@@ -58,7 +58,7 @@ function CampaignReview() {
   }
 
   return (
-    <div className="min-h-full min-w-full p-10">
+    <div className="min-h-full min-w-full py-10">
       {/** Header */}
       <div className="flex items-center gap-4">
         <button
@@ -132,8 +132,7 @@ function CampaignReview() {
                     key={tag}
                     type="button"
                     onClick={() => removeInterest(tag)}
-                    className="font-thai bg-sealight-active text-seadark-active 
-                    flex items-center gap-1 rounded-lg px-3 py-1 text-lg hover:scale-105 transition-all hover:cursor-pointer"
+                    className="font-thai bg-sealight-active text-seadark-active flex items-center gap-1 rounded-lg px-3 py-1 text-lg transition-all hover:scale-105 hover:cursor-pointer"
                   >
                     {tag}
                     <X className="h-3 w-3" />
@@ -214,7 +213,7 @@ function CampaignReview() {
                     </p>
                     <button
                       type="button"
-                      className="font-thai text-seadark mt-2 flex items-center gap-1 text-lg hover:text-seadark-active hover:cursor-pointer hover:scale-105"
+                      className="font-thai text-seadark hover:text-seadark-active mt-2 flex items-center gap-1 text-lg hover:scale-105 hover:cursor-pointer"
                     >
                       <Shuffle className="h-3 w-3" />
                       สุ่มใหม่
@@ -328,8 +327,7 @@ function CampaignReview() {
           <button
             type="button"
             onClick={() => navigate('/campaign/rain-promo-2026/report')}
-            className="bg-citrus hover:bg-citrushover hover:cursor-pointer font-thai text-amalfidark flex w-full items-center justify-center gap-2 
-            rounded-xl px-6 py-4 text-2xl font-bold shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] transition-all hover:scale-105"
+            className="bg-citrus hover:bg-citrushover font-thai text-amalfidark flex w-full items-center justify-center gap-2 rounded-xl px-6 py-4 text-2xl font-bold shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] transition-all hover:scale-105 hover:cursor-pointer"
           >
             <svg
               width="23"
@@ -349,15 +347,14 @@ function CampaignReview() {
           <button
             type="button"
             onClick={() => navigate('/campaign')}
-            className="font-thai bg-sealight-hover border-seadark text-seadark w-full rounded-xl border-[1.5px] py-3
-             text-lg font-semibold hover:bg-sealight-active hover:text-seadark-active hover:cursor-pointer hover:scale-105"
+            className="font-thai bg-sealight-hover border-seadark text-seadark hover:bg-sealight-active hover:text-seadark-active w-full rounded-xl border-[1.5px] py-3 text-lg font-semibold hover:scale-105 hover:cursor-pointer"
           >
             บันทึกเป็นฉบับร่าง
           </button>
           <button
             type="button"
             onClick={() => navigate('/campaign/new')}
-            className="font-thai w-full py-2 text-center text-lg text-[#8e98a8] underline hover:cursor-pointer hover:scale-105"
+            className="font-thai w-full py-2 text-center text-lg text-[#8e98a8] underline hover:scale-105 hover:cursor-pointer"
           >
             เริ่มใหม่ด้วยบรีฟอื่น
           </button>

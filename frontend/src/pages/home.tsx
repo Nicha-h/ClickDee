@@ -51,9 +51,9 @@ function Home() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
   return (
-    <div className="min-h-full w-full pb-10">
+    <div className="min-h-full w-full py-10">
       {/** Welcome Message + create campaign btn*/}
-      <div className="flex flex-row items-center justify-between gap-5 p-10">
+      <div className="flex flex-row items-center justify-between gap-5 w-7xl">
         <div className="font-thai flex flex-col items-start justify-start gap-2 font-semibold">
           <div className="text-amalfidark text-4xl">
             สวัสดีตอนเช้า ☀️ ทีมLulu!
@@ -78,7 +78,7 @@ function Home() {
         </div>
       </div>
       {/** AI status box*/}
-      <div className="bg-sealight border-seadark ml-10 flex h-60 w-7xl flex-row items-center justify-between rounded-xl border-2 px-15 shadow-md">
+      <div className="bg-sealight border-seadark mt-10 flex h-60 w-7xl flex-row items-center justify-between rounded-xl border-2 px-15 shadow-md">
         <div className="flex flex-1 flex-col gap-4">
           {/** AI Agent Status + time update */}
           <div className="font-thai -mt-4 flex w-full flex-row items-center justify-start gap-2 font-semibold">
@@ -90,7 +90,7 @@ function Home() {
               </span>
               AI Agent · กำลังทำงาน
             </div>
-            <h2 className="ml-5 text-sm">อัปเดทล่าสุด 2 ชั่วโมงที่แล้ว</h2>
+            <h2 className="ml-5 text-base">อัปเดทล่าสุด 2 ชั่วโมงที่แล้ว</h2>
           </div>
           {/** filler msg*/}
           <div className="flex flex-col items-start justify-start gap-2">
@@ -110,7 +110,7 @@ function Home() {
       </div>
       {/** summary boxes*/}
       {/** TODO: Replace placeholder data with real-time metrics. Replace values with a variable instead of texts*/}
-      <div className="mt-10 ml-10 flex h-45 w-7xl flex-row items-center justify-between gap-5">
+      <div className="mt-10 flex h-45 w-7xl flex-row items-center justify-between gap-5">
         <div className="h-full w-75 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
           <div className="font-thai text-amalfi flex flex-row p-4 text-2xl font-semibold">
             <img src={ppl} alt="People" className="mr-2 inline-block h-9 w-9" />
@@ -209,7 +209,7 @@ function Home() {
         </div>
       </div>
       {/** Campaign boxes + sales overview + connected channels (left) / AI recommendations + local trend (right) */}
-      <div className="mt-10 ml-10 flex flex-row items-start gap-5">
+      <div className="mt-10 flex flex-row items-start gap-5">
         {/** Left column */}
         <div className="flex w-3xl flex-col gap-8">
           <div className="flex h-64 w-full flex-col">
@@ -281,7 +281,9 @@ function Home() {
               <div className="relative" ref={salesRangeRef}>
                 <button
                   onClick={() => setIsSalesRangeOpen((prev) => !prev)}
-                  className="font-thai border-amalfi bg-amalfilight hover:bg-amalfilight-hover flex items-center gap-1 rounded-full border px-4 py-1 text-base text-black transition-all duration-200 ease-in-out hover:scale-105 hover:cursor-pointer"
+                  className="font-thai border-amalfi bg-amalfilight hover:bg-amalfilight-hover flex items-center 
+                  gap-1 rounded-full border px-4 py-1 text-base text-black transition-all 
+                  duration-200 ease-in-out hover:cursor-pointer"
                 >
                   {salesRange.label}
                   <ChevronDown className="h-4 w-4" />
@@ -338,8 +340,9 @@ function Home() {
         </div>
 
         {/** Right column */}
-        <div className="mr-10 flex w-150 flex-col gap-5">
-          {/** AI recommendations */}
+        <div className="flex w-150 flex-col gap-5">
+          {/** AI recommendations*/}
+          {/** TODO: Load AI recommendations actual*/}
           <div className="w-full rounded-xl border-2 border-[#8E98A8] p-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
             <div className="flex flex-row items-center gap-3">
               <div className="bg-citrus rounded-xl p-3 shadow-md">
@@ -364,7 +367,8 @@ function Home() {
                   ได้เลย
                 </p>
                 {/* TODO: wire up real action once backend exists */}
-                <button className="bg-sealight-hover border-seadark text-seadark font-thai mt-5 flex items-center gap-1 rounded-full border px-7 py-1 text-base">
+                <button className="bg-sealight-hover border-seadark text-seadark font-thai mt-5 flex 
+                items-center gap-1 rounded-full border px-7 py-1 text-base hover:bg-sealight-active hover:cursor-pointer transition-colors">
                   เริ่มเลย
                   <ArrowRight className="h-4 w-4" />
                 </button>
@@ -378,7 +382,8 @@ function Home() {
                   วัน
                 </p>
                 {/* TODO: wire up real action once backend exists */}
-                <button className="bg-sealight-hover border-seadark text-seadark font-thai mt-5 flex items-center gap-1 rounded-full border px-7 py-1 text-base">
+                <button className="bg-sealight-hover border-seadark text-seadark font-thai mt-5 flex items-center gap-1 
+                rounded-full border px-7 py-1 text-base hover:bg-sealight-active hover:cursor-pointer transition-colors">
                   เพิ่มงบ
                   <ArrowRight className="h-4 w-4" />
                 </button>
@@ -397,7 +402,8 @@ function Home() {
             </p>
             <div className="mt-4 flex justify-end gap-3">
               {/* TODO: wire up real action once backend exists */}
-              <button className="bg-seadark font-thai mt-3 flex h-12 w-36 items-center gap-1 rounded-full px-7 py-1 text-xl text-white">
+              <button className="bg-seadark font-thai mt-3 flex h-12 w-36 items-center gap-1 
+              rounded-full px-7 py-1 text-xl text-white hover:bg-seadark-hover hover:cursor-pointer transition-colors">
                 คว้าโอกาส
               </button>
             </div>

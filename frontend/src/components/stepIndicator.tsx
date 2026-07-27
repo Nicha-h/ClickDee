@@ -21,7 +21,7 @@ function StepIndicator({ currentStep }: { currentStep: 1 | 2 | 3 }) {
         return (
           <div key={label} className="flex items-center">
             <div
-              className={`font-thai flex h-10 items-center gap-2 rounded-2xl px-4 text-sm font-bold whitespace-nowrap not-italic ${
+              className={`font-thai flex h-10 items-center gap-2 rounded-2xl px-4 text-lg font-bold whitespace-nowrap not-italic ${
                 status === 'completed'
                   ? 'bg-[#519b5c] text-white'
                   : status === 'active'
@@ -30,7 +30,7 @@ function StepIndicator({ currentStep }: { currentStep: 1 | 2 | 3 }) {
               }`}
             >
               <span
-                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-normal ${
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-lg font-normal ${
                   status === 'completed'
                     ? 'bg-white text-[#519b5c]'
                     : status === 'active'

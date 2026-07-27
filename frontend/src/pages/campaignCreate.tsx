@@ -36,7 +36,7 @@ function CampaignCreate() {
   }
 
   return (
-    <div className="min-h-full min-w-full p-10">
+    <div className="min-h-full min-w-full py-10">
       {/** Header */}
       <div className="flex items-start gap-4">
         <button
@@ -100,8 +100,7 @@ function CampaignCreate() {
             <button
               type="submit"
               disabled={!prompt.trim()}
-              className="bg-citrus hover:bg-citrushover hover:cursor-pointer hover:scale-105 font-thai flex items-center gap-2 rounded-2xl px-6 py-3 
-              text-lg font-semibold text-black shadow-md transition-all disabled:cursor-not-allowed disabled:opacity-50 "
+              className="bg-citrus hover:bg-citrushover font-thai flex items-center gap-2 rounded-2xl px-6 py-3 text-lg font-semibold text-black shadow-md transition-all hover:scale-105 hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
               <img src={sparklebold} alt="" className="h-5 w-5" />
               สร้างแคมเปญด้วย AI
@@ -109,7 +108,7 @@ function CampaignCreate() {
           </div>
 
           <div className="mt-6 border-t border-[#8E98A8] pt-4">
-            <p className="font-thai text-lg text-black font-semibold">
+            <p className="font-thai text-lg font-semibold text-black">
               หรือเริ่มจากตัวอย่างที่น้องดีแนะนำ
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -160,8 +159,7 @@ function CampaignCreate() {
             <button
               type="button"
               onClick={() => setPrompt(trendPrompt)}
-              className="bg-sea font-thai mt-4 flex items-center gap-1 rounded-2xl px-4 py-2 text-base 
-              font-semibold text-black hover:bg-seahover hover:scale-105 hover:cursor-pointer transition-all"
+              className="bg-sea font-thai hover:bg-seahover mt-4 flex items-center gap-1 rounded-2xl px-4 py-2 text-base font-semibold text-black transition-all hover:scale-105 hover:cursor-pointer"
             >
               ใช้ไอเดียนี้
               <ArrowRight className="h-4 w-4" />
