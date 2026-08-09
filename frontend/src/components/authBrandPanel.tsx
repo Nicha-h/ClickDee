@@ -10,7 +10,7 @@ type AuthBrandPanelProps = {
 
 function AuthBrandPanel({ title, description }: AuthBrandPanelProps) {
   return (
-    <div className="bg-amalfidark relative h-screen w-2/5 min-w-120 shrink-0 overflow-hidden">
+    <div className="bg-amalfidark relative hidden h-screen w-2/5 min-w-120 shrink-0 overflow-hidden lg:block">
       <img
         src={ellipseTop}
         alt=""
@@ -29,7 +29,7 @@ function AuthBrandPanel({ title, description }: AuthBrandPanelProps) {
         <div className="font-thai relative mt-25 flex flex-col gap-2 px-14 text-5xl leading-tight font-bold text-white">
           {title}
         </div>
-        <p className="font-thai relative mt-9 max-w-110 px-14 text-lg leading-relaxed text-amalfilight-hover">
+        <p className="font-thai text-amalfilight-hover relative mt-9 max-w-110 px-14 text-lg leading-relaxed">
           {description}
         </p>
         <div className="relative mx-14 mt-15 inline-flex w-fit items-start rounded-full bg-white/12 px-5 py-3">

@@ -28,12 +28,12 @@ function Login() {
         }
         description="เข้าสู่ระบบเพื่อดูภาพรวมแคมเปญ ยอดขาย และให้ AI ดูแลโฆษณาต่อจากที่ค้างไว้"
       />
-      <div className="flex flex-1 items-center justify-center px-10">
+      <div className="flex w-full flex-1 items-center justify-center px-4 md:px-8 lg:px-10">
         <form
           onSubmit={handleSubmit}
           className="flex w-full max-w-xl flex-col items-start gap-6"
         >
-          <p className="font-thai text-amalfidark text-4xl font-bold">
+          <p className="font-thai text-amalfidark text-2xl font-bold sm:text-3xl lg:text-4xl">
             เข้าสู่ระบบ
           </p>
           <p className="font-thai text-lg text-[#8E98A8]">
