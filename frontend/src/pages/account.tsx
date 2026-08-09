@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { CircleUserRound, Pencil } from 'lucide-react'
+import { useSimulatedLoading } from '@/components/useSimulatedLoading'
+import AccountSkeleton from '@/components/accountSkeleton'
 
 type EditableFieldProps = {
   fieldKey: string
@@ -98,6 +100,7 @@ function Account() {
   const [profile, setProfile] = useState(initialProfile)
   const [business, setBusiness] = useState(initialBusiness)
   const [editingKey, setEditingKey] = useState<string | null>(null)
+  const isLoading = useSimulatedLoading()
 
   const updateProfile = (key: string, value: string) => {
     setProfile((prev) => ({ ...prev, [key]: value }))
@@ -106,6 +109,8 @@ function Account() {
     setBusiness((prev) => ({ ...prev, [key]: value }))
   }
   const saveEditing = () => setEditingKey(null)
+
+  if (isLoading) return <AccountSkeleton />
 
   return (
     <div className="min-h-full min-w-full py-10">

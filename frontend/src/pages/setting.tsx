@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { ChevronRight, Trash2 } from 'lucide-react'
 import Toggle from '@/components/toggle'
 import ConfirmDialog from '@/components/confirmDialog'
+import { useSimulatedLoading } from '@/components/useSimulatedLoading'
+import SettingSkeleton from '@/components/settingSkeleton'
 
 type PlanKey = 'free' | 'starter' | 'pro'
 
@@ -61,6 +63,7 @@ function Setting() {
   })
   const [language, setLanguage] = useState('th')
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+  const isLoading = useSimulatedLoading()
 
   const toggleNotify = (key: NotifyKey, checked: boolean) => {
     setNotifySettings((prev) => ({ ...prev, [key]: checked }))
@@ -71,6 +74,8 @@ function Setting() {
 
   // TODO: create delete account functionality
   const deleteAccount = () => {}
+
+  if (isLoading) return <SettingSkeleton />
 
   return (
     <div className="min-h-full min-w-full py-10">
@@ -175,8 +180,7 @@ function Setting() {
         <div className="flex flex-col">
           <Link
             to="/account"
-            className="font-thai hover:text-amalfidark flex items-center justify-between border-b border-[#F0ECF7]
-            py-4 text-xl font-semibold text-[#1F2937] last:border-b-0"
+            className="font-thai hover:text-amalfidark flex items-center justify-between border-b border-[#F0ECF7] py-4 text-xl font-semibold text-[#1F2937] last:border-b-0"
           >
             <span>แก้ไขข้อมูลบัญชีและธุรกิจ</span>
             <ChevronRight className="h-5 w-5 text-[#8E98A8]" />
