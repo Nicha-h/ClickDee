@@ -79,7 +79,9 @@ function Setting() {
 
   return (
     <div className="min-h-full min-w-full py-10">
-      <h1 className="font-thai text-amalfidark text-4xl font-bold">ตั้งค่า</h1>
+      <h1 className="font-thai text-amalfidark text-2xl font-bold sm:text-3xl lg:text-4xl">
+        ตั้งค่า
+      </h1>
       <p className="font-thai mt-2 text-lg font-semibold text-black">
         จัดการแพ็กเกจ การแจ้งเตือน และการตั้งค่าบัญชีของคุณ
       </p>

@@ -114,7 +114,7 @@ function Account() {
 
   return (
     <div className="min-h-full min-w-full py-10">
-      <h1 className="font-thai text-amalfidark text-4xl font-bold">
+      <h1 className="font-thai text-amalfidark text-2xl font-bold sm:text-3xl lg:text-4xl">
         บัญชีของฉัน
       </h1>
       <p className="font-thai mt-2 text-lg font-semibold text-black">

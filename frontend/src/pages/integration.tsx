@@ -11,7 +11,7 @@ function Integration() {
 
   return (
     <div className="min-h-full min-w-full py-10">
-      <h1 className="font-thai text-amalfidark text-4xl font-bold">
+      <h1 className="font-thai text-amalfidark text-2xl font-bold sm:text-3xl lg:text-4xl">
         การเชื่อมต่อ
       </h1>
       <p className="font-thai mt-4 max-w-263.75 text-xl text-black">
@@ -26,7 +26,7 @@ function Integration() {
             className="h-31 w-31 rounded-xl object-cover"
           />
           <div>
-            <p className="font-eng text-3xl font-semibold text-black">
+            <p className="font-eng text-xl font-semibold text-black sm:text-2xl lg:text-3xl">
               Facebook
             </p>
             <p className="font-thai text-amalfidark mt-1 text-lg font-semibold">

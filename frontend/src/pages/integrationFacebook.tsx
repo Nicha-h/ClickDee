@@ -59,16 +59,16 @@ function IntegrationFacebook() {
         กลับไปหน้า การเชื่อมต่อ
       </Link>
 
-      <h1 className="font-thai text-amalfidark mt-4 text-4xl font-bold">
+      <h1 className="font-thai text-amalfidark mt-4 text-2xl font-bold sm:text-3xl lg:text-4xl">
         การเชื่อมต่อ Facebook
       </h1>
       <p className="font-thai mt-4 max-w-263.75 text-xl text-black">
         จัดการการเชื่อมต่อ Facebook ที่ใช้งานอยู่และการซิงโครไนซ์ข้อมูลอัตโนมัติ
       </p>
 
-      <div className="mt-6 flex items-start gap-10">
+      <div className="mt-6 flex flex-col items-start gap-10 md:flex-row">
         {/** Connection summary */}
-        <div className="flex min-h-116 w-88 shrink-0 flex-col rounded-xl border border-[#8E98A8] bg-white p-6 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+        <div className="flex min-h-116 w-full shrink-0 flex-col rounded-xl border border-[#8E98A8] bg-white p-6 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] md:w-64 lg:w-88">
           <div className="flex items-start justify-between">
             <div className="bg-citrus flex h-16 w-16 items-center justify-center rounded-xl">
               <img src={connectIcon} alt="" className="h-9 w-9" />
@@ -158,7 +158,7 @@ function IntegrationFacebook() {
         </div>
       </div>
 
-      <div className="mt-6 flex items-center justify-between gap-4 rounded-xl border-3 border-dashed border-[#ff004f] bg-[#ffe6e6] p-6">
+      <div className="mt-6 flex flex-col items-start justify-between gap-4 rounded-xl border-3 border-dashed border-[#ff004f] bg-[#ffe6e6] p-6 sm:flex-row sm:items-center">
         <p className="font-thai max-w-3xl text-lg font-medium text-[#ff2629]">
           การยกเลิกการเชื่อมต่อจะหยุดแคมเปญที่ใช้งานอยู่และระบบอัตโนมัติของ AI
           ทั้งหมดทันที
