@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   ChevronLeft,
   Users,
@@ -8,7 +8,7 @@ import {
   TrendingUp,
   ArrowRight,
 } from 'lucide-react'
-import sparklebold from '@/assets/sparklebold.svg'
+import sparklebold from '@/assets/icons/sparklebold.svg'
 import StepIndicator from '@/components/stepIndicator'
 
 type SuggestedIdea = { id: string; prompt: string }
@@ -27,7 +27,10 @@ const trendPrompt =
 
 function CampaignCreate() {
   const navigate = useNavigate()
-  const [prompt, setPrompt] = useState('')
+  const location = useLocation()
+  const [prompt, setPrompt] = useState(
+    () => (location.state as { prompt?: string } | null)?.prompt ?? '',
+  )
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()

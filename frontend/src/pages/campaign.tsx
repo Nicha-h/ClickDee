@@ -9,12 +9,14 @@ import {
   Play,
   Pencil,
 } from 'lucide-react'
-import rocket from '@/assets/rocket.svg'
-import cash from '@/assets/cash.svg'
-import starcircle from '@/assets/starcircle.svg'
-import sparklebold from '@/assets/sparklebold.svg'
+import rocket from '@/assets/icons/rocket.svg'
+import cash from '@/assets/icons/cash.svg'
+import starcircle from '@/assets/icons/starcircle.svg'
+import sparklebold from '@/assets/icons/sparklebold.svg'
 import { campaigns, platformBadgeStyles } from '@/data/campaigns'
 import type { CampaignItem } from '@/data/campaigns'
+import { useSimulatedLoading } from '@/components/useSimulatedLoading'
+import CampaignSkeleton from '@/components/campaignSkeleton'
 
 {
   /** Summary data PLACEHOLDER*/
@@ -43,7 +45,7 @@ const filterTabs: FilterTab[] = [
 
 function CampaignCard({ campaign }: { campaign: CampaignItem }) {
   return (
-    <div className="flex flex-row overflow-hidden rounded-xl border border-[#8E98A8]">
+    <div className="flex shrink-0 flex-row overflow-hidden rounded-xl border border-[#8E98A8]">
       <img
         src={campaign.thumbnail}
         alt={campaign.title}
@@ -153,10 +155,13 @@ function CampaignCard({ campaign }: { campaign: CampaignItem }) {
               เริ่มแคมเปญ
             </button>
           )}
-          <button className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold">
+          <Link
+            to={`/campaign/${campaign.id}/edit`}
+            className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold"
+          >
             <Pencil className="h-5 w-5" />
             แก้ไข
-          </button>
+          </Link>
         </div>
       </div>
     </div>
@@ -166,6 +171,9 @@ function CampaignCard({ campaign }: { campaign: CampaignItem }) {
 function Campaign() {
   const navigate = useNavigate()
   const [activeFilter, setActiveFilter] = useState('all')
+  const isLoading = useSimulatedLoading()
+
+  if (isLoading) return <CampaignSkeleton />
 
   return (
     <div className="min-h-full min-w-full py-10">
@@ -284,7 +292,7 @@ function Campaign() {
       </div>
 
       {/** Campaign list */}
-      <div className="mt-8 flex max-h-150 flex-col gap-6 overflow-y-auto pr-2">
+      <div className="mt-8 flex flex-col gap-6">
         {campaigns.map((campaign) => (
           <CampaignCard key={campaign.id} campaign={campaign} />
         ))}

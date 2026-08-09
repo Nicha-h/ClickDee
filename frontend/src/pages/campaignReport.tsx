@@ -10,11 +10,14 @@ import {
   Play,
   Plus,
   Square,
+  Pencil,
 } from 'lucide-react'
-import cash from '@/assets/cash.svg'
+import cash from '@/assets/icons/cash.svg'
 import DonutChart from '@/components/donutChart'
 import { campaigns, platformBadgeStyles } from '@/data/campaigns'
 import type { Creative } from '@/data/campaigns'
+import { useSimulatedLoading } from '@/components/useSimulatedLoading'
+import CampaignReportSkeleton from '@/components/campaignReportSkeleton'
 
 type ReportStatus = 'active' | 'paused' | 'stopped'
 
@@ -96,6 +99,9 @@ function CreativeCard({ creative }: { creative: Creative }) {
 function CampaignReport() {
   const { campaignId } = useParams()
   const campaign = campaigns.find((c) => c.id === campaignId)
+  const isLoading = useSimulatedLoading()
+
+  if (isLoading) return <CampaignReportSkeleton />
 
   if (!campaign) {
     return (
@@ -137,6 +143,13 @@ function CampaignReportView({
           </p>
         </div>
         <div className="font-thai flex items-center gap-3 text-xl">
+          <Link
+            to={`/campaign/${campaign.id}/edit`}
+            className="hover:text-amalfidark flex items-center gap-2 text-[#8E98A8] hover:cursor-pointer hover:font-semibold"
+          >
+            <Pencil className="h-6 w-6" />
+            แก้ไข
+          </Link>
           {status === 'active' && (
             <button
               onClick={() => setStatus('paused')}
