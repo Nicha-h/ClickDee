@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
-import ppl from '@/assets/ppl.svg'
-import click from '@/assets/click.svg'
-import cash from '@/assets/cash.svg'
-import increase from '@/assets/increase.svg'
-import starcircle from '@/assets/starcircle.svg'
-import overviewLineChart from '@/assets/overview-line-chart.png'
-import overviewLineChartLegend from '@/assets/overview-line-chart-legend.png'
+import ppl from '@/assets/icons/ppl.svg'
+import click from '@/assets/icons/click.svg'
+import cash from '@/assets/icons/cash.svg'
+import increase from '@/assets/icons/increase.svg'
+import starcircle from '@/assets/icons/starcircle.svg'
+import overviewLineChart from '@/assets/placeholders/overview-line-chart.png'
+import overviewLineChartLegend from '@/assets/placeholders/overview-line-chart-legend.png'
 import DonutChart from '@/components/donutChart'
+import { useSimulatedLoading } from '@/components/useSimulatedLoading'
+import OverviewSkeleton from '@/components/overviewSkeleton'
 
 {
   /** Summary data PLACEHOLDER*/
@@ -89,6 +91,9 @@ const topCampaigns = [
 
 function Overview() {
   const [activeRange, setActiveRange] = useState('week')
+  const isLoading = useSimulatedLoading()
+
+  if (isLoading) return <OverviewSkeleton />
 
   return (
     <div className="min-h-full min-w-full py-10">
@@ -111,7 +116,7 @@ function Overview() {
               activeRange === range.key
                 ? 'bg-seadark-hover text-white'
                 : 'bg-sealight-active text-seadark-hover hover:bg-sealight-hover'
-            } hover:cursor-pointer *:transition-all hover:scale-105`}
+            } *:transition-all hover:scale-105 hover:cursor-pointer`}
           >
             {range.label}
           </button>
