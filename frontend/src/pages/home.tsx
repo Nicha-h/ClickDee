@@ -1,20 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import coffee from '@/assets/coffee.svg'
-import rocket from '@/assets/rocket.svg'
-import ppl from '@/assets/ppl.svg'
-import increase from '@/assets/increase.svg'
-import star from '@/assets/starcircle.svg'
-import cash from '@/assets/cash.svg'
-import click from '@/assets/click.svg'
+import coffee from '@/assets/icons/coffee.svg'
+import rocket from '@/assets/icons/rocket.svg'
+import ppl from '@/assets/icons/ppl.svg'
+import increase from '@/assets/icons/increase.svg'
+import star from '@/assets/icons/starcircle.svg'
+import cash from '@/assets/icons/cash.svg'
+import click from '@/assets/icons/click.svg'
 import { ArrowRight, ChevronDown } from 'lucide-react'
-import rain from '@/assets/campaign-rain-promo.png'
-import milo from '@/assets/campaign-milo-promo.jpg'
-import trend1 from '@/assets/trend1.png'
-import trend2 from '@/assets/trend2.png'
-import sparklebold from '@/assets/sparklebold.svg'
-import facebook from '@/assets/facebook.svg'
-import salesChart from '@/assets/home-sales-chart.png'
+import rain from '@/assets/placeholders/campaign-rain-promo.png'
+import milo from '@/assets/placeholders/campaign-milo-promo.jpg'
+import trend1 from '@/assets/placeholders/trend1.png'
+import trend2 from '@/assets/placeholders/trend2.png'
+import sparklebold from '@/assets/icons/sparklebold.svg'
+import facebook from '@/assets/logos/facebook.svg'
+import salesChart from '@/assets/placeholders/home-sales-chart.png'
+import { useSimulatedLoading } from '@/components/useSimulatedLoading'
+import HomeSkeleton from '@/components/homeSkeleton'
 
 const salesRangeOptions = [
   { value: '7d', label: '7 วัน' },
@@ -24,6 +26,7 @@ const salesRangeOptions = [
 
 function Home() {
   const navigate = useNavigate()
+  const isLoading = useSimulatedLoading()
   {
     /** Summary data PLACEHOLDER*/
   }
@@ -34,6 +37,8 @@ function Home() {
   const handleClick = () => {
     navigate('/campaign/new')
   }
+  const localTrendPrompt =
+    'เพิ่มลูกค้าใหม่ย่านสีลม-สาทร ที่กำลังค้นหาคาเฟ่ใกล้ฉัน งบ 300 บาท/วัน'
   const [salesRange, setSalesRange] = useState(salesRangeOptions[0])
   const [isSalesRangeOpen, setIsSalesRangeOpen] = useState(false)
   const salesRangeRef = useRef<HTMLDivElement>(null)
@@ -50,10 +55,13 @@ function Home() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  if (isLoading) return <HomeSkeleton />
+
   return (
     <div className="min-h-full w-full py-10">
       {/** Welcome Message + create campaign btn*/}
-      <div className="flex flex-row items-center justify-between gap-5 w-7xl">
+      <div className="flex w-7xl flex-row items-center justify-between gap-5">
         <div className="font-thai flex flex-col items-start justify-start gap-2 font-semibold">
           <div className="text-amalfidark text-4xl">
             สวัสดีตอนเช้า ☀️ ทีมLulu!
@@ -281,9 +289,7 @@ function Home() {
               <div className="relative" ref={salesRangeRef}>
                 <button
                   onClick={() => setIsSalesRangeOpen((prev) => !prev)}
-                  className="font-thai border-amalfi bg-amalfilight hover:bg-amalfilight-hover flex items-center 
-                  gap-1 rounded-full border px-4 py-1 text-base text-black transition-all 
-                  duration-200 ease-in-out hover:cursor-pointer"
+                  className="font-thai border-amalfi bg-amalfilight hover:bg-amalfilight-hover flex items-center gap-1 rounded-full border px-4 py-1 text-base text-black transition-all duration-200 ease-in-out hover:cursor-pointer"
                 >
                   {salesRange.label}
                   <ChevronDown className="h-4 w-4" />
@@ -366,9 +372,10 @@ function Home() {
                   AI สร้าง 3 ภาพใหม่สำหรับเมนูลาเต้คาราเมล กดดูและเริ่ม A/B Test
                   ได้เลย
                 </p>
-                {/* TODO: wire up real action once backend exists */}
-                <button className="bg-sealight-hover border-seadark text-seadark font-thai mt-5 flex 
-                items-center gap-1 rounded-full border px-7 py-1 text-base hover:bg-sealight-active hover:cursor-pointer transition-colors">
+                <button
+                  onClick={() => navigate('/campaign/latte-caramel-2026/edit')}
+                  className="bg-sealight-hover border-seadark text-seadark font-thai hover:bg-sealight-active mt-5 flex items-center gap-1 rounded-full border px-7 py-1 text-base transition-colors hover:cursor-pointer"
+                >
                   เริ่มเลย
                   <ArrowRight className="h-4 w-4" />
                 </button>
@@ -381,9 +388,10 @@ function Home() {
                   ใช้ไป 90% แล้ว — AI แนะนำให้เพิ่ม ฿2,000 เพื่อให้รันต่ออีก 3
                   วัน
                 </p>
-                {/* TODO: wire up real action once backend exists */}
-                <button className="bg-sealight-hover border-seadark text-seadark font-thai mt-5 flex items-center gap-1 
-                rounded-full border px-7 py-1 text-base hover:bg-sealight-active hover:cursor-pointer transition-colors">
+                <button
+                  onClick={() => navigate('/campaign/milo-promo-2026/edit')}
+                  className="bg-sealight-hover border-seadark text-seadark font-thai hover:bg-sealight-active mt-5 flex items-center gap-1 rounded-full border px-7 py-1 text-base transition-colors hover:cursor-pointer"
+                >
                   เพิ่มงบ
                   <ArrowRight className="h-4 w-4" />
                 </button>
@@ -401,9 +409,14 @@ function Home() {
               สัปดาห์นี้
             </p>
             <div className="mt-4 flex justify-end gap-3">
-              {/* TODO: wire up real action once backend exists */}
-              <button className="bg-seadark font-thai mt-3 flex h-12 w-36 items-center gap-1 
-              rounded-full px-7 py-1 text-xl text-white hover:bg-seadark-hover hover:cursor-pointer transition-colors">
+              <button
+                onClick={() =>
+                  navigate('/campaign/new', {
+                    state: { prompt: localTrendPrompt },
+                  })
+                }
+                className="bg-seadark font-thai hover:bg-seadark-hover mt-3 flex h-12 w-36 items-center gap-1 rounded-full px-7 py-1 text-xl text-white transition-colors hover:cursor-pointer"
+              >
                 คว้าโอกาส
               </button>
             </div>
