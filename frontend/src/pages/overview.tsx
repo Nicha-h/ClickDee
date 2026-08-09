@@ -99,7 +99,9 @@ function Overview() {
     <div className="min-h-full min-w-full py-10">
       {/** Header */}
       <div className="font-thai flex flex-col gap-1 font-semibold">
-        <h1 className="text-amalfidark text-4xl font-bold">รายงานผลสรุป</h1>
+        <h1 className="text-amalfidark text-2xl font-bold sm:text-3xl lg:text-4xl">
+          รายงานผลสรุป
+        </h1>
         <p className="text-lg font-bold text-black">
           ภาพรวมประสิทธิภาพแคมเปญทั้งหมด · {rangeSubtitles[activeRange]}
         </p>
@@ -107,12 +109,12 @@ function Overview() {
 
       {/** Date range filter */}
       {/* TODO: wire up real date-range filtering once analytics data is available */}
-      <div className="mt-4 flex flex-row items-center gap-2">
+      <div className="mt-4 flex flex-row items-center gap-2 overflow-x-auto">
         {dateRanges.map((range) => (
           <button
             key={range.key}
             onClick={() => setActiveRange(range.key)}
-            className={`font-thai rounded-[15px] px-5 py-1 text-lg transition-colors ${
+            className={`font-thai shrink-0 rounded-[15px] px-5 py-1 text-lg transition-colors ${
               activeRange === range.key
                 ? 'bg-seadark-hover text-white'
                 : 'bg-sealight-active text-seadark-hover hover:bg-sealight-hover'
@@ -124,14 +126,14 @@ function Overview() {
       </div>
 
       {/** Stat cards */}
-      <div className="mt-6 flex flex-row items-stretch gap-5">
-        <div className="w-65 rounded-xl border-2 border-[#8E98A8] px-4 py-1 pb-4 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+      <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="w-full rounded-xl border-2 border-[#8E98A8] px-4 py-1 pb-4 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
           <div className="font-thai text-amalfi flex flex-row items-center p-4 text-xl font-semibold">
             <img src={ppl} alt="People" className="mr-2 inline-block h-9 w-9" />
             <h2 className="font-thai text-amalfi font-semibold">ยอดเข้าถึง</h2>
           </div>
           <div className="flex flex-row items-center justify-start px-4">
-            <p className="text-citrusdark text-3xl font-bold">
+            <p className="text-citrusdark text-2xl font-bold sm:text-3xl">
               {reach.toLocaleString()}
             </p>
             <div className="ml-4 flex flex-row items-center justify-start gap-2">
@@ -151,7 +153,7 @@ function Overview() {
             </p>
           </div>
         </div>
-        <div className="w-65 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+        <div className="w-full rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
           <div className="font-thai text-amalfi flex flex-row items-center p-4 text-xl font-semibold">
             <img
               src={click}
@@ -161,7 +163,7 @@ function Overview() {
             <h2 className="font-thai text-amalfi font-semibold">คลิก</h2>
           </div>
           <div className="flex flex-row items-center justify-start px-4">
-            <p className="text-citrusdark text-3xl font-bold">
+            <p className="text-citrusdark text-2xl font-bold sm:text-3xl">
               {clickNum.toLocaleString()}
             </p>
             <div className="ml-4 flex flex-row items-center justify-start gap-2">
@@ -181,7 +183,7 @@ function Overview() {
             </p>
           </div>
         </div>
-        <div className="w-65 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+        <div className="w-full rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
           <div className="font-thai text-amalfi flex flex-row items-center p-4 text-xl font-semibold">
             <img
               src={cash}
@@ -193,7 +195,7 @@ function Overview() {
             </h2>
           </div>
           <div className="flex flex-row items-center justify-start px-4">
-            <p className="text-citrusdark text-3xl font-bold">
+            <p className="text-citrusdark text-2xl font-bold sm:text-3xl">
               ฿{usedBudget.toLocaleString()}
             </p>
           </div>
@@ -203,13 +205,15 @@ function Overview() {
             </p>
           </div>
         </div>
-        <div className="bg-amalfi w-65 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+        <div className="bg-amalfi w-full rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
           <div className="font-thai flex flex-row items-center justify-between p-4 text-xl font-semibold text-white">
             <h2 className="font-thai font-semibold">ROI</h2>
             <img src={starcircle} alt="ROI" className="inline-block h-9 w-9" />
           </div>
           <div className="flex flex-row items-center justify-start px-4">
-            <p className="text-3xl font-bold text-white">{ROI.toFixed(1)}x</p>
+            <p className="text-2xl font-bold text-white sm:text-3xl">
+              {ROI.toFixed(1)}x
+            </p>
           </div>
           <div className="px-4">
             <p className="font-thai mt-2 text-lg font-semibold text-white">
@@ -220,10 +224,10 @@ function Overview() {
       </div>
 
       {/** Charts */}
-      <div className="mt-6 flex flex-row gap-5">
+      <div className="mt-6 flex flex-col gap-5 md:flex-row">
         {/* TODO: replace with a real chart (reach/spend trend, channel split) once a charting library and live data are wired up */}
         <div className="flex-1 rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
-          <div className="flex flex-row items-center justify-between">
+          <div className="flex flex-row flex-wrap items-center justify-between gap-2">
             <div>
               <h3 className="font-thai text-amalfidark text-2xl font-bold">
                 แนวโน้มรายวัน
@@ -240,7 +244,7 @@ function Overview() {
             className="mt-4 w-full"
           />
         </div>
-        <div className="w-96 rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+        <div className="w-full rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] md:w-72 lg:w-96">
           <h3 className="font-thai text-amalfidark text-2xl font-bold">
             ช่องทางที่ทำงาน
           </h3>
@@ -261,11 +265,11 @@ function Overview() {
         <p className="font-thai mt-1 text-base text-black">
           3 ข้อสำคัญที่คุณควรรู้จากรายงานนี้
         </p>
-        <div className="mt-4 flex flex-row gap-4">
+        <div className="mt-4 flex flex-col flex-wrap gap-4 sm:flex-row">
           {aiInsights.map((insight, i) => (
             <div
               key={insight}
-              className="border-seadark-hover flex flex-1 gap-2 rounded-xl border bg-white p-3"
+              className="border-seadark-hover flex min-w-40 flex-1 gap-2 rounded-xl border bg-white p-3 sm:min-w-55"
             >
               <span className="bg-sealight-active text-amalfidark flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold">
                 {i + 1}
@@ -277,7 +281,7 @@ function Overview() {
       </div>
 
       {/** Bottom row: top campaigns + audience segments */}
-      <div className="mt-6 flex flex-row gap-5">
+      <div className="mt-6 flex flex-col gap-5 md:flex-row">
         <div className="flex-1 rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
           <div className="flex flex-row items-center justify-between">
             <h3 className="font-thai text-amalfidark text-2xl font-bold">
@@ -292,46 +296,48 @@ function Overview() {
             </Link>
           </div>
           {/* TODO: compute real top-campaigns ranking from live performance data */}
-          <div className="mt-4 flex flex-row justify-between px-2 text-base font-bold text-black">
-            <span className="font-thai text-base">แคมเปญ</span>
-            <div className="flex flex-row gap-10">
-              <span className="font-thai w-20 text-right">การเข้าถึง</span>
-              <span className="font-thai w-14 text-right">ออเดอร์</span>
-              <span className="font-thai w-12 text-right">ROI</span>
-            </div>
-          </div>
-          <div className="mt-2 flex flex-col gap-3">
-            {topCampaigns.map((c) => (
-              <div
-                key={c.rank}
-                className="border-seadark-hover flex flex-row items-center justify-between rounded-xl border px-3 py-3"
-              >
-                <div className="flex flex-row items-center gap-3">
-                  <span
-                    className={`flex h-8 w-8 items-center justify-center rounded-full text-base font-semibold ${c.badgeClass}`}
-                  >
-                    {c.rank}
-                  </span>
-                  <p className="font-thai text-base text-black">{c.name}</p>
-                </div>
-                <div className="flex flex-row gap-10 text-base text-black">
-                  <span className="w-16 text-right">
-                    {c.reach.toLocaleString()}
-                  </span>
-                  <span className="w-14 text-right">
-                    {c.orders.toLocaleString()}
-                  </span>
-                  <span className="w-12 text-right font-semibold text-[#519b5c]">
-                    {c.roi}x
-                  </span>
-                </div>
+          <div className="overflow-x-auto">
+            <div className="mt-4 flex min-w-100 flex-row justify-between px-2 text-base font-bold text-black">
+              <span className="font-thai text-base">แคมเปญ</span>
+              <div className="flex flex-row gap-10">
+                <span className="font-thai w-20 text-right">การเข้าถึง</span>
+                <span className="font-thai w-14 text-right">ออเดอร์</span>
+                <span className="font-thai w-12 text-right">ROI</span>
               </div>
-            ))}
+            </div>
+            <div className="mt-2 flex min-w-100 flex-col gap-3">
+              {topCampaigns.map((c) => (
+                <div
+                  key={c.rank}
+                  className="border-seadark-hover flex flex-row items-center justify-between rounded-xl border px-3 py-3"
+                >
+                  <div className="flex flex-row items-center gap-3">
+                    <span
+                      className={`flex h-8 w-8 items-center justify-center rounded-full text-base font-semibold ${c.badgeClass}`}
+                    >
+                      {c.rank}
+                    </span>
+                    <p className="font-thai text-base text-black">{c.name}</p>
+                  </div>
+                  <div className="flex flex-row gap-10 text-base text-black">
+                    <span className="w-16 text-right">
+                      {c.reach.toLocaleString()}
+                    </span>
+                    <span className="w-14 text-right">
+                      {c.orders.toLocaleString()}
+                    </span>
+                    <span className="w-12 text-right font-semibold text-[#519b5c]">
+                      {c.roi}x
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* TODO: replace with a real customer-segment breakdown chart computed from audience data */}
-        <div className="w-108 rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+        <div className="w-full rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] md:w-80 lg:w-108">
           <h3 className="font-thai text-amalfidark text-2xl font-bold">
             กลุ่มลูกค้าที่กดดู
           </h3>

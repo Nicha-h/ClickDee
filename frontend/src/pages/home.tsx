@@ -61,9 +61,9 @@ function Home() {
   return (
     <div className="min-h-full w-full py-10">
       {/** Welcome Message + create campaign btn*/}
-      <div className="flex w-7xl flex-row items-center justify-between gap-5">
+      <div className="flex w-full max-w-7xl flex-col items-start justify-between gap-5 sm:flex-row sm:items-center">
         <div className="font-thai flex flex-col items-start justify-start gap-2 font-semibold">
-          <div className="text-amalfidark text-4xl">
+          <div className="text-amalfidark text-2xl sm:text-3xl lg:text-4xl">
             สวัสดีตอนเช้า ☀️ ทีมLulu!
           </div>
           <div className="text-xl">
@@ -71,10 +71,10 @@ function Home() {
             ระบบกำลังทำงานอย่างเต็มที่เพื่อยอดขายของคุณ
           </div>
         </div>
-        <div className="shrink-0">
+        <div className="w-full shrink-0 sm:w-auto">
           <button
             onClick={() => handleClick()}
-            className="bg-citrus hover:bg-citrushover font-thai rounded-[19px] px-12 py-6 text-2xl font-semibold text-black shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:cursor-pointer hover:shadow-lg"
+            className="bg-citrus hover:bg-citrushover font-thai w-full rounded-[19px] px-12 py-6 text-2xl font-semibold text-black shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:cursor-pointer hover:shadow-lg sm:w-auto"
           >
             <img
               src={rocket}
@@ -86,19 +86,22 @@ function Home() {
         </div>
       </div>
       {/** AI status box*/}
-      <div className="bg-sealight border-seadark mt-10 flex h-60 w-7xl flex-row items-center justify-between rounded-xl border-2 px-15 shadow-md">
+      <div className="bg-sealight border-seadark mt-10 flex w-full max-w-7xl flex-col items-start justify-between gap-6 rounded-xl border-2 px-6 py-6 shadow-md sm:h-60 sm:flex-row sm:items-center sm:px-15 sm:py-0">
         <div className="flex flex-1 flex-col gap-4">
           {/** AI Agent Status + time update */}
-          <div className="font-thai -mt-4 flex w-full flex-row items-center justify-start gap-2 font-semibold">
+          <div className="font-thai -mt-4 flex w-full flex-row flex-wrap items-center justify-start gap-2 font-semibold">
             {/** AI Agent Status TODO: Make this relate to the real AI status [active/inactive/error] with relative colors*/}
-            <div className="text-amalfi flex items-center gap-2 rounded-full border-2 border-black bg-white px-4 py-2 text-lg">
+            <div className="text-amalfi flex items-center gap-2 rounded-full border-2 mt-2 border-black bg-white px-3 py-1 
+            text-xs whitespace-nowrap sm:px-4 sm:py-2 sm:text-sm lg:text-lg">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500"></span>
               </span>
               AI Agent · กำลังทำงาน
             </div>
-            <h2 className="ml-5 text-base">อัปเดทล่าสุด 2 ชั่วโมงที่แล้ว</h2>
+            <h2 className="text-xs mt-3 sm:ml-5 md:text-sm lg:text-base">
+              อัปเดทล่าสุด 2 ชั่วโมงที่แล้ว
+            </h2>
           </div>
           {/** filler msg*/}
           <div className="flex flex-col items-start justify-start gap-2">
@@ -112,20 +115,20 @@ function Home() {
           </div>
         </div>
         {/** coffee cup */}
-        <div className="mr-6 ml-26 shrink-0">
+        <div className="shrink-0 self-center sm:ml-26">
           <img src={coffee} alt="Coffee" className="h-40 w-40" />
         </div>
       </div>
       {/** summary boxes*/}
       {/** TODO: Replace placeholder data with real-time metrics. Replace values with a variable instead of texts*/}
-      <div className="mt-10 flex h-45 w-7xl flex-row items-center justify-between gap-5">
-        <div className="h-full w-75 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+      <div className="mt-10 grid w-full max-w-7xl grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="h-full min-h-45 w-full rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
           <div className="font-thai text-amalfi flex flex-row p-4 text-2xl font-semibold">
             <img src={ppl} alt="People" className="mr-2 inline-block h-9 w-9" />
             <h2 className="font-thai text-amalfi font-semibold">ยอดเข้าถึง</h2>
           </div>
           <div className="flex flex-row items-center justify-start px-4">
-            <p className="text-citrusdark text-3xl font-bold">
+            <p className="text-citrusdark text-2xl font-bold sm:text-3xl">
               {reach.toLocaleString()}
             </p>
             <div className="ml-4 flex flex-row items-center justify-start gap-2">
@@ -145,7 +148,7 @@ function Home() {
             </p>
           </div>
         </div>
-        <div className="h-full w-75 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+        <div className="h-full min-h-45 w-full rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
           <div className="font-thai text-amalfi flex flex-row p-4 text-2xl font-semibold">
             <img
               src={click}
@@ -155,7 +158,7 @@ function Home() {
             <h2 className="font-thai text-amalfi font-semibold">คลิก</h2>
           </div>
           <div className="flex flex-row items-center justify-start px-4">
-            <p className="text-citrusdark text-3xl font-bold">
+            <p className="text-citrusdark text-2xl font-bold sm:text-3xl">
               {clickNum.toLocaleString()}
             </p>
             <div className="ml-4 flex flex-row items-center justify-start gap-2">
@@ -175,7 +178,7 @@ function Home() {
             </p>
           </div>
         </div>
-        <div className="h-full w-75 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+        <div className="h-full min-h-45 w-full rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
           <div className="font-thai text-amalfi flex flex-row p-4 text-2xl font-semibold">
             <img
               src={cash}
@@ -187,7 +190,7 @@ function Home() {
             </h2>
           </div>
           <div className="flex flex-row items-center justify-start px-4">
-            <p className="text-citrusdark text-3xl font-bold">
+            <p className="text-citrusdark text-2xl font-bold sm:text-3xl">
               ฿{usedBudget.toLocaleString()}
             </p>
           </div>
@@ -197,7 +200,7 @@ function Home() {
             </p>
           </div>
         </div>
-        <div className="bg-amalfi h-full w-75 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+        <div className="bg-amalfi h-full min-h-45 w-full rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
           <div className="font-thai flex flex-row justify-between p-4 text-2xl font-semibold text-white">
             <h2 className="font-thai font-semibold">ROI</h2>
             <img
@@ -207,7 +210,9 @@ function Home() {
             />
           </div>
           <div className="flex flex-row items-center justify-start px-4">
-            <p className="text-3xl font-bold text-white">{ROI.toFixed(1)}x</p>
+            <p className="text-2xl font-bold text-white sm:text-3xl">
+              {ROI.toFixed(1)}x
+            </p>
           </div>
           <div className="px-4">
             <p className="font-thai mt-2 text-lg font-semibold text-white">
@@ -217,12 +222,12 @@ function Home() {
         </div>
       </div>
       {/** Campaign boxes + sales overview + connected channels (left) / AI recommendations + local trend (right) */}
-      <div className="mt-10 flex flex-row items-start gap-5">
+      <div className="mt-10 flex flex-col items-start gap-5 md:flex-row">
         {/** Left column */}
-        <div className="flex w-3xl flex-col gap-8">
+        <div className="flex w-full flex-col gap-8 md:w-[60%] lg:w-3xl">
           <div className="flex h-64 w-full flex-col">
             <div className="font-thai flex flex-row items-center justify-between gap-2 p-4 text-2xl font-semibold">
-              <h2 className="font-thai text-amalfidark text-3xl font-semibold">
+              <h2 className="font-thai text-amalfidark text-xl font-semibold sm:text-2xl lg:text-3xl">
                 โฆษณาที่กำลังรันอยู่
               </h2>
               <NavLink
@@ -233,13 +238,13 @@ function Home() {
                 <ArrowRight className="-mt-1 ml-2 inline-block h-6 w-6" />
               </NavLink>
             </div>
-            <div className="items-between flex h-60 w-full flex-row justify-start rounded-xl border-2 border-[#8E98A8] px-6 py-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+            <div className="items-between flex h-auto w-full flex-row justify-start rounded-xl border-2 border-[#8E98A8] px-4 py-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30 sm:h-60 sm:px-6">
               <img
                 src={rain}
                 alt="Campaign1"
-                className="h-15 w-15 rounded-2xl object-cover"
+                className="h-15 w-15 shrink-0 rounded-2xl object-cover"
               />
-              <div className="flex flex-col px-4">
+              <div className="flex min-w-0 flex-col px-4">
                 <h2 className="font-thai text-2xl font-semibold text-black">
                   โปรหน้าฝน 2026 ลด 20%
                 </h2>
@@ -247,17 +252,17 @@ function Home() {
                   ROI: {ROI.toFixed(1)}x
                 </h3>
               </div>
-              <div className="ml-auto flex flex-row items-center justify-end">
+              <div className="ml-auto hidden flex-row items-center justify-end sm:flex">
                 <img src={trend1} alt="Trend1" className="h-15 w-50" />
               </div>
             </div>
-            <div className="items-between mt-5 flex h-60 w-full flex-row justify-start rounded-xl border-2 border-[#8E98A8] px-6 py-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+            <div className="items-between mt-5 flex h-auto w-full flex-row justify-start rounded-xl border-2 border-[#8E98A8] px-4 py-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30 sm:h-60 sm:px-6">
               <img
                 src={milo}
                 alt="Campaign2"
-                className="h-15 w-15 rounded-2xl object-cover"
+                className="h-15 w-15 shrink-0 rounded-2xl object-cover"
               />
-              <div className="flex flex-col px-4">
+              <div className="flex min-w-0 flex-col px-4">
                 <h2 className="font-thai text-2xl font-semibold text-black">
                   โปรไมโล 2026 ลด 60%
                 </h2>
@@ -265,7 +270,7 @@ function Home() {
                   ROI: {ROI.toFixed(1)}x
                 </h3>
               </div>
-              <div className="ml-auto flex flex-row items-center justify-end">
+              <div className="ml-auto hidden flex-row items-center justify-end sm:flex">
                 <img src={trend2} alt="Trend2" className="h-15 w-50" />
               </div>
             </div>
@@ -275,7 +280,7 @@ function Home() {
           {/** Sales overview */}
           {/* TODO: replace with a real sales chart once analytics data is available */}
           <div className="mt-8 w-full rounded-xl border-2 border-[#8E98A8] px-10 py-6 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
-            <div className="flex flex-row items-center justify-between">
+            <div className="flex flex-row flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="font-thai text-amalfidark text-2xl font-semibold">
                   ภาพรวมยอดขาย
@@ -323,7 +328,7 @@ function Home() {
             <p className="font-thai mt-1 text-base text-black">
               ClickDee ส่งโฆษณาออกไปยังแพลตฟอร์มเหล่านี้ให้คุณอัตโนมัติ
             </p>
-            <div className="mt-4 flex w-58 flex-row items-center gap-3 rounded-[10px] border border-[#8E98A8] p-4">
+            <div className="mt-4 flex w-full flex-row items-center gap-3 rounded-[10px] border border-[#8E98A8] p-4 sm:w-58">
               <img
                 src={facebook}
                 alt="Facebook"
@@ -346,7 +351,7 @@ function Home() {
         </div>
 
         {/** Right column */}
-        <div className="flex w-150 flex-col gap-5">
+        <div className="flex w-full flex-col gap-5 md:w-[40%] lg:w-150">
           {/** AI recommendations*/}
           {/** TODO: Load AI recommendations actual*/}
           <div className="w-full rounded-xl border-2 border-[#8E98A8] p-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">

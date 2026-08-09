@@ -188,13 +188,13 @@ function Ai() {
 
   return (
     <div className="flex h-[calc(100vh-5rem)] min-w-full flex-col py-10">
-      <h1 className="text-amalfidark font-thai text-4xl font-bold">
+      <h1 className="text-amalfidark font-thai text-2xl font-bold sm:text-3xl lg:text-4xl">
         ที่ปรึกษา AI
       </h1>
 
-      <div className="mt-6 flex min-h-0 flex-1 flex-row items-stretch gap-0">
+      <div className="mt-6 flex min-h-0 flex-1 flex-col items-stretch gap-0 xl:flex-row">
         {/** Chat column */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 pr-6">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 xl:pr-6">
           <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-2">
             {initialMessages.map((message) =>
               message.sender === 'ai' ? (
@@ -214,7 +214,7 @@ function Ai() {
               onChange={(e) => setInputValue(e.target.value)}
               type="text"
               placeholder="พิมพ์คำถามของคุณ..."
-              className="font-thai flex-1 text-lg outline-none"
+              className="font-thai flex-1 px-3 text-lg outline-none"
             />
             <button
               type="submit"
@@ -226,28 +226,43 @@ function Ai() {
         </div>
 
         {/** Quick Actions panel */}
-        <div className="relative flex shrink-0 self-stretch">
+        <div className="relative mt-4 flex w-full shrink-0 flex-col self-stretch xl:mt-0 xl:w-auto xl:flex-row">
           <button
             type="button"
             onClick={() => setQuickActionsOpen((open) => !open)}
-            className="absolute top-8 -left-4 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-[#8E98A8] bg-white shadow-md transition-all hover:scale-115 hover:cursor-pointer"
+            className="absolute top-8 -left-4 z-10 hidden h-8 w-8 items-center justify-center rounded-full border border-[#8E98A8] bg-white shadow-md transition-all hover:scale-115 hover:cursor-pointer xl:flex"
           >
             <ChevronRight
               className={`h-5 w-5 transition-transform ${quickActionsOpen ? 'rotate-180' : ''}`}
             />
           </button>
+          <button
+            type="button"
+            onClick={() => setQuickActionsOpen((open) => !open)}
+            className="bg-citrus-light-active font-thai text-amalfidark flex w-full items-center justify-between rounded-[10px] px-4 py-3 text-lg font-bold xl:hidden"
+          >
+            <span className="flex items-center gap-2">
+              <Zap className="h-5 w-5" />
+              Quick Actions
+            </span>
+            <ChevronRight
+              className={`h-5 w-5 transition-transform ${quickActionsOpen ? 'rotate-90' : ''}`}
+            />
+          </button>
           <div
-            className={`bg-citrus-light-active overflow-x-clip overflow-y-scroll rounded-[10px] transition-all duration-200 ${
-              quickActionsOpen ? 'w-105 p-6 opacity-100' : 'w-0 p-0 opacity-0'
+            className={`bg-citrus-light-active overflow-x-clip rounded-[10px] transition-all duration-200 xl:overflow-y-scroll ${
+              quickActionsOpen
+                ? 'mt-2 block w-full p-6 opacity-100 xl:mt-0 xl:w-105 xl:opacity-100'
+                : 'hidden w-full p-0 opacity-0 xl:block xl:w-0 xl:opacity-0'
             }`}
           >
-            <div className="border-citrusdark flex w-91 items-center gap-2 border-b-2 pb-3">
+            <div className="border-citrusdark flex w-full items-center gap-2 border-b-2 pb-3 xl:w-91">
               <Zap className="text-amalfidark h-6 w-6" />
               <h2 className="font-thai text-amalfidark text-2xl font-bold">
                 Quick Actions
               </h2>
             </div>
-            <div className="mt-4 flex w-91 flex-col gap-3">
+            <div className="mt-4 flex w-full flex-col gap-3 xl:w-91">
               {quickActions.map((action) => (
                 <QuickActionCard
                   key={action.id}
