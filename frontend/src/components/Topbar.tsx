@@ -1,10 +1,11 @@
-import { CircleUserRound, Settings, Bell } from 'lucide-react'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { CircleUserRound, Settings, Bell, Menu } from 'lucide-react'
+import { useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { NavLink } from 'react-router-dom'
 import NotificationPanel, {
   type NotificationItem,
 } from '@/components/notificationPanel'
 import Portal from '@/components/portal'
+import useScrollHidden from '@/components/useScrollHidden'
 
 {
   /** Notification data PLACEHOLDER */
@@ -33,7 +34,14 @@ const initialNotifications: NotificationItem[] = [
 const NOTIF_PANEL_GAP = 8
 const NOTIF_PANEL_MARGIN = 16
 
-function Topbar() {
+function Topbar({
+  containerRef,
+  onMenuClick,
+}: {
+  containerRef: RefObject<HTMLDivElement | null>
+  onMenuClick: () => void
+}) {
+  const hidden = useScrollHidden(containerRef)
   const [activeButton, setActiveButton] = useState('')
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifications, setNotifications] = useState(initialNotifications)
@@ -61,12 +69,27 @@ function Topbar() {
     const maxLeft = window.innerWidth - panelWidth - NOTIF_PANEL_MARGIN
     setNotifPos({
       top: bellRect.bottom + NOTIF_PANEL_GAP,
-      left: Math.min(bellRect.right - panelWidth, maxLeft),
+      left: Math.max(
+        NOTIF_PANEL_MARGIN,
+        Math.min(bellRect.right - panelWidth, maxLeft),
+      ),
     })
   }, [notifOpen])
 
   return (
-    <div className="sticky top-0 z-10 flex h-20 w-full shrink-0 flex-row items-center justify-end bg-white px-2">
+    <div
+      className={`sticky top-0 z-10 flex h-20 w-full shrink-0 flex-row items-center justify-between bg-white px-2 transition-transform duration-300 ease-in-out lg:translate-y-0 lg:justify-end ${
+        hidden ? '-translate-y-full' : 'translate-y-0'
+      }`}
+    >
+      <button
+        type="button"
+        onClick={onMenuClick}
+        aria-label="Open navigation menu"
+        className="ml-2 flex items-center justify-center p-0 lg:hidden"
+      >
+        <Menu className="h-8 w-8 text-[#8E98A8] transition-all hover:text-[#6B7280]" />
+      </button>
       <div className="mr-11 flex flex-row items-center justify-end gap-10 pt-4">
         <div className="relative">
           <button

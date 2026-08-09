@@ -31,6 +31,7 @@ const DashboardLayout = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const previousPathname = useRef(pathname)
   const [transitioning, setTransitioning] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
 
   useEffect(() => {
     scrollContainerRef.current?.scrollTo(0, 0)
@@ -38,6 +39,7 @@ const DashboardLayout = () => {
     if (previousPathname.current === pathname) return
     previousPathname.current = pathname
 
+    setNavOpen(false)
     setTransitioning(true)
     const timeout = setTimeout(
       () => setTransitioning(false),
@@ -48,13 +50,19 @@ const DashboardLayout = () => {
 
   return (
     <div className="flex min-h-screen w-full overflow-hidden">
-      <Navbar />
+      <Navbar open={navOpen} onClose={() => setNavOpen(false)} />
       <div
         ref={scrollContainerRef}
         className="relative flex h-screen flex-1 flex-col overflow-y-auto"
       >
-        <Topbar />
-        <div key={pathname} className="animate-[fade-in_0.25s_ease-out] px-10">
+        <Topbar
+          containerRef={scrollContainerRef}
+          onMenuClick={() => setNavOpen(true)}
+        />
+        <div
+          key={pathname}
+          className="animate-[fade-in_0.25s_ease-out] px-4 md:px-8 lg:px-10"
+        >
           <Outlet />
         </div>
         <DashboardTransitionLoader visible={transitioning} />

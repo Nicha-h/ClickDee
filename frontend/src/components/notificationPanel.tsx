@@ -24,7 +24,7 @@ function NotificationPanel({
     <div
       ref={panelRef}
       style={style}
-      className="fixed z-30 w-100 overflow-hidden rounded-2xl border border-[#8E98A8] bg-white shadow-[0px_8px_32px_0px_rgba(0,0,0,0.18)]"
+      className="fixed z-30 w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-[#8E98A8] bg-white shadow-[0px_8px_32px_0px_rgba(0,0,0,0.18)] sm:w-100"
     >
       <div className="flex items-center justify-between border-b border-[#F0ECF7] px-5 py-4.5">
         <span className="font-thai text-xl font-bold text-[#1F2937]">

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import home from '@/assets/icons/home.svg'
 import robot from '@/assets/icons/robot.svg'
@@ -25,190 +25,185 @@ const creditUsage: CreditUsage[] = [
   { label: 'สร้างวิดีโอ (Video generation)', used: 20, total: 30 },
 ]
 
-const CREDIT_PANEL_GAP = 8
-const CREDIT_PANEL_MARGIN = 16
-
-function Navbar() {
+function Navbar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [activeButton, setActiveButton] = useState('Home')
   const [creditOpen, setCreditOpen] = useState(false)
-  const [creditPos, setCreditPos] = useState({ top: 0, left: 0 })
-  const creditTriggerRef = useRef<HTMLDivElement>(null)
-  const creditPanelRef = useRef<HTMLDivElement>(null)
   const handleClick = (buttonName: string) => {
     setActiveButton(buttonName)
   }
 
-  // Anchor the popover to the trigger's real screen position (rather than
-  // flowing it via absolute/relative CSS) so it stays beside the AI Token
-  // card wherever that card ends up, instead of getting clipped by the
-  // sidebar's fixed h-screen height when the popover would render below it.
-  useLayoutEffect(() => {
-    if (!creditOpen) return
-    const trigger = creditTriggerRef.current
-    if (!trigger) return
-    const triggerRect = trigger.getBoundingClientRect()
-    const panelHeight = creditPanelRef.current?.offsetHeight ?? 0
-    const maxTop = window.innerHeight - panelHeight - CREDIT_PANEL_MARGIN
-    setCreditPos({
-      top: Math.min(triggerRect.top, Math.max(CREDIT_PANEL_MARGIN, maxTop)),
-      left: triggerRect.right + CREDIT_PANEL_GAP,
-    })
-  }, [creditOpen])
+  useEffect(() => {
+    if (!open) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [open, onClose])
+
+  useEffect(() => {
+    if (!open) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [open])
 
   return (
-    <nav className="bg-amalfi sticky top-0 flex h-screen w-80 flex-col justify-between gap-6">
-      <div className="grid justify-start gap-3">
-        {/** logo */}
-        <div className="bg-amalfi flex h-20 w-79 p-3 text-4xl">
+    <>
+      <Portal>
+        <div
+          className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ease-in-out lg:hidden ${
+            open ? 'opacity-100' : 'pointer-events-none opacity-0'
+          }`}
+          onClick={onClose}
+        />
+      </Portal>
+      <nav
+        className={`bg-amalfi fixed inset-y-0 left-0 z-50 flex h-screen w-80 -translate-x-full flex-col justify-between gap-6 transition-transform duration-300 ease-in-out lg:sticky lg:top-0 lg:z-auto lg:translate-x-0 ${
+          open ? 'translate-x-0' : ''
+        }`}
+      >
+        <div className="grid justify-start gap-3">
+          {/** logo */}
+          <div className="bg-amalfi flex h-20 w-79 p-3 text-4xl">
+            <NavLink
+              to="/home"
+              onClick={() => handleClick('home')}
+              className="font-jakarta flex items-center justify-center gap-4 p-3 pt-5 text-4xl font-bold text-white"
+            >
+              <img src={logo} alt="ClickDee" className="h-16 w-16" />
+              <p className="text-white">ClickDee</p>
+            </NavLink>
+            {/** navigation btns */}
+          </div>
           <NavLink
             to="/home"
             onClick={() => handleClick('home')}
-            className="font-jakarta flex items-center justify-center gap-4 p-3 pt-5 text-4xl font-bold text-white"
+            className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-colors duration-200 hover:-translate-x-0.5 ${
+              activeButton === 'home'
+                ? 'bg-citrus-light hover:bg-citrus-light-hover'
+                : 'bg-amalfi hover:bg-amalfihover'
+            } font-thai text-xl font-semibold ${activeButton === 'home' ? 'text-black' : 'text-white'}`}
           >
-            <img src={logo} alt="ClickDee" className="h-16 w-16" />
-            <p className="text-white">ClickDee</p>
+            <div className="flex items-center gap-6">
+              <img
+                src={home}
+                alt="Home"
+                className={`h-6 w-6 ${activeButton === 'home' ? 'brightness-0' : ''}`}
+              />
+              หน้าหลัก
+            </div>
           </NavLink>
-          {/** navigation btns */}
-        </div>
-        <NavLink
-          to="/home"
-          onClick={() => handleClick('home')}
-          className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-colors duration-200 hover:-translate-x-0.5 ${
-            activeButton === 'home'
-              ? 'bg-citrus-light hover:bg-citrus-light-hover'
-              : 'bg-amalfi hover:bg-amalfihover'
-          } font-thai text-xl font-semibold ${activeButton === 'home' ? 'text-black' : 'text-white'}`}
-        >
-          <div className="flex items-center gap-6">
-            <img
-              src={home}
-              alt="Home"
-              className={`h-6 w-6 ${activeButton === 'home' ? 'brightness-0' : ''}`}
-            />
-            หน้าหลัก
-          </div>
-        </NavLink>
-        <NavLink
-          to="/campaign"
-          onClick={() => handleClick('campaign')}
-          className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-colors duration-200 hover:-translate-x-0.5 ${activeButton === 'campaign' ? 'bg-citrus-light hover:bg-citrus-light-hover' : 'bg-amalfi hover:bg-amalfihover'} font-thai text-xl font-semibold ${activeButton === 'campaign' ? 'text-black' : 'text-white'}`}
-        >
-          <div className="flex items-center gap-6">
-            <img
-              src={rocket}
-              alt="Campaign"
-              className={`h-6 w-6 ${activeButton === 'campaign' ? 'brightness-0' : ''}`}
-            />
-            แคมเปญ
-          </div>
-        </NavLink>
-        <NavLink
-          to="/ai"
-          onClick={() => handleClick('ai')}
-          className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-colors duration-200 hover:-translate-x-0.5 ${activeButton === 'ai' ? 'bg-citrus-light hover:bg-citrus-light-hover' : 'bg-amalfi hover:bg-amalfihover'} font-thai text-xl font-semibold ${activeButton === 'ai' ? 'text-black' : 'text-white'}`}
-        >
-          <div className="flex items-center gap-6">
-            <img
-              src={robot}
-              alt="AI"
-              className={`h-6 w-6 ${activeButton === 'ai' ? 'brightness-0' : ''}`}
-            />
-            ที่ปรึกษา AI
-          </div>
-        </NavLink>
-        <NavLink
-          to="/overview"
-          onClick={() => handleClick('overview')}
-          className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-colors duration-200 hover:-translate-x-0.5 ${activeButton === 'overview' ? 'bg-citrus-light hover:bg-citrus-light-hover' : 'bg-amalfi hover:bg-amalfihover'} font-thai text-xl font-semibold ${activeButton === 'overview' ? 'text-black' : 'text-white'}`}
-        >
-          <div className="flex items-center gap-6">
-            <img
-              src={stats}
-              alt="Overview"
-              className={`h-6 w-6 ${activeButton === 'overview' ? 'brightness-0' : ''}`}
-            />
-            รายงาน
-          </div>
-        </NavLink>
-        <NavLink
-          to="/integration"
-          onClick={() => handleClick('integration')}
-          className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-colors duration-200 hover:-translate-x-0.5 ${activeButton === 'integration' ? 'bg-citrus-light hover:bg-citrus-light-hover' : 'bg-amalfi hover:bg-amalfihover'} font-thai text-xl font-semibold ${activeButton === 'integration' ? 'text-black' : 'text-white'}`}
-        >
-          <div className="flex items-center gap-6">
-            <img
-              src={account}
-              alt="Integration"
-              className={`h-6 w-6 ${activeButton === 'integration' ? 'brightness-0' : ''}`}
-            />
-            การเชื่อมต่อ
-          </div>
-        </NavLink>
-      </div>
-      <div className="mb-5 grid items-end justify-center gap-2 p-4">
-        <div className="relative mx-5 w-70">
-          <div
-            ref={creditTriggerRef}
-            onClick={() => setCreditOpen((open) => !open)}
-            className="font-thai h-50 w-70 cursor-pointer items-center justify-start rounded-2xl border-3 border-white/30 bg-white/10 p-7 text-2xl text-white shadow-lg backdrop-blur-md"
+          <NavLink
+            to="/campaign"
+            onClick={() => handleClick('campaign')}
+            className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-colors duration-200 hover:-translate-x-0.5 ${activeButton === 'campaign' ? 'bg-citrus-light hover:bg-citrus-light-hover' : 'bg-amalfi hover:bg-amalfihover'} font-thai text-xl font-semibold ${activeButton === 'campaign' ? 'text-black' : 'text-white'}`}
           >
-            <div>
-              <div className="text-2lg mb-2 flex items-center gap-2 font-semibold">
-                <img src={sparklebold} alt="Sparkle" className="h-6 w-6" />
-                AI Token
-              </div>
-              <div className="text-base font-semibold">
-                เหลือ {AI_TOKEN} / {AI_TOKEN_MAX} tokens
-              </div>
-              <div className="py-2 text-base font-bold">
-                เดือนนี้ใช้งานไปแล้ว
-              </div>
+            <div className="flex items-center gap-6">
+              <img
+                src={rocket}
+                alt="Campaign"
+                className={`h-6 w-6 ${activeButton === 'campaign' ? 'brightness-0' : ''}`}
+              />
+              แคมเปญ
+            </div>
+          </NavLink>
+          <NavLink
+            to="/ai"
+            onClick={() => handleClick('ai')}
+            className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-colors duration-200 hover:-translate-x-0.5 ${activeButton === 'ai' ? 'bg-citrus-light hover:bg-citrus-light-hover' : 'bg-amalfi hover:bg-amalfihover'} font-thai text-xl font-semibold ${activeButton === 'ai' ? 'text-black' : 'text-white'}`}
+          >
+            <div className="flex items-center gap-6">
+              <img
+                src={robot}
+                alt="AI"
+                className={`h-6 w-6 ${activeButton === 'ai' ? 'brightness-0' : ''}`}
+              />
+              ที่ปรึกษา AI
+            </div>
+          </NavLink>
+          <NavLink
+            to="/overview"
+            onClick={() => handleClick('overview')}
+            className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-colors duration-200 hover:-translate-x-0.5 ${activeButton === 'overview' ? 'bg-citrus-light hover:bg-citrus-light-hover' : 'bg-amalfi hover:bg-amalfihover'} font-thai text-xl font-semibold ${activeButton === 'overview' ? 'text-black' : 'text-white'}`}
+          >
+            <div className="flex items-center gap-6">
+              <img
+                src={stats}
+                alt="Overview"
+                className={`h-6 w-6 ${activeButton === 'overview' ? 'brightness-0' : ''}`}
+              />
+              รายงาน
+            </div>
+          </NavLink>
+          <NavLink
+            to="/integration"
+            onClick={() => handleClick('integration')}
+            className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-colors duration-200 hover:-translate-x-0.5 ${activeButton === 'integration' ? 'bg-citrus-light hover:bg-citrus-light-hover' : 'bg-amalfi hover:bg-amalfihover'} font-thai text-xl font-semibold ${activeButton === 'integration' ? 'text-black' : 'text-white'}`}
+          >
+            <div className="flex items-center gap-6">
+              <img
+                src={account}
+                alt="Integration"
+                className={`h-6 w-6 ${activeButton === 'integration' ? 'brightness-0' : ''}`}
+              />
+              การเชื่อมต่อ
+            </div>
+          </NavLink>
+        </div>
+        <div className="mb-5 grid items-end justify-center gap-2 p-4">
+          <div className="relative mx-5 w-70">
+            <div
+              onClick={() => setCreditOpen((open) => !open)}
+              className="font-thai h-50 w-70 cursor-pointer items-center justify-start rounded-2xl border-3 border-white/30 bg-white/10 p-7 text-2xl text-white shadow-lg backdrop-blur-md"
+            >
+              <div>
+                <div className="text-2lg mb-2 flex items-center gap-2 font-semibold">
+                  <img src={sparklebold} alt="Sparkle" className="h-6 w-6" />
+                  AI Token
+                </div>
+                <div className="text-base font-semibold">
+                  เหลือ {AI_TOKEN} / {AI_TOKEN_MAX} tokens
+                </div>
+                <div className="py-2 text-base font-bold">
+                  เดือนนี้ใช้งานไปแล้ว
+                </div>
 
-              {/* TODO: come fix this later */}
-              <div className="h-2 w-full rounded-full bg-white/20">
-                <div
-                  className="bg-citrus h-2 rounded-full"
-                  style={{ width: `${(AI_TOKEN / AI_TOKEN_MAX) * 100}%` }}
-                />
+                {/* TODO: come fix this later */}
+                <div className="h-2 w-full rounded-full bg-white/20">
+                  <div
+                    className="bg-citrus h-2 rounded-full"
+                    style={{ width: `${(AI_TOKEN / AI_TOKEN_MAX) * 100}%` }}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-          {creditOpen && (
-            <Portal>
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setCreditOpen(false)}
-              />
-              <CreditPanel
-                usage={creditUsage}
-                panelRef={creditPanelRef}
-                style={{
-                  top: creditPos.top,
-                  left: creditPos.left,
-                  zIndex: 50,
-                }}
-              />
-            </Portal>
-          )}
-        </div>
-        {/** logout btn */}
-        {/** Todo: create logout functionality */}
-        <NavLink
-          to="/logout"
-          onClick={() => handleClick('logout')}
-          className={`font-thai mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 text-xl text-white transition-transform duration-200 hover:-translate-x-0.5`}
-        >
-          <div className="flex items-center gap-6 pt-5">
-            <img
-              src={logout}
-              alt="Logout"
-              className={`h-5 w-5 ${activeButton === 'logout' ? 'brightness-0' : ''} `}
+            <CreditPanel
+              open={creditOpen}
+              onClose={() => setCreditOpen(false)}
+              usage={creditUsage}
             />
-            ออกจากระบบ
           </div>
-        </NavLink>
-      </div>
-    </nav>
+          {/** logout btn */}
+          <NavLink
+            to="/login"
+            onClick={() => handleClick('logout')}
+            className={`font-thai mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 text-xl text-white transition-transform duration-200 hover:-translate-x-0.5`}
+          >
+            <div className="flex items-center gap-6 pt-5">
+              <img
+                src={logout}
+                alt="Logout"
+                className={`h-5 w-5 ${activeButton === 'logout' ? 'brightness-0' : ''} `}
+              />
+              ออกจากระบบ
+            </div>
+          </NavLink>
+        </div>
+      </nav>
+    </>
   )
 }
 
