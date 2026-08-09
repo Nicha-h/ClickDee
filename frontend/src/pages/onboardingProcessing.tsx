@@ -25,7 +25,7 @@ function OnboardingProcessing() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-white">
       <OnboardingTopbar />
-      <div className="flex flex-1 flex-col justify-center gap-6 px-10 py-10 text-center">
+      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4 py-10 text-center md:px-8 lg:px-10">
         <div className="relative flex h-35 w-35 items-center justify-center">
           <span className="bg-sea absolute inline-flex h-28 w-28 animate-ping rounded-full opacity-60" />
           <span className="bg-sea absolute inline-flex h-28 w-28 animate-ping rounded-full opacity-60 [animation-delay:0.5s]" />
@@ -34,7 +34,7 @@ function OnboardingProcessing() {
           </span>
         </div>
         <div className="font-thai flex flex-col gap-2">
-          <h1 className="text-amalfidark text-3xl font-bold">
+          <h1 className="text-amalfidark text-xl font-bold sm:text-2xl lg:text-3xl">
             กำลังปรับแต่งระบบให้เหมาะกับธุรกิจของคุณ...
           </h1>
           <p className="max-w-150 text-lg text-[#8e98a8]">

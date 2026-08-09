@@ -108,7 +108,9 @@ function OnboardingWizard({
             คำตอบนี้จะถูกส่งให้ AI ช่วยปรับแต่งระบบให้คุณ
           </span>
         )}
-        <h1 className="text-amalfidark text-3xl font-bold">{step.question}</h1>
+        <h1 className="text-amalfidark text-xl font-bold sm:text-2xl lg:text-3xl">
+          {step.question}
+        </h1>
         <p className="text-base text-[#8e98a8]">{step.subtext}</p>
       </div>
 
@@ -178,7 +180,7 @@ function OnboardingWizard({
         </div>
       )}
 
-      <div className="flex h-14 w-full items-center justify-center">
+      <div className="flex h-14 w-full items-center justify-between gap-4">
         {isLastStep ? (
           <button
             type="button"
@@ -197,7 +199,6 @@ function OnboardingWizard({
             ข้ามขั้นตอนนี้
           </button>
         )}
-        <div className="w-full max-w-100 shrink-0" />
         <button
           type="button"
           onClick={goNext}

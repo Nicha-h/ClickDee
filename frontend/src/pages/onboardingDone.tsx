@@ -72,7 +72,7 @@ function OnboardingDone() {
           />
 
           <div className="font-thai flex flex-col gap-2">
-            <p className="text-amalfidark flex items-center justify-center gap-2 text-3xl font-bold">
+            <p className="text-amalfidark flex items-center justify-center gap-2 text-xl font-bold sm:text-2xl lg:text-3xl">
               ยินดีต้อนรับสู่ ClickDee!
               <PartyPopper className="text-citrus h-8 w-8" />
             </p>
@@ -112,7 +112,7 @@ function OnboardingDone() {
           <button
             type="button"
             onClick={() => navigate('/home')}
-            className="bg-citrus hover:bg-citrushover text-amalfi font-thai flex h-14 w-80 items-center justify-center gap-2 rounded-2xl text-lg font-bold transition-all hover:scale-105 hover:cursor-pointer"
+            className="bg-citrus hover:bg-citrushover text-amalfi font-thai flex h-14 w-full max-w-80 items-center justify-center gap-2 rounded-2xl text-lg font-bold transition-all hover:scale-105 hover:cursor-pointer"
           >
             เข้าสู่แดชบอร์ด
             <ArrowRight className="h-5 w-5" />

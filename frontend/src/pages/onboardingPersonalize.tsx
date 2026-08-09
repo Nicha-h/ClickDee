@@ -19,7 +19,7 @@ function OnboardingPersonalize() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-white">
       <OnboardingTopbar />
-      <div className="flex flex-1 justify-center px-10 py-10">
+      <div className="flex flex-1 justify-center px-4 py-10 md:px-8 lg:px-10">
         <OnboardingWizard
           steps={AI_FOLLOWUP_STEPS}
           initialAnswers={initialAnswers}
