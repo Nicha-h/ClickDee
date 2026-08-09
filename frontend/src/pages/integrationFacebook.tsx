@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
-import connectIcon from '@/assets/connect-icon.svg'
-import disconnectIcon from '@/assets/disconnect-icon.svg'
-import account from '@/assets/account.svg'
+import connectIcon from '@/assets/icons/connect-icon.svg'
+import disconnectIcon from '@/assets/icons/disconnect-icon.svg'
+import account from '@/assets/icons/account.svg'
 import Toggle from '@/components/toggle'
+import { useSimulatedLoading } from '@/components/useSimulatedLoading'
+import IntegrationFacebookSkeleton from '@/components/integrationFacebookSkeleton'
 
 type SyncedPage = { id: string; name: string; isSynced: boolean }
 type AdAccount = {
@@ -37,12 +39,15 @@ const initialAdAccount: AdAccount = {
 function IntegrationFacebook() {
   const [syncedPages, setSyncedPages] = useState(initialSyncedPages)
   const [adAccount, setAdAccount] = useState(initialAdAccount)
+  const isLoading = useSimulatedLoading()
 
   const toggleSyncedPage = (id: string, isSynced: boolean) => {
     setSyncedPages((prev) =>
       prev.map((page) => (page.id === id ? { ...page, isSynced } : page)),
     )
   }
+
+  if (isLoading) return <IntegrationFacebookSkeleton />
 
   return (
     <div className="min-h-full min-w-full py-10">

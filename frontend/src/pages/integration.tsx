@@ -1,8 +1,13 @@
 import { useNavigate } from 'react-router-dom'
-import facebookLogoTile from '@/assets/facebook-logo-tile.png'
+import facebookLogoTile from '@/assets/logos/facebook-logo-tile.png'
+import { useSimulatedLoading } from '@/components/useSimulatedLoading'
+import IntegrationSkeleton from '@/components/integrationSkeleton'
 
 function Integration() {
   const navigate = useNavigate()
+  const isLoading = useSimulatedLoading()
+
+  if (isLoading) return <IntegrationSkeleton />
 
   return (
     <div className="min-h-full min-w-full py-10">
