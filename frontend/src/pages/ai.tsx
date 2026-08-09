@@ -11,7 +11,9 @@ import {
   BarChart3,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import aiMascot from '@/assets/ai-mascot.png'
+import aiMascot from '@/assets/placeholders/ai-mascot.png'
+import { useSimulatedLoading } from '@/components/useSimulatedLoading'
+import AiSkeleton from '@/components/aiSkeleton'
 
 type ChatMessage = {
   id: string
@@ -180,6 +182,9 @@ function QuickActionCard({
 function Ai() {
   const [inputValue, setInputValue] = useState('')
   const [quickActionsOpen, setQuickActionsOpen] = useState(true)
+  const isLoading = useSimulatedLoading()
+
+  if (isLoading) return <AiSkeleton />
 
   return (
     <div className="flex h-[calc(100vh-5rem)] min-w-full flex-col py-10">
@@ -213,8 +218,7 @@ function Ai() {
             />
             <button
               type="submit"
-              className="bg-sealight-hover flex h-12 w-10 shrink-0 items-center justify-center rounded-full 
-              hover:scale-105 hover:*:cursor-pointer *:transition-all"
+              className="bg-sealight-hover flex h-12 w-10 shrink-0 items-center justify-center rounded-full *:transition-all hover:scale-105 hover:*:cursor-pointer"
             >
               <Send className="text-amalfidark h-6 w-6" />
             </button>
