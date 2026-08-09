@@ -45,18 +45,18 @@ const filterTabs: FilterTab[] = [
 
 function CampaignCard({ campaign }: { campaign: CampaignItem }) {
   return (
-    <div className="flex shrink-0 flex-row overflow-hidden rounded-xl border border-[#8E98A8]">
+    <div className="flex flex-col overflow-hidden rounded-xl border border-[#8E98A8] lg:shrink-0 lg:flex-row">
       <img
         src={campaign.thumbnail}
         alt={campaign.title}
-        className="h-62 w-40 shrink-0 rounded-tl-xl rounded-bl-xl object-cover"
+        className="h-48 w-full shrink-0 rounded-t-xl object-cover lg:h-62 lg:w-40 lg:rounded-tl-xl lg:rounded-tr-none lg:rounded-bl-xl"
       />
       <div className="flex flex-1 flex-col gap-3 p-5">
-        <div className="flex flex-row items-start justify-between">
-          <h3 className="font-thai text-amalfidark text-3xl font-bold">
+        <div className="flex flex-row flex-wrap items-start justify-between gap-2">
+          <h3 className="font-thai text-amalfidark text-xl font-bold sm:text-2xl lg:text-3xl">
             {campaign.title}
           </h3>
-          <div className="flex flex-row items-center gap-2">
+          <div className="flex flex-row flex-wrap items-center gap-2">
             <span className="font-thai flex items-center gap-1 rounded-full bg-[#caf3d0] px-3 py-1 text-base font-medium text-[#519b5c]">
               {/** Status badge FLAGGED wrong status. Add a campaign that has a different status later*/}
               <span className="h-2 w-2 rounded-full bg-[#519b5c]" />
@@ -68,11 +68,11 @@ function CampaignCard({ campaign }: { campaign: CampaignItem }) {
             </span>
           </div>
         </div>
-        <div className="flex flex-row items-center gap-3">
+        <div className="flex flex-row flex-wrap items-center gap-3">
           <p className="font-thai text-lg font-bold text-black">
             {campaign.goal}
           </p>
-          <div className="flex flex-row gap-2">
+          <div className="flex flex-row flex-wrap gap-2">
             {campaign.platforms.map((platform) => {
               const badge = platformBadgeStyles[platform]
               return (
@@ -87,8 +87,8 @@ function CampaignCard({ campaign }: { campaign: CampaignItem }) {
             })}
           </div>
         </div>
-        <div className="flex flex-row items-center gap-4">
-          <div className="grid flex-1 grid-cols-5">
+        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+          <div className="grid flex-1 grid-cols-2 gap-y-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             <div>
               <p className="font-thai text-amalfidark text-base font-bold">
                 ยอดเข้าถึง
@@ -131,11 +131,11 @@ function CampaignCard({ campaign }: { campaign: CampaignItem }) {
           <img
             src={campaign.trendImage}
             alt=""
-            className="h-26.5 w-51 object-contain"
+            className="hidden h-26.5 w-51 shrink-0 object-contain sm:block"
           />
         </div>
       </div>
-      <div className="flex w-45 shrink-0 flex-col items-end justify-between border-l border-[#D9D9D9] p-5">
+      <div className="flex w-full shrink-0 flex-row items-center justify-between gap-4 border-t border-[#D9D9D9] p-5 lg:w-45 lg:flex-col lg:items-end lg:justify-between lg:border-t-0 lg:border-l">
         <Link
           to={`/campaign/${campaign.id}/report`}
           className="border-seadark bg-sealight-hover font-thai text-seadark-hover hover:bg-sealight-active flex items-center gap-1 rounded-[19px] border px-4 py-2 text-base font-semibold"
@@ -143,7 +143,7 @@ function CampaignCard({ campaign }: { campaign: CampaignItem }) {
           ดูรายงาน
           <ChevronRight className="h-4 w-4" />
         </Link>
-        <div className="flex flex-col items-end gap-4">
+        <div className="flex flex-row flex-wrap items-center gap-4 lg:flex-col lg:items-end">
           {campaign.status === 'active' ? (
             <button className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold">
               <Pause className="h-5 w-5" />
@@ -179,7 +179,9 @@ function Campaign() {
     <div className="min-h-full min-w-full py-10">
       {/** Header */}
       <div className="font-thai flex flex-col gap-2 font-semibold">
-        <h1 className="text-amalfidark text-4xl font-semibold">แคมเปญของฉัน</h1>
+        <h1 className="text-amalfidark text-2xl font-semibold sm:text-3xl lg:text-4xl">
+          แคมเปญของฉัน
+        </h1>
         <p className="text-lg font-semibold text-black">
           จัดการโฆษณาทั้งหมดของคุณ — AI ดูแลการเสนอราคา จัดสรรงบ
           และเพิ่มประสิทธิภาพให้อัตโนมัติ
@@ -190,7 +192,7 @@ function Campaign() {
       <div className="mt-6">
         <button
           onClick={() => navigate('/campaign/new')}
-          className="bg-citrus font-thai hover:bg-citrushover rounded-[19px] px-12 py-6 text-2xl font-semibold text-black shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:cursor-pointer hover:shadow-lg"
+          className="bg-citrus font-thai hover:bg-citrushover w-full rounded-[19px] px-12 py-6 text-2xl font-semibold text-black shadow-md transition-all duration-200 ease-in-out hover:scale-105 hover:cursor-pointer hover:shadow-lg sm:w-auto"
         >
           <img
             src={rocket}
@@ -202,8 +204,8 @@ function Campaign() {
       </div>
 
       {/** Stat cards */}
-      <div className="mt-8 flex flex-row items-stretch gap-5">
-        <div className="h-45 w-85 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+      <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="h-full min-h-45 w-full rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
           <div className="flex flex-row items-center p-4">
             <img
               src={rocket}
@@ -214,21 +216,21 @@ function Campaign() {
               แคมเปญที่กำลังทำงาน
             </h2>
           </div>
-          <p className="text-citrusdark px-4 text-3xl font-bold">
+          <p className="text-citrusdark px-4 text-2xl font-bold sm:text-3xl">
             {activeCampaigns}
           </p>
           <p className="font-thai mt-2 px-4 text-lg font-semibold text-black">
             จาก {totalCampaigns} แคมเปญทั้งหมด
           </p>
         </div>
-        <div className="w-85 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+        <div className="h-full min-h-45 w-full rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
           <div className="flex flex-row items-center p-4">
             <img src={cash} alt="Spend" className="mr-2 inline-block h-9 w-9" />
             <h2 className="font-thai text-amalfi text-2xl font-semibold">
               ใช้จ่ายรวมเดือนนี้
             </h2>
           </div>
-          <p className="text-citrusdark px-4 text-3xl font-bold">
+          <p className="text-citrusdark px-4 text-2xl font-bold sm:text-3xl">
             ฿{totalSpend.toLocaleString()}
           </p>
           <p className="font-thai mt-2 px-4 text-lg font-semibold text-black">
@@ -236,26 +238,26 @@ function Campaign() {
             {remainingBudget.toLocaleString()}
           </p>
         </div>
-        <div className="w-85 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+        <div className="h-full min-h-45 w-full rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
           <div className="flex flex-row items-center p-4">
             <ShoppingCart className="text-amalfi mr-2 inline-block h-9 w-9" />
             <h2 className="font-thai text-amalfi text-2xl font-semibold">
               ออเดอร์รวม
             </h2>
           </div>
-          <p className="text-citrusdark px-4 text-3xl font-bold">
+          <p className="text-citrusdark px-4 text-2xl font-bold sm:text-3xl">
             {totalOrders.toLocaleString()}
           </p>
           <p className="font-thai mt-2 px-4 text-lg font-semibold text-black">
             +{ordersDelta} จากเมื่อวาน
           </p>
         </div>
-        <div className="bg-amalfi w-85 rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+        <div className="bg-amalfi h-full min-h-45 w-full rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
           <div className="flex flex-row justify-between p-4">
             <h2 className="font-thai text-2xl font-semibold text-white">ROI</h2>
             <img src={starcircle} alt="ROI" className="inline-block h-9 w-9" />
           </div>
-          <p className="px-4 text-3xl font-bold text-white">
+          <p className="px-4 text-2xl font-bold text-white sm:text-3xl">
             {roi.toFixed(1)}x
           </p>
           <p className="font-thai mt-2 px-4 text-lg font-semibold text-white">
@@ -266,12 +268,12 @@ function Campaign() {
 
       {/** Filter tabs + search */}
       {/* TODO: wire up real filtering by campaign status once API is available */}
-      <div className="mt-8 flex flex-row items-center gap-3">
+      <div className="mt-8 flex flex-row items-center gap-3 overflow-x-auto">
         {filterTabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveFilter(tab.key)}
-            className={`font-thai rounded-[19px] px-5 py-2 text-base font-semibold transition-colors ${
+            className={`font-thai shrink-0 rounded-[19px] px-5 py-2 text-base font-semibold transition-colors ${
               activeFilter === tab.key
                 ? 'bg-seaactive hover:bg-seadark-hover text-white'
                 : 'bg-sealight-active text-seadark-hover hover:bg-sea'
@@ -299,7 +301,7 @@ function Campaign() {
       </div>
 
       {/** AI suggestion banner */}
-      <div className="border-seadark bg-sealight mt-8 flex flex-row items-start gap-4 rounded-[10px] border p-6">
+      <div className="border-seadark bg-sealight mt-8 flex flex-col items-start gap-4 rounded-[10px] border p-6 sm:flex-row">
         <div className="bg-citrus rounded-xl p-4 shadow-md">
           <img src={sparklebold} alt="Sparkle" className="h-8 w-8" />
         </div>

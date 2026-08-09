@@ -35,13 +35,15 @@ function MetricCard({
   caption: string
 }) {
   return (
-    <div className="w-64 rounded-xl border border-[#8E98A8] bg-white p-4 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+    <div className="w-full rounded-xl border border-[#8E98A8] bg-white p-4 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
       <div className="flex items-center gap-2">
         {icon}
         <h3 className="font-thai text-amalfi text-xl font-bold">{label}</h3>
       </div>
       <div className="mt-2 flex items-center gap-2">
-        <p className="text-citrusdark text-3xl font-bold">{value}</p>
+        <p className="text-citrusdark text-2xl font-bold sm:text-3xl">
+          {value}
+        </p>
         {trend && (
           <span className="flex items-center gap-1 text-sm font-medium text-[#519b5c]">
             <TrendingUp className="h-4 w-4" />
@@ -58,7 +60,7 @@ function MetricCard({
 
 function CreativeCard({ creative }: { creative: Creative }) {
   return (
-    <div className="w-57 overflow-hidden rounded-xl border border-[#8E98A8]">
+    <div className="w-full overflow-hidden rounded-xl border border-[#8E98A8]">
       <div className="relative">
         <img
           src={creative.image}
@@ -133,16 +135,16 @@ function CampaignReportView({
   return (
     <div className="min-h-full min-w-full py-10">
       {/** Header */}
-      <div className="flex flex-row items-center justify-between">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div className="font-thai flex flex-col gap-2 font-semibold">
-          <h1 className="text-amalfidark text-4xl font-bold">
+          <h1 className="text-amalfidark text-2xl font-bold sm:text-3xl lg:text-4xl">
             {campaign.title}
           </h1>
           <p className="text-base font-semibold text-black">
             {campaign.goal} · ระยะเวลา: เหลืออีก {campaign.daysRemaining} วัน
           </p>
         </div>
-        <div className="font-thai flex items-center gap-3 text-xl">
+        <div className="font-thai flex flex-wrap items-center gap-3 text-xl">
           <Link
             to={`/campaign/${campaign.id}/edit`}
             className="hover:text-amalfidark flex items-center gap-2 text-[#8E98A8] hover:cursor-pointer hover:font-semibold"
@@ -190,7 +192,7 @@ function CampaignReportView({
       </div>
 
       {/** Metric cards */}
-      <div className="mt-6 flex flex-row gap-5">
+      <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           icon={<Users className="text-amalfi h-8 w-8" />}
           label="ยอดเข้าถึง"
@@ -220,9 +222,9 @@ function CampaignReportView({
       </div>
 
       {/** Budget usage + ROI */}
-      <div className="mt-6 flex flex-row gap-5">
+      <div className="mt-6 flex flex-col gap-5 md:flex-row">
         <div className="flex-1 rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
-          <div className="flex flex-row items-center justify-between">
+          <div className="flex flex-row flex-wrap items-center justify-between gap-2">
             <h3 className="font-thai text-amalfidark text-2xl font-bold">
               การใช้งบประมาณ
             </h3>
@@ -245,9 +247,9 @@ function CampaignReportView({
             <span>เหลือเวลาอีก {campaign.daysRemaining} วัน</span>
           </div>
         </div>
-        <div className="bg-amalfihover w-96 rounded-xl p-5 text-white">
+        <div className="bg-amalfihover w-full rounded-xl p-5 text-white md:w-72 lg:w-96">
           <p className="font-thai text-xl">Return on Investment (ROI)</p>
-          <p className="mt-2 text-3xl font-bold">{campaign.roi}x</p>
+          <p className="mt-2 text-2xl font-bold sm:text-3xl">{campaign.roi}x</p>
           <p className="font-thai mt-3 text-base">
             เทียบกับมาตรฐาน {campaign.roiBenchmark}x ในกลุ่มเดียวกัน
           </p>
@@ -259,11 +261,11 @@ function CampaignReportView({
         <h3 className="font-thai text-amalfidark mb-4 text-xl font-bold">
           น้องดี AI สรุปแคมเปญนี้ให้
         </h3>
-        <div className="flex flex-row gap-4">
+        <div className="flex flex-col flex-wrap gap-4 sm:flex-row">
           {campaign.insights.map((insight, i) => (
             <div
               key={i}
-              className="border-seadark flex flex-1 gap-2 rounded-xl border bg-white p-3"
+              className="border-seadark flex min-w-40 flex-1 gap-2 rounded-xl border bg-white p-3 sm:min-w-55"
             >
               <span className="bg-sealight-active text-amalfidark flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-base font-bold">
                 {i + 1}
@@ -275,9 +277,9 @@ function CampaignReportView({
       </div>
 
       {/** Charts */}
-      <div className="mt-6 flex flex-row gap-5">
+      <div className="mt-6 flex flex-col gap-5 md:flex-row">
         <div className="flex-1 rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
-          <div className="flex flex-row items-center justify-between">
+          <div className="flex flex-row flex-wrap items-center justify-between gap-2">
             <div>
               <h3 className="font-thai text-amalfidark text-2xl font-bold">
                 แนวโน้มรายวัน
@@ -294,7 +296,7 @@ function CampaignReportView({
             className="mt-4 w-full"
           />
         </div>
-        <div className="w-96 rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+        <div className="w-full rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] md:w-72 lg:w-96">
           <h3 className="font-thai text-amalfidark text-2xl font-bold">
             ช่องทางที่ทำงาน
           </h3>
@@ -313,7 +315,7 @@ function CampaignReportView({
 
       {/** Creatives */}
       <div className="mt-6 rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
-        <div className="flex flex-row items-center justify-between">
+        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <h3 className="font-thai text-amalfidark text-2xl font-bold">
               ครีเอทีฟที่กำลังทำงาน
@@ -328,11 +330,11 @@ function CampaignReportView({
             สร้างครีเอทีฟใหม่
           </button>
         </div>
-        <div className="mt-5 flex flex-row gap-5">
+        <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {campaign.creatives.map((creative) => (
             <CreativeCard key={creative.rank} creative={creative} />
           ))}
-          <div className="h-69 w-57 rounded-xl border-2 border-dashed border-[#8E98A8] bg-[rgba(142,152,168,0.1)]" />
+          <div className="h-69 w-full rounded-xl border-2 border-dashed border-[#8E98A8] bg-[rgba(142,152,168,0.1)]" />
         </div>
       </div>
       <div className="h-24 w-full shrink-0"></div>

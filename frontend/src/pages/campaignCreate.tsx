@@ -50,7 +50,7 @@ function CampaignCreate() {
           <ChevronLeft className="text-amalfidark h-7 w-7" />
         </button>
         <div className="font-thai flex flex-col gap-1">
-          <h1 className="text-amalfidark text-4xl font-bold">
+          <h1 className="text-amalfidark text-2xl font-bold sm:text-3xl lg:text-4xl">
             สร้างแคมเปญใหม่
           </h1>
           <p className="text-lg font-semibold text-black">
@@ -64,7 +64,7 @@ function CampaignCreate() {
         <StepIndicator currentStep={1} />
       </div>
 
-      <div className="mt-6 flex items-start gap-5">
+      <div className="mt-6 flex flex-col items-start gap-5 md:flex-row">
         {/** Main prompt card */}
         <form
           onSubmit={handleSubmit}
@@ -130,7 +130,7 @@ function CampaignCreate() {
         </form>
 
         {/** Right column */}
-        <div className="flex w-97 shrink-0 flex-col gap-5">
+        <div className="flex w-full shrink-0 flex-col gap-5 md:w-72 lg:w-97">
           <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
             <h3 className="font-thai text-amalfidark text-2xl font-bold">
               น้องดีจะช่วยอะไรบ้าง

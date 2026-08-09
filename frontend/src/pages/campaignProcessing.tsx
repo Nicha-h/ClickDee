@@ -27,7 +27,7 @@ function CampaignProcessing() {
           <ChevronLeft className="text-amalfidark h-7 w-7" />
         </button>
         <div className="font-thai flex flex-col gap-1">
-          <h1 className="text-amalfidark text-4xl font-bold">
+          <h1 className="text-amalfidark text-2xl font-bold sm:text-3xl lg:text-4xl">
             AI กำลังคิดให้คุณอยู่...
           </h1>
           <p className="text-lg font-semibold text-black">
@@ -49,7 +49,7 @@ function CampaignProcessing() {
             <Sparkles className="h-14 w-14 animate-[spin_6s_linear_infinite] text-white" />
           </span>
         </div>
-        <h2 className="font-thai text-amalfidark mt-6 text-3xl font-bold">
+        <h2 className="font-thai text-amalfidark mt-6 text-xl font-bold sm:text-2xl lg:text-3xl">
           น้องดีกำลังคิดให้คุณอยู่...
         </h2>
         <p className="font-thai mt-2 text-xl text-[#8e98a8]">

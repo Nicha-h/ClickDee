@@ -68,7 +68,7 @@ function CampaignReview() {
         >
           <ChevronLeft className="text-amalfidark h-7 w-7" />
         </button>
-        <h1 className="font-thai text-amalfidark text-4xl font-bold">
+        <h1 className="font-thai text-amalfidark text-2xl font-bold sm:text-3xl lg:text-4xl">
           ตรวจสอบและเปิดตัวแคมเปญ
         </h1>
       </div>
@@ -77,9 +77,9 @@ function CampaignReview() {
         <StepIndicator currentStep={3} />
       </div>
 
-      <div className="mt-6 flex items-start gap-5">
+      <div className="mt-6 flex flex-col items-start gap-5 md:flex-row">
         {/** Left column */}
-        <div className="flex min-w-0 flex-1 flex-col gap-5">
+        <div className="flex w-full min-w-0 flex-1 flex-col gap-5">
           <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
             <h3 className="font-thai text-amalfidark text-2xl font-bold">
               บรีฟของคุณ
@@ -196,11 +196,11 @@ function CampaignReview() {
               3 ตัวอย่างพร้อมแคปชั่น — กด &apos;แก้ไข&apos; เพื่อแก้คำ หรือกด ✨
               บนการ์ดเพื่อสุ่มใบใหม่
             </p>
-            <div className="mt-4 flex gap-4">
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {creatives.map((creative) => (
                 <div
                   key={creative.rank}
-                  className="min-w-0 flex-1 overflow-hidden rounded-xl border border-[#8E98A8]"
+                  className="min-w-0 overflow-hidden rounded-xl border border-[#8E98A8]"
                 >
                   <img
                     src={creative.image}
@@ -226,7 +226,7 @@ function CampaignReview() {
         </div>
 
         {/** Right column */}
-        <div className="flex w-97 shrink-0 flex-col gap-5">
+        <div className="flex w-full shrink-0 flex-col gap-5 md:w-72 lg:w-97">
           <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
             <h3 className="font-thai text-amalfidark text-2xl font-bold">
               งบประมาณ
