@@ -1,13 +1,13 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import home from '@/assets/home.svg'
-import robot from '@/assets/robot.svg'
-import rocket from '@/assets/rocket.svg'
-import stats from '@/assets/stats.svg'
-import account from '@/assets/account.svg'
-import logout from '@/assets/logout.svg'
-import sparklebold from '@/assets/sparklebold.svg'
-import logo from '@/assets/logo.svg'
+import home from '@/assets/icons/home.svg'
+import robot from '@/assets/icons/robot.svg'
+import rocket from '@/assets/icons/rocket.svg'
+import stats from '@/assets/icons/stats.svg'
+import account from '@/assets/icons/account.svg'
+import logout from '@/assets/icons/logout.svg'
+import sparklebold from '@/assets/icons/sparklebold.svg'
+import logo from '@/assets/logos/logo.svg'
 import CreditPanel, { type CreditUsage } from '@/components/creditPanel'
 import Portal from '@/components/portal'
 {
@@ -61,7 +61,7 @@ function Navbar() {
         {/** logo */}
         <div className="bg-amalfi flex h-20 w-79 p-3 text-4xl">
           <NavLink
-            to="/"
+            to="/home"
             onClick={() => handleClick('home')}
             className="font-jakarta flex items-center justify-center gap-4 p-3 pt-5 text-4xl font-bold text-white"
           >
@@ -71,7 +71,7 @@ function Navbar() {
           {/** navigation btns */}
         </div>
         <NavLink
-          to="/"
+          to="/home"
           onClick={() => handleClick('home')}
           className={`mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 transition-colors duration-200 hover:-translate-x-0.5 ${
             activeButton === 'home'

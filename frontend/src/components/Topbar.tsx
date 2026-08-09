@@ -66,7 +66,7 @@ function Topbar() {
   }, [notifOpen])
 
   return (
-    <div className="sticky top-0 flex h-20 w-full flex-row items-center justify-end bg-white px-2">
+    <div className="sticky top-0 z-10 flex h-20 w-full shrink-0 flex-row items-center justify-end bg-white px-2">
       <div className="mr-11 flex flex-row items-center justify-end gap-10 pt-4">
         <div className="relative">
           <button
