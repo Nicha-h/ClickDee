@@ -250,26 +250,34 @@ function Ai() {
             />
           </button>
           <div
-            className={`bg-citrus-light-active overflow-x-clip rounded-[10px] transition-all duration-200 xl:overflow-y-scroll ${
+            className={`grid overflow-hidden transition-all duration-300 ease-in-out xl:mt-0 xl:grid-rows-[1fr] xl:overflow-visible xl:opacity-100 ${
               quickActionsOpen
-                ? 'mt-2 block w-full p-6 opacity-100 xl:mt-0 xl:w-105 xl:opacity-100'
-                : 'hidden w-full p-0 opacity-0 xl:block xl:w-0 xl:opacity-0'
+                ? 'mt-2 grid-rows-[1fr] opacity-100'
+                : 'grid-rows-[0fr] opacity-0'
             }`}
           >
-            <div className="border-citrusdark flex w-full items-center gap-2 border-b-2 pb-3 xl:w-91">
-              <Zap className="text-amalfidark h-6 w-6" />
-              <h2 className="font-thai text-amalfidark text-2xl font-bold">
-                Quick Actions
-              </h2>
-            </div>
-            <div className="mt-4 flex w-full flex-col gap-3 xl:w-91">
-              {quickActions.map((action) => (
-                <QuickActionCard
-                  key={action.id}
-                  action={action}
-                  onSelect={() => setInputValue(action.prompt)}
-                />
-              ))}
+            <div className="min-h-0">
+              <div
+                className={`bg-citrus-light-active overflow-x-clip rounded-[10px] transition-all duration-200 xl:overflow-y-scroll ${
+                  quickActionsOpen ? 'w-full p-6 xl:w-105' : 'w-full p-0 xl:w-0'
+                }`}
+              >
+                <div className="border-citrusdark flex w-full items-center gap-2 border-b-2 pb-3 xl:w-91">
+                  <Zap className="text-amalfidark h-6 w-6" />
+                  <h2 className="font-thai text-amalfidark text-2xl font-bold">
+                    Quick Actions
+                  </h2>
+                </div>
+                <div className="mt-4 flex w-full flex-col gap-3 xl:w-91">
+                  {quickActions.map((action) => (
+                    <QuickActionCard
+                      key={action.id}
+                      action={action}
+                      onSelect={() => setInputValue(action.prompt)}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
