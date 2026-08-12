@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import coffee from '@/assets/icons/coffee.svg'
 import rocket from '@/assets/icons/rocket.svg'
@@ -10,11 +10,12 @@ import click from '@/assets/icons/click.svg'
 import { ArrowRight, ChevronDown } from 'lucide-react'
 import rain from '@/assets/placeholders/campaign-rain-promo.png'
 import milo from '@/assets/placeholders/campaign-milo-promo.jpg'
-import trend1 from '@/assets/placeholders/trend1.png'
-import trend2 from '@/assets/placeholders/trend2.png'
 import sparklebold from '@/assets/icons/sparklebold.svg'
 import facebook from '@/assets/logos/facebook.svg'
-import salesChart from '@/assets/placeholders/home-sales-chart.png'
+import TrendChart from '@/components/trendChart'
+import type { TrendPoint } from '@/components/trendChart'
+import Sparkline from '@/components/sparkline'
+import { campaigns } from '@/data/campaigns'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import HomeSkeleton from '@/components/homeSkeleton'
 
@@ -23,6 +24,41 @@ const salesRangeOptions = [
   { value: 'monthly', label: 'รายเดือน' },
   { value: 'yearly', label: 'รายปี' },
 ]
+
+const salesDataByRange: Record<string, TrendPoint[]> = {
+  '7d': [
+    { label: '5 พ.ค.', sales: 14200 },
+    { label: '6 พ.ค.', sales: 15100 },
+    { label: '7 พ.ค.', sales: 16300 },
+    { label: '8 พ.ค.', sales: 15800 },
+    { label: '9 พ.ค.', sales: 17400 },
+    { label: '10 พ.ค.', sales: 18600 },
+    { label: '11 พ.ค.', sales: 19900 },
+  ],
+  monthly: [
+    { label: 'มิ.ย.', sales: 142000 },
+    { label: 'ก.ค.', sales: 151000 },
+    { label: 'ส.ค.', sales: 148000 },
+    { label: 'ก.ย.', sales: 159000 },
+    { label: 'ต.ค.', sales: 167000 },
+    { label: 'พ.ย.', sales: 178000 },
+    { label: 'ธ.ค.', sales: 192000 },
+    { label: 'ม.ค.', sales: 185000 },
+    { label: 'ก.พ.', sales: 197000 },
+    { label: 'มี.ค.', sales: 206000 },
+    { label: 'เม.ย.', sales: 214000 },
+    { label: 'พ.ค.', sales: 228000 },
+  ],
+  yearly: [
+    { label: '2022', sales: 1180000 },
+    { label: '2023', sales: 1450000 },
+    { label: '2024', sales: 1720000 },
+    { label: '2025', sales: 2050000 },
+    { label: '2026', sales: 2280000 },
+  ],
+}
+const rainPromoCampaign = campaigns.find((c) => c.id === 'rain-promo-2026')!
+const miloPromoCampaign = campaigns.find((c) => c.id === 'milo-promo-2026')!
 
 function Home() {
   const navigate = useNavigate()
@@ -42,6 +78,10 @@ function Home() {
   const [salesRange, setSalesRange] = useState(salesRangeOptions[0])
   const [isSalesRangeOpen, setIsSalesRangeOpen] = useState(false)
   const salesRangeRef = useRef<HTMLDivElement>(null)
+  const salesData = useMemo(
+    () => salesDataByRange[salesRange.value],
+    [salesRange.value],
+  )
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -91,15 +131,14 @@ function Home() {
           {/** AI Agent Status + time update */}
           <div className="font-thai -mt-4 flex w-full flex-row flex-wrap items-center justify-start gap-2 font-semibold">
             {/** AI Agent Status TODO: Make this relate to the real AI status [active/inactive/error] with relative colors*/}
-            <div className="text-amalfi flex items-center gap-2 rounded-full border-2 mt-2 border-black bg-white px-3 py-1 
-            text-xs whitespace-nowrap sm:px-4 sm:py-2 sm:text-sm lg:text-lg">
+            <div className="text-amalfi mt-2 flex items-center gap-2 rounded-full border-2 border-black bg-white px-3 py-1 text-xs whitespace-nowrap sm:px-4 sm:py-2 sm:text-sm lg:text-lg">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500"></span>
               </span>
               AI Agent · กำลังทำงาน
             </div>
-            <h2 className="text-xs mt-3 sm:ml-5 md:text-sm lg:text-base">
+            <h2 className="mt-3 text-xs sm:ml-5 md:text-sm lg:text-base">
               อัปเดทล่าสุด 2 ชั่วโมงที่แล้ว
             </h2>
           </div>
@@ -253,7 +292,14 @@ function Home() {
                 </h3>
               </div>
               <div className="ml-auto hidden flex-row items-center justify-end sm:flex">
-                <img src={trend1} alt="Trend1" className="h-15 w-50" />
+                <Sparkline
+                  data={rainPromoCampaign.dailyTrend.map((d) => ({
+                    label: d.date,
+                    value: d.reach,
+                  }))}
+                  label="ยอดเข้าถึงรายวัน"
+                  className="h-19 w-50"
+                />
               </div>
             </div>
             <div className="items-between mt-5 flex h-auto w-full flex-row justify-start rounded-xl border-2 border-[#8E98A8] px-4 py-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30 sm:h-60 sm:px-6">
@@ -271,14 +317,20 @@ function Home() {
                 </h3>
               </div>
               <div className="ml-auto hidden flex-row items-center justify-end sm:flex">
-                <img src={trend2} alt="Trend2" className="h-15 w-50" />
+                <Sparkline
+                  data={miloPromoCampaign.dailyTrend.map((d) => ({
+                    label: d.date,
+                    value: d.reach,
+                  }))}
+                  label="ยอดเข้าถึงรายวัน"
+                  className="h-19 w-50"
+                />
               </div>
             </div>
             <div className="flex h-full w-full flex-row items-center justify-start gap-5 overflow-x-auto"></div>
           </div>
 
           {/** Sales overview */}
-          {/* TODO: replace with a real sales chart once analytics data is available */}
           <div className="mt-8 w-full rounded-xl border-2 border-[#8E98A8] px-10 py-6 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
             <div className="flex flex-row flex-wrap items-center justify-between gap-3">
               <div>
@@ -317,7 +369,12 @@ function Home() {
                 )}
               </div>
             </div>
-            <img src={salesChart} alt="ภาพรวมยอดขาย" className="mt-4 w-full" />
+            <TrendChart
+              key={salesRange.value}
+              data={salesData}
+              series={[{ key: 'sales', label: 'ยอดขาย', color: '#1E59BC' }]}
+              valueFormatter={(v) => `฿${v.toLocaleString()}`}
+            />
           </div>
 
           {/** Connected channels */}

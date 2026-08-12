@@ -6,9 +6,13 @@ import click from '@/assets/icons/click.svg'
 import cash from '@/assets/icons/cash.svg'
 import increase from '@/assets/icons/increase.svg'
 import starcircle from '@/assets/icons/starcircle.svg'
-import overviewLineChart from '@/assets/placeholders/overview-line-chart.png'
-import overviewLineChartLegend from '@/assets/placeholders/overview-line-chart-legend.png'
 import DonutChart from '@/components/donutChart'
+import TrendChart from '@/components/trendChart'
+import {
+  indexToFirst,
+  reachVsSpendSeries,
+  percentFormatter,
+} from '@/components/trendChartUtils'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import OverviewSkeleton from '@/components/overviewSkeleton'
 
@@ -23,6 +27,17 @@ const ROI = 11.5
 const channelReach = [
   { key: 'facebook', label: 'Facebook', value: 5220, color: '#1877F2' },
 ]
+
+const dailyTrendRaw = [
+  { date: '5 พ.ค.', reach: 1420, spend: 1400 },
+  { date: '6 พ.ค.', reach: 1550, spend: 1500 },
+  { date: '7 พ.ค.', reach: 1680, spend: 1650 },
+  { date: '8 พ.ค.', reach: 1610, spend: 1750 },
+  { date: '9 พ.ค.', reach: 1890, spend: 1800 },
+  { date: '10 พ.ค.', reach: 2050, spend: 1950 },
+  { date: '11 พ.ค.', reach: 2250, spend: 2350 },
+]
+const dailyTrendIndexed = indexToFirst(dailyTrendRaw, ['reach', 'spend'])
 
 const audienceSegments = [
   { key: '18-24', label: '18–24 ปี', value: 2890, color: '#77BAFF' },
@@ -225,7 +240,6 @@ function Overview() {
 
       {/** Charts */}
       <div className="mt-6 flex flex-col gap-5 md:flex-row">
-        {/* TODO: replace with a real chart (reach/spend trend, channel split) once a charting library and live data are wired up */}
         <div className="flex-1 rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
           <div className="flex flex-row flex-wrap items-center justify-between gap-2">
             <div>
@@ -236,12 +250,11 @@ function Overview() {
                 การเข้าถึง vs. งบที่ใช้
               </p>
             </div>
-            <img src={overviewLineChartLegend} alt="" className="h-9" />
           </div>
-          <img
-            src={overviewLineChart}
-            alt="แนวโน้มรายวัน"
-            className="mt-4 w-full"
+          <TrendChart
+            data={dailyTrendIndexed}
+            series={reachVsSpendSeries}
+            valueFormatter={percentFormatter}
           />
         </div>
         <div className="w-full rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] md:w-72 lg:w-96">
