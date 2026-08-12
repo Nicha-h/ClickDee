@@ -2,15 +2,11 @@ import facebook from '@/assets/logos/facebook.svg'
 import campaignRainPromo from '@/assets/placeholders/campaign-rain-promo.png'
 import campaignMiloPromo from '@/assets/placeholders/campaign-milo-promo.jpg'
 import campaignLattePromo from '@/assets/placeholders/campaign-latte-promo.jpg'
-import campaignTrend1 from '@/assets/placeholders/campaign-trend-1.png'
-import campaignTrend2 from '@/assets/placeholders/campaign-trend-2.png'
-import campaignReportLineChart from '@/assets/placeholders/campaign-report-line-chart.png'
-import campaignReportLineChartLegend from '@/assets/placeholders/campaign-report-line-chart-legend.png'
 import campaignReportCreative1 from '@/assets/placeholders/campaign-report-creative-1.jpg'
 import campaignReportCreative2 from '@/assets/placeholders/campaign-report-creative-2.jpg'
 import campaignReportCreative3 from '@/assets/placeholders/campaign-report-creative-3.jpg'
 
-export type CampaignStatus = 'active' | 'paused'
+export type CampaignStatus = 'active' | 'paused' | 'ended'
 export type Platform = 'facebook'
 
 export type Creative = {
@@ -27,10 +23,15 @@ export type ChannelReach = {
   reach: number
 }
 
+export type DailyTrendPoint = {
+  date: string
+  reach: number
+  spend: number
+}
+
 export type CampaignItem = {
   id: string
   thumbnail: string
-  trendImage: string
   title: string
   goal: string
   status: CampaignStatus
@@ -48,8 +49,7 @@ export type CampaignItem = {
   dailyAvgSpend: number
   roiBenchmark: number
   insights: [string, string, string]
-  lineChartImage: string
-  lineChartLegendImage: string
+  dailyTrend: DailyTrendPoint[]
   channelReach: ChannelReach[]
   creatives: Creative[]
 }
@@ -61,7 +61,6 @@ export const campaigns: CampaignItem[] = [
   {
     id: 'rain-promo-2026',
     thumbnail: campaignRainPromo,
-    trendImage: campaignTrend1,
     title: 'โปรหน้าฝน 2026 ลด 20%',
     goal: 'เป้าหมาย: เพิ่มยอดขาย',
     status: 'active',
@@ -82,8 +81,15 @@ export const campaigns: CampaignItem[] = [
       'งบเหลือ 48% AI กำลังจัดสรรอย่างมีประสิทธิภาพ',
       'ครีเอทีฟ #2 มี Engagement สูงกว่าใบอื่น 28% — AI กำลังเพิ่มสัดส่วนการแสดงผลให้อัตโนมัติ',
     ],
-    lineChartImage: campaignReportLineChart,
-    lineChartLegendImage: campaignReportLineChartLegend,
+    dailyTrend: [
+      { date: '5 พ.ค.', reach: 2800, spend: 380 },
+      { date: '6 พ.ค.', reach: 3200, spend: 410 },
+      { date: '7 พ.ค.', reach: 3550, spend: 430 },
+      { date: '8 พ.ค.', reach: 3900, spend: 460 },
+      { date: '9 พ.ค.', reach: 4300, spend: 470 },
+      { date: '10 พ.ค.', reach: 4750, spend: 480 },
+      { date: '11 พ.ค.', reach: 5100, spend: 490 },
+    ],
     channelReach: [{ platform: 'facebook', reach: 18000 }],
     creatives: [
       {
@@ -115,7 +121,6 @@ export const campaigns: CampaignItem[] = [
   {
     id: 'milo-promo-2026',
     thumbnail: campaignMiloPromo,
-    trendImage: campaignTrend2,
     title: 'โปรไมโล 2026 ลด 60%',
     goal: 'เป้าหมาย: ระบายสต็อก',
     status: 'paused',
@@ -136,8 +141,15 @@ export const campaigns: CampaignItem[] = [
       'งบเหลือ 9% ใกล้หมด AI แนะนำให้ตัดสินใจเติมงบหรือปิดแคมเปญเร็วๆ นี้',
       'ครีเอทีฟ #1 มี Engagement สูงกว่าใบอื่น 40% — AI กำลังเพิ่มสัดส่วนการแสดงผลให้อัตโนมัติ',
     ],
-    lineChartImage: campaignReportLineChart,
-    lineChartLegendImage: campaignReportLineChartLegend,
+    dailyTrend: [
+      { date: '5 พ.ค.', reach: 6200, spend: 700 },
+      { date: '6 พ.ค.', reach: 8100, spend: 950 },
+      { date: '7 พ.ค.', reach: 9800, spend: 1150 },
+      { date: '8 พ.ค.', reach: 11400, spend: 1300 },
+      { date: '9 พ.ค.', reach: 9600, spend: 1200 },
+      { date: '10 พ.ค.', reach: 8700, spend: 1000 },
+      { date: '11 พ.ค.', reach: 8100, spend: 950 },
+    ],
     channelReach: [{ platform: 'facebook', reach: 27700 }],
     creatives: [
       {
@@ -169,10 +181,9 @@ export const campaigns: CampaignItem[] = [
   {
     id: 'latte-caramel-2026',
     thumbnail: campaignLattePromo,
-    trendImage: campaignTrend2,
     title: 'ลาเต้คาราเมล เมนูใหม่',
     goal: 'เป้าหมาย: ทดสอบครีเอทีฟใหม่ (A/B Test)',
-    status: 'active',
+    status: 'ended',
     daysRemaining: 5,
     platforms: ['facebook'],
     reach: 64200,
@@ -190,8 +201,15 @@ export const campaigns: CampaignItem[] = [
       'งบเหลือ 9% ใกล้หมด AI แนะนำให้ตัดสินใจเติมงบหรือปิดแคมเปญเร็วๆ นี้',
       'ครีเอทีฟ #1 มี Engagement สูงกว่าใบอื่น 40% — AI กำลังเพิ่มสัดส่วนการแสดงผลให้อัตโนมัติ',
     ],
-    lineChartImage: campaignReportLineChart,
-    lineChartLegendImage: campaignReportLineChartLegend,
+    dailyTrend: [
+      { date: '5 พ.ค.', reach: 7200, spend: 900 },
+      { date: '6 พ.ค.', reach: 5400, spend: 650 },
+      { date: '7 พ.ค.', reach: 8900, spend: 1150 },
+      { date: '8 พ.ค.', reach: 6100, spend: 800 },
+      { date: '9 พ.ค.', reach: 9600, spend: 1300 },
+      { date: '10 พ.ค.', reach: 7800, spend: 1000 },
+      { date: '11 พ.ค.', reach: 10400, spend: 1450 },
+    ],
     channelReach: [{ platform: 'facebook', reach: 27700 }],
     creatives: [
       {
