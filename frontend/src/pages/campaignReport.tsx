@@ -14,6 +14,12 @@ import {
 } from 'lucide-react'
 import cash from '@/assets/icons/cash.svg'
 import DonutChart from '@/components/donutChart'
+import TrendChart from '@/components/trendChart'
+import {
+  indexToFirst,
+  reachVsSpendSeries,
+  percentFormatter,
+} from '@/components/trendChartUtils'
 import { campaigns, platformBadgeStyles } from '@/data/campaigns'
 import type { Creative } from '@/data/campaigns'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
@@ -130,7 +136,9 @@ function CampaignReportView({
   campaign: (typeof campaigns)[number]
   budgetPct: number
 }) {
-  const [status, setStatus] = useState<ReportStatus>(campaign.status)
+  const [status, setStatus] = useState<ReportStatus>(
+    campaign.status === 'ended' ? 'stopped' : campaign.status,
+  )
 
   return (
     <div className="min-h-full min-w-full py-10">
@@ -141,7 +149,9 @@ function CampaignReportView({
             {campaign.title}
           </h1>
           <p className="text-base font-semibold text-black">
-            {campaign.goal} · ระยะเวลา: เหลืออีก {campaign.daysRemaining} วัน
+            {campaign.goal}
+            {status !== 'stopped' &&
+              ` · ระยะเวลา: เหลืออีก ${campaign.daysRemaining} วัน`}
           </p>
         </div>
         <div className="font-thai flex flex-wrap items-center gap-3 text-xl">
@@ -288,12 +298,11 @@ function CampaignReportView({
                 การเข้าถึง vs. งบที่ใช้
               </p>
             </div>
-            <img src={campaign.lineChartLegendImage} alt="" className="h-9" />
           </div>
-          <img
-            src={campaign.lineChartImage}
-            alt="แนวโน้มรายวัน"
-            className="mt-4 w-full"
+          <TrendChart
+            data={indexToFirst(campaign.dailyTrend, ['reach', 'spend'])}
+            series={reachVsSpendSeries}
+            valueFormatter={percentFormatter}
           />
         </div>
         <div className="w-full rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] md:w-72 lg:w-96">

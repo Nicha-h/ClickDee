@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import useEmblaCarousel from 'embla-carousel-react'
 import {
   ShoppingCart,
   Search,
@@ -17,6 +18,7 @@ import { campaigns, platformBadgeStyles } from '@/data/campaigns'
 import type { CampaignItem } from '@/data/campaigns'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import CampaignSkeleton from '@/components/campaignSkeleton'
+import Sparkline from '@/components/sparkline'
 
 {
   /** Summary data PLACEHOLDER*/
@@ -30,20 +32,56 @@ const totalOrders = 2462
 const ordersDelta = 184
 const roi = 11.5
 
+const aiSuggestionPrompt =
+  'สร้างแคมเปญ "เครื่องดื่มร้อนช่วงฝนตก" ฝนกำลังจะตกใน 3 วันข้างหน้า งบเริ่มต้น 200 บาท/วัน'
+
 type FilterTab = { key: string; label: string; count: number }
 
-{
-  /** Filter tabs PLACEHOLDER fix this to reflect actual filter logic */
-}
 const filterTabs: FilterTab[] = [
-  { key: 'all', label: 'ทั้งหมด', count: 12 },
-  { key: 'active', label: 'กำลังทำงาน', count: 8 },
-  { key: 'paused', label: 'หยุดชั่วคราว', count: 4 },
-  { key: 'draft', label: 'ฉบับร่าง', count: 1 },
-  { key: 'ended', label: 'สิ้นสุดแล้ว', count: 1 },
+  { key: 'all', label: 'ทั้งหมด', count: campaigns.length },
+  {
+    key: 'active',
+    label: 'กำลังทำงาน',
+    count: campaigns.filter((c) => c.status === 'active').length,
+  },
+  {
+    key: 'paused',
+    label: 'หยุดชั่วคราว',
+    count: campaigns.filter((c) => c.status === 'paused').length,
+  },
+  {
+    key: 'ended',
+    label: 'สิ้นสุดแล้ว',
+    count: campaigns.filter((c) => c.status === 'ended').length,
+  },
 ]
 
+const statusBadgeStyles: Record<
+  CampaignItem['status'],
+  { bg: string; textColor: string; dotColor: string; label: string }
+> = {
+  active: {
+    bg: 'bg-[#caf3d0]',
+    textColor: 'text-[#519b5c]',
+    dotColor: 'bg-[#519b5c]',
+    label: 'กำลังทำงาน',
+  },
+  paused: {
+    bg: 'bg-citrus-light-active',
+    textColor: 'text-citrusdark',
+    dotColor: 'bg-citrusdark',
+    label: 'หยุดชั่วคราว',
+  },
+  ended: {
+    bg: 'bg-[#E5E7EB]',
+    textColor: 'text-[#6B7280]',
+    dotColor: 'bg-[#6B7280]',
+    label: 'สิ้นสุดแล้ว',
+  },
+}
+
 function CampaignCard({ campaign }: { campaign: CampaignItem }) {
+  const statusBadge = statusBadgeStyles[campaign.status]
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border border-[#8E98A8] lg:shrink-0 lg:flex-row">
       <img
@@ -57,15 +95,20 @@ function CampaignCard({ campaign }: { campaign: CampaignItem }) {
             {campaign.title}
           </h3>
           <div className="flex flex-row flex-wrap items-center gap-2">
-            <span className="font-thai flex items-center gap-1 rounded-full bg-[#caf3d0] px-3 py-1 text-base font-medium text-[#519b5c]">
-              {/** Status badge FLAGGED wrong status. Add a campaign that has a different status later*/}
-              <span className="h-2 w-2 rounded-full bg-[#519b5c]" />
-              กำลังทำงาน
+            <span
+              className={`font-thai flex items-center gap-1 rounded-full px-3 py-1 text-base font-medium ${statusBadge.bg} ${statusBadge.textColor}`}
+            >
+              <span
+                className={`h-2 w-2 rounded-full ${statusBadge.dotColor}`}
+              />
+              {statusBadge.label}
             </span>
-            <span className="font-thai text-citrusdark flex items-center gap-1 text-lg font-medium">
-              <Clock className="h-4 w-4" />
-              เหลือ {campaign.daysRemaining} วัน
-            </span>
+            {campaign.status !== 'ended' && (
+              <span className="font-thai text-citrusdark flex items-center gap-1 text-lg font-medium">
+                <Clock className="h-4 w-4" />
+                เหลือ {campaign.daysRemaining} วัน
+              </span>
+            )}
           </div>
         </div>
         <div className="flex flex-row flex-wrap items-center gap-3">
@@ -128,10 +171,13 @@ function CampaignCard({ campaign }: { campaign: CampaignItem }) {
               </p>
             </div>
           </div>
-          <img
-            src={campaign.trendImage}
-            alt=""
-            className="hidden h-26.5 w-51 shrink-0 object-contain sm:block"
+          <Sparkline
+            data={campaign.dailyTrend.map((d) => ({
+              label: d.date,
+              value: d.reach,
+            }))}
+            label="ยอดเข้าถึงรายวัน"
+            className="hidden h-30 w-51 shrink-0 sm:block"
           />
         </div>
       </div>
@@ -144,12 +190,13 @@ function CampaignCard({ campaign }: { campaign: CampaignItem }) {
           <ChevronRight className="h-4 w-4" />
         </Link>
         <div className="flex flex-row flex-wrap items-center gap-4 lg:flex-col lg:items-end">
-          {campaign.status === 'active' ? (
+          {campaign.status === 'active' && (
             <button className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold">
               <Pause className="h-5 w-5" />
               หยุดชั่วคราว
             </button>
-          ) : (
+          )}
+          {campaign.status === 'paused' && (
             <button className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold">
               <Play className="h-5 w-5" />
               เริ่มแคมเปญ
@@ -171,9 +218,24 @@ function CampaignCard({ campaign }: { campaign: CampaignItem }) {
 function Campaign() {
   const navigate = useNavigate()
   const [activeFilter, setActiveFilter] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
   const isLoading = useSimulatedLoading()
+  const [filterTabsRef] = useEmblaCarousel({
+    axis: 'x',
+    dragFree: true,
+    containScroll: 'trimSnaps',
+  })
 
   if (isLoading) return <CampaignSkeleton />
+
+  const filteredCampaigns = campaigns.filter((campaign) => {
+    const matchesStatus =
+      activeFilter === 'all' || campaign.status === activeFilter
+    const matchesSearch = campaign.title
+      .toLowerCase()
+      .includes(searchQuery.trim().toLowerCase())
+    return matchesStatus && matchesSearch
+  })
 
   return (
     <div className="min-h-full min-w-full py-10">
@@ -267,27 +329,32 @@ function Campaign() {
       </div>
 
       {/** Filter tabs + search */}
-      {/* TODO: wire up real filtering by campaign status once API is available */}
-      <div className="mt-8 flex flex-row items-center gap-3 overflow-x-auto">
-        {filterTabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveFilter(tab.key)}
-            className={`font-thai shrink-0 rounded-[19px] px-5 py-2 text-base font-semibold transition-colors ${
-              activeFilter === tab.key
-                ? 'bg-seaactive hover:bg-seadark-hover text-white'
-                : 'bg-sealight-active text-seadark-hover hover:bg-sea'
-            } transition-all hover:cursor-pointer hover:shadow-md`}
-          >
-            {tab.label} ({tab.count})
-          </button>
-        ))}
+      <div
+        ref={filterTabsRef}
+        className="mt-8 cursor-grab overflow-hidden active:cursor-grabbing"
+      >
+        <div className="flex flex-row items-center gap-3">
+          {filterTabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveFilter(tab.key)}
+              className={`font-thai shrink-0 rounded-[19px] px-5 py-2 text-base font-semibold transition-colors ${
+                activeFilter === tab.key
+                  ? 'bg-seaactive hover:bg-seadark-hover text-white'
+                  : 'bg-sealight-active text-seadark-hover hover:bg-sea'
+              } transition-all hover:cursor-pointer hover:shadow-md`}
+            >
+              {tab.label} ({tab.count})
+            </button>
+          ))}
+        </div>
       </div>
-      {/* TODO: implement real search against campaign list */}
       <div className="border-seadark mt-4 flex w-full flex-row items-center justify-around gap-2 rounded-[19px] border-2 px-4 py-2">
         <Search className="text-seadark h-5 w-5" />
         <input
           type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="ค้นหาแคมเปญ..."
           className="font-thai flex-1 text-lg outline-none"
         />
@@ -295,9 +362,15 @@ function Campaign() {
 
       {/** Campaign list */}
       <div className="mt-8 flex flex-col gap-6">
-        {campaigns.map((campaign) => (
-          <CampaignCard key={campaign.id} campaign={campaign} />
-        ))}
+        {filteredCampaigns.length > 0 ? (
+          filteredCampaigns.map((campaign) => (
+            <CampaignCard key={campaign.id} campaign={campaign} />
+          ))
+        ) : (
+          <p className="font-thai py-10 text-center text-lg text-black">
+            ไม่พบแคมเปญที่ตรงกับตัวกรอง
+          </p>
+        )}
       </div>
 
       {/** AI suggestion banner */}
@@ -319,7 +392,12 @@ function Campaign() {
           </p>
         </div>
 
-        <button className="bg-amalfihover font-thai hover:bg-amalfiactive flex shrink-0 items-center gap-1 rounded-[19px] px-6 py-2 text-lg font-semibold text-white transition-all duration-200 ease-in-out hover:scale-105 hover:cursor-pointer hover:shadow-lg">
+        <button
+          onClick={() =>
+            navigate('/campaign/new', { state: { prompt: aiSuggestionPrompt } })
+          }
+          className="bg-amalfihover font-thai hover:bg-amalfiactive flex shrink-0 items-center gap-1 rounded-[19px] px-6 py-2 text-lg font-semibold text-white transition-all duration-200 ease-in-out hover:scale-105 hover:cursor-pointer hover:shadow-lg"
+        >
           สร้างเลย
           <ChevronRight className="h-4 w-4" />
         </button>
