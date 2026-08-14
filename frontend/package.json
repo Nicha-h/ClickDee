@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "generate:api": "orval --config orval.config.ts"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.3",
