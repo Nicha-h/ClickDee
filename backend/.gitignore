@@ -28,6 +28,8 @@ lerna-debug.log*
 .DS_Store
 
 /src/generated/prisma
+/dist
+tsconfig.tsbuildinfo
 
 #packagelog
 package-lock.json
