@@ -6,8 +6,10 @@ type ConfirmDialogProps = {
   message: string
   confirmLabel?: string
   cancelLabel?: string
+  confirmDisabled?: boolean
   onConfirm: () => void
   onCancel: () => void
+  children?: React.ReactNode
 }
 
 function ConfirmDialog({
@@ -16,8 +18,10 @@ function ConfirmDialog({
   message,
   confirmLabel = 'ยืนยัน',
   cancelLabel = 'ยกเลิก',
+  confirmDisabled = false,
   onConfirm,
   onCancel,
+  children,
 }: ConfirmDialogProps) {
   if (!open) return null
 
@@ -38,7 +42,8 @@ function ConfirmDialog({
           <p className="font-thai mb-6 text-base font-medium text-[#1F2937]">
             {message}
           </p>
-          <div className="flex justify-end gap-3">
+          {children}
+          <div className="mt-6 flex justify-end gap-3">
             <button
               type="button"
               onClick={onCancel}
@@ -49,7 +54,8 @@ function ConfirmDialog({
             <button
               type="button"
               onClick={onConfirm}
-              className="font-thai rounded-xl bg-[#E07070] px-5 py-2.5 text-base font-medium text-white hover:bg-[#c85050]"
+              disabled={confirmDisabled}
+              className="font-thai rounded-xl bg-[#E07070] px-5 py-2.5 text-base font-medium text-white hover:bg-[#c85050] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#E07070]"
             >
               {confirmLabel}
             </button>

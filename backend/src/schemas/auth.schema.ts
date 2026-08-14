@@ -44,4 +44,12 @@ export const UserSchema = z
   })
   .openapi('User')
 
+export const DeleteAccountParamSchema = z.object({
+  id: z.string().openapi({ param: { name: 'id', in: 'path' } }),
+})
+
+export const DeleteAccountSchema = z
+  .object({ password: z.string().min(1) })
+  .openapi('DeleteAccountInput')
+
 export type SignupInput = z.infer<typeof SignupSchema>

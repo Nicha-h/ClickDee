@@ -10,6 +10,7 @@ import sparklebold from '@/assets/icons/sparklebold.svg'
 import logo from '@/assets/logos/logo.svg'
 import CreditPanel, { type CreditUsage } from '@/components/creditPanel'
 import Portal from '@/components/portal'
+import { clearUserId } from '@/lib/userId'
 {
   /* placeholder for AI token management */
 }
@@ -189,7 +190,10 @@ function Navbar({ open, onClose }: { open: boolean; onClose: () => void }) {
           {/** logout btn */}
           <NavLink
             to="/login"
-            onClick={() => handleClick('logout')}
+            onClick={() => {
+              clearUserId()
+              handleClick('logout')
+            }}
             className={`font-thai mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 text-xl text-white transition-transform duration-200 hover:-translate-x-0.5`}
           >
             <div className="flex items-center gap-6 pt-5">

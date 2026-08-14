@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ChevronRight, Trash2 } from 'lucide-react'
 import Toggle from '@/components/toggle'
 import ConfirmDialog from '@/components/confirmDialog'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import SettingSkeleton from '@/components/settingSkeleton'
+import { deleteApiAuthAccountId } from '@/api/generated/client'
+import { clearUserId, getUserId } from '@/lib/userId'
 
 type PlanKey = 'free' | 'starter' | 'pro'
 
@@ -63,17 +65,49 @@ function Setting() {
   })
   const [language, setLanguage] = useState('th')
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const isLoading = useSimulatedLoading()
+  const navigate = useNavigate()
 
   const toggleNotify = (key: NotifyKey, checked: boolean) => {
     setNotifySettings((prev) => ({ ...prev, [key]: checked }))
   }
 
-  // TODO: create logout functionality
-  const logout = () => {}
+  const closeDeleteDialog = () => {
+    setConfirmDeleteOpen(false)
+    setDeletePassword('')
+    setDeleteError(null)
+  }
 
-  // TODO: create delete account functionality
-  const deleteAccount = () => {}
+  const logout = () => {
+    clearUserId()
+    navigate('/login')
+  }
+
+  const deleteAccount = async () => {
+    const id = getUserId()
+    if (!id) {
+      navigate('/login')
+      return
+    }
+    setIsDeleting(true)
+    setDeleteError(null)
+    try {
+      const res = await deleteApiAuthAccountId(id, { password: deletePassword })
+      if (res.status === 401) {
+        setDeleteError('รหัสผ่านไม่ถูกต้อง')
+        return
+      }
+      clearUserId()
+      navigate('/login')
+    } catch {
+      setDeleteError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   if (isLoading) return <SettingSkeleton />
 
@@ -189,7 +223,11 @@ function Setting() {
           </Link>
           <button
             type="button"
-            onClick={() => setConfirmDeleteOpen(true)}
+            onClick={() => {
+              setDeletePassword('')
+              setDeleteError(null)
+              setConfirmDeleteOpen(true)
+            }}
             className="font-thai flex items-center gap-2 border-b border-[#F0ECF7] py-4 text-left text-lg font-bold text-[#E07070] last:border-b-0 hover:text-[#c85050]"
           >
             <Trash2 className="h-5 w-5" />
@@ -209,14 +247,32 @@ function Setting() {
         open={confirmDeleteOpen}
         title="ยืนยันการลบบัญชี"
         message="คุณแน่ใจหรือไม่ว่าต้องการลบบัญชีนี้ การดำเนินการนี้ไม่สามารถย้อนกลับได้"
-        confirmLabel="ลบบัญชี"
+        confirmLabel={isDeleting ? 'กำลังลบบัญชี...' : 'ลบบัญชี'}
         cancelLabel="ยกเลิก"
-        onCancel={() => setConfirmDeleteOpen(false)}
-        onConfirm={() => {
-          deleteAccount()
-          setConfirmDeleteOpen(false)
-        }}
-      />
+        confirmDisabled={!deletePassword || isDeleting}
+        onCancel={closeDeleteDialog}
+        onConfirm={deleteAccount}
+      >
+        <div className="flex flex-col gap-2">
+          <label
+            htmlFor="delete-account-password"
+            className="font-thai text-amalfidark text-base font-medium"
+          >
+            กรอกรหัสผ่านเพื่อยืนยัน
+          </label>
+          <input
+            id="delete-account-password"
+            type="password"
+            value={deletePassword}
+            onChange={(e) => setDeletePassword(e.target.value)}
+            placeholder="รหัสผ่านของคุณ"
+            className="font-thai border-amalfilight-hover text-amalfidark focus:border-amalfi h-12 w-full rounded-xl border-[1.5px] px-4 text-base placeholder:text-[#8E98A8] focus:outline-none"
+          />
+          {deleteError && (
+            <p className="font-thai text-sm text-red-500">{deleteError}</p>
+          )}
+        </div>
+      </ConfirmDialog>
 
       <div className="h-10 w-full shrink-0" />
     </div>

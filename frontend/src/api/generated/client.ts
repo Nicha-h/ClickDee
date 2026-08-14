@@ -125,6 +125,11 @@ export interface LoginInput {
   password: string;
 }
 
+export interface DeleteAccountInput {
+  /** @minLength 1 */
+  password: string;
+}
+
 export type AiMessageRole = typeof AiMessageRole[keyof typeof AiMessageRole];
 
 
@@ -423,6 +428,59 @@ export const postApiAuthLogin = async (loginInput?: LoginInput, options?: Reques
 
   const data: postApiAuthLoginResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiAuthLoginResponse
+}
+
+
+
+export type deleteApiAuthAccountIdResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteApiAuthAccountIdResponse401 = {
+  data: Error
+  status: 401
+}
+
+export type deleteApiAuthAccountIdResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type deleteApiAuthAccountIdResponseSuccess = (deleteApiAuthAccountIdResponse204) & {
+  headers: Headers;
+};
+export type deleteApiAuthAccountIdResponseError = (deleteApiAuthAccountIdResponse401 | deleteApiAuthAccountIdResponse404) & {
+  headers: Headers;
+};
+
+export type deleteApiAuthAccountIdResponse = (deleteApiAuthAccountIdResponseSuccess | deleteApiAuthAccountIdResponseError)
+
+export const getDeleteApiAuthAccountIdUrl = (id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/auth/account/${id}`
+}
+
+export const deleteApiAuthAccountId = async (id: string,
+    deleteAccountInput?: DeleteAccountInput, options?: RequestInit): Promise<deleteApiAuthAccountIdResponse> => {
+
+  const res = await fetch(getDeleteApiAuthAccountIdUrl(id),
+  {
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(deleteAccountInput)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteApiAuthAccountIdResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as deleteApiAuthAccountIdResponse
 }
 
 

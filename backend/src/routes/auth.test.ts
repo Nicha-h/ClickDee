@@ -24,6 +24,8 @@ const { sampleUser } = vi.hoisted(() => ({
 vi.mock('../services/user.service.js', () => ({
   findUserByEmail: vi.fn().mockResolvedValue(null),
   createUser: vi.fn().mockResolvedValue(sampleUser),
+  findUserById: vi.fn().mockResolvedValue(null),
+  deleteUser: vi.fn().mockResolvedValue(sampleUser),
 }))
 
 vi.mock('../lib/password.js', () => ({
@@ -110,5 +112,40 @@ describe('POST /api/auth/login', () => {
       }),
     })
     expect(res.status).toBe(401)
+  })
+})
+
+describe('DELETE /api/auth/account/:id', () => {
+  it('deletes the account with the correct password', async () => {
+    vi.mocked(userService.findUserById).mockResolvedValueOnce(sampleUser)
+    vi.mocked(passwordLib.verifyPassword).mockResolvedValueOnce(true)
+    const res = await app.request('/api/auth/account/user-1', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: 'password123' }),
+    })
+    expect(res.status).toBe(204)
+    expect(userService.deleteUser).toHaveBeenCalledWith('user-1')
+  })
+
+  it('returns 401 for a wrong password', async () => {
+    vi.mocked(userService.findUserById).mockResolvedValueOnce(sampleUser)
+    vi.mocked(passwordLib.verifyPassword).mockResolvedValueOnce(false)
+    const res = await app.request('/api/auth/account/user-1', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: 'wrong-password' }),
+    })
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 404 for an unknown user', async () => {
+    vi.mocked(userService.findUserById).mockResolvedValueOnce(null)
+    const res = await app.request('/api/auth/account/nobody', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: 'password123' }),
+    })
+    expect(res.status).toBe(404)
   })
 })

@@ -1,5 +1,11 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
-import { LoginSchema, SignupSchema, UserSchema } from '../schemas/auth.schema.js'
+import {
+  DeleteAccountParamSchema,
+  DeleteAccountSchema,
+  LoginSchema,
+  SignupSchema,
+  UserSchema,
+} from '../schemas/auth.schema.js'
 import * as userService from '../services/user.service.js'
 import { verifyPassword } from '../lib/password.js'
 import { Prisma } from '../generated/prisma/client.js'
@@ -91,4 +97,42 @@ authApp.openapi(loginRoute, async (c) => {
     return c.json({ message: 'Invalid email or password' }, 401)
   }
   return c.json(serializeUser(user), 200)
+})
+
+const deleteAccountRoute = createRoute({
+  method: 'delete',
+  path: '/account/{id}',
+  tags: ['Auth'],
+  request: {
+    params: DeleteAccountParamSchema,
+    body: {
+      content: { 'application/json': { schema: DeleteAccountSchema } },
+    },
+  },
+  responses: {
+    204: {
+      description: 'Account deleted',
+    },
+    401: {
+      content: { 'application/json': { schema: ErrorSchema } },
+      description: 'Invalid password',
+    },
+    404: {
+      content: { 'application/json': { schema: ErrorSchema } },
+      description: 'User not found',
+    },
+  },
+})
+authApp.openapi(deleteAccountRoute, async (c) => {
+  const { id } = c.req.valid('param')
+  const { password } = c.req.valid('json')
+  const user = await userService.findUserById(id)
+  if (!user) {
+    return c.json({ message: 'User not found' }, 404)
+  }
+  if (!(await verifyPassword(password, user.passwordHash))) {
+    return c.json({ message: 'Invalid password' }, 401)
+  }
+  await userService.deleteUser(id)
+  return c.body(null, 204)
 })
