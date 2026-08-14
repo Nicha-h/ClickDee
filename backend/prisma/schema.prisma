@@ -31,3 +31,56 @@ model Campaign {
 
   @@map("campaigns")
 }
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+model User {
+  id               String         @id @default(cuid())
+  email            String         @unique
+  passwordHash     String
+  businessName     String?
+  location         String?
+  category         String?
+  categoryOther    String?
+  adExperience     String?
+  budget           String?
+  goal             String?
+  signatureProduct String?        @db.Text
+  platforms        String[]       @default([])
+  peakHours        String?
+  promoHighlight   String?        @db.Text
+  conversations    Conversation[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@map("users")
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           MessageRole
+  content        String       @db.Text
+  list           String[]     @default([])
+  closing        String?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
