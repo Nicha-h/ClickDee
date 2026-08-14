@@ -18,6 +18,13 @@ export const SignupSchema = z
   })
   .openapi('SignupInput')
 
+export const LoginSchema = z
+  .object({
+    email: z.string().email(),
+    password: z.string().min(1),
+  })
+  .openapi('LoginInput')
+
 export const UserSchema = z
   .object({
     id: z.string(),

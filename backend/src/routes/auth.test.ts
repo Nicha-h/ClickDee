@@ -26,8 +26,13 @@ vi.mock('../services/user.service.js', () => ({
   createUser: vi.fn().mockResolvedValue(sampleUser),
 }))
 
+vi.mock('../lib/password.js', () => ({
+  verifyPassword: vi.fn().mockResolvedValue(false),
+}))
+
 import { app } from '../app.js'
 import * as userService from '../services/user.service.js'
+import * as passwordLib from '../lib/password.js'
 
 describe('POST /api/auth/signup', () => {
   it('creates an account and omits passwordHash from the response', async () => {
@@ -58,5 +63,52 @@ describe('POST /api/auth/signup', () => {
       }),
     })
     expect(res.status).toBe(409)
+  })
+})
+
+describe('POST /api/auth/login', () => {
+  it('logs in with valid credentials and omits passwordHash from the response', async () => {
+    vi.mocked(userService.findUserByEmail).mockResolvedValueOnce(sampleUser)
+    vi.mocked(passwordLib.verifyPassword).mockResolvedValueOnce(true)
+    const res = await app.request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'business@example.com',
+        password: 'password123',
+      }),
+    })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.id).toBe('user-1')
+    expect(body.email).toBe('business@example.com')
+    expect(body.passwordHash).toBeUndefined()
+  })
+
+  it('returns 401 for a wrong password', async () => {
+    vi.mocked(userService.findUserByEmail).mockResolvedValueOnce(sampleUser)
+    vi.mocked(passwordLib.verifyPassword).mockResolvedValueOnce(false)
+    const res = await app.request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'business@example.com',
+        password: 'wrong-password',
+      }),
+    })
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 401 for an unknown email', async () => {
+    vi.mocked(userService.findUserByEmail).mockResolvedValueOnce(null)
+    const res = await app.request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'nobody@example.com',
+        password: 'password123',
+      }),
+    })
+    expect(res.status).toBe(401)
   })
 })

@@ -1,6 +1,7 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
-import { SignupSchema, UserSchema } from '../schemas/auth.schema.js'
+import { LoginSchema, SignupSchema, UserSchema } from '../schemas/auth.schema.js'
 import * as userService from '../services/user.service.js'
+import { verifyPassword } from '../lib/password.js'
 import { Prisma } from '../generated/prisma/client.js'
 import type { UserModel } from '../generated/prisma/models.js'
 
@@ -63,4 +64,31 @@ authApp.openapi(signupRoute, async (c) => {
     }
     throw err
   }
+})
+
+const loginRoute = createRoute({
+  method: 'post',
+  path: '/login',
+  tags: ['Auth'],
+  request: {
+    body: { content: { 'application/json': { schema: LoginSchema } } },
+  },
+  responses: {
+    200: {
+      content: { 'application/json': { schema: UserSchema } },
+      description: 'Login successful',
+    },
+    401: {
+      content: { 'application/json': { schema: ErrorSchema } },
+      description: 'Invalid email or password',
+    },
+  },
+})
+authApp.openapi(loginRoute, async (c) => {
+  const { email, password } = c.req.valid('json')
+  const user = await userService.findUserByEmail(email)
+  if (!user || !(await verifyPassword(password, user.passwordHash))) {
+    return c.json({ message: 'Invalid email or password' }, 401)
+  }
+  return c.json(serializeUser(user), 200)
 })

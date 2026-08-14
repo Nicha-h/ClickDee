@@ -119,6 +119,12 @@ export interface SignupInput {
   promoHighlight?: string;
 }
 
+export interface LoginInput {
+  email: string;
+  /** @minLength 1 */
+  password: string;
+}
+
 export type AiMessageRole = typeof AiMessageRole[keyof typeof AiMessageRole];
 
 
@@ -370,6 +376,53 @@ export const postApiAuthSignup = async (signupInput?: SignupInput, options?: Req
 
   const data: postApiAuthSignupResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiAuthSignupResponse
+}
+
+
+
+export type postApiAuthLoginResponse200 = {
+  data: User
+  status: 200
+}
+
+export type postApiAuthLoginResponse401 = {
+  data: Error
+  status: 401
+}
+
+export type postApiAuthLoginResponseSuccess = (postApiAuthLoginResponse200) & {
+  headers: Headers;
+};
+export type postApiAuthLoginResponseError = (postApiAuthLoginResponse401) & {
+  headers: Headers;
+};
+
+export type postApiAuthLoginResponse = (postApiAuthLoginResponseSuccess | postApiAuthLoginResponseError)
+
+export const getPostApiAuthLoginUrl = () => {
+
+
+
+
+  return `${apiBaseUrl}/api/auth/login`
+}
+
+export const postApiAuthLogin = async (loginInput?: LoginInput, options?: RequestInit): Promise<postApiAuthLoginResponse> => {
+
+  const res = await fetch(getPostApiAuthLoginUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(loginInput)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiAuthLoginResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiAuthLoginResponse
 }
 
 

@@ -1,8 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
+import { z } from 'zod'
 import AuthBrandPanel from '@/components/authBrandPanel'
 import AuthSocialButtons from '@/components/authSocialButtons'
+
+const emailSchema = z.string().email('กรุณากรอกอีเมลให้ถูกต้อง')
 
 function SignUp() {
   const [email, setEmail] = useState('')
@@ -19,6 +22,11 @@ function SignUp() {
   // full business profile exists too (see onboardingDone.tsx).
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
+    const emailResult = emailSchema.safeParse(email)
+    if (!emailResult.success) {
+      setFormError(emailResult.error.issues[0].message)
+      return
+    }
     if (password.length < 8) {
       setFormError('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร')
       return

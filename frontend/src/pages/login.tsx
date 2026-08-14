@@ -1,20 +1,51 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
+import { z } from 'zod'
 import AuthBrandPanel from '@/components/authBrandPanel'
 import AuthSocialButtons from '@/components/authSocialButtons'
 import { useNavigate } from 'react-router-dom'
+import { postApiAuthLogin } from '@/api/generated/client'
+import { setUserId } from '@/lib/userId'
+
+const loginSchema = z.object({
+  email: z.string().email('กรุณากรอกอีเมลให้ถูกต้อง'),
+  password: z.string().min(1, 'กรุณากรอกรหัสผ่าน'),
+})
 
 function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
 
-  const handleSubmit = (event: FormEvent) => {
-    navigate('/home')
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
+
+    const result = loginSchema.safeParse({ email, password })
+    if (!result.success) {
+      setError(result.error.issues[0].message)
+      return
+    }
+
+    setError(null)
+    setIsSubmitting(true)
+    try {
+      const res = await postApiAuthLogin(result.data)
+      if (res.status === 401) {
+        setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง')
+        return
+      }
+      setUserId(res.data.id)
+      navigate('/home')
+    } catch {
+      setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -105,12 +136,16 @@ function Login() {
             </p>
           </div>
 
+          {error && (
+            <p className="font-thai w-full text-sm text-red-500">{error}</p>
+          )}
+
           <button
             type="submit"
-            onClick={() => handleSubmit}
-            className="bg-citrus hover:bg-citrushover text-amalfi font-thai flex h-16 w-full items-center justify-center rounded-2xl text-lg font-bold transition-all duration-200 hover:scale-105 hover:cursor-pointer"
+            disabled={isSubmitting}
+            className="bg-citrus hover:bg-citrushover text-amalfi font-thai flex h-16 w-full items-center justify-center rounded-2xl text-lg font-bold transition-all duration-200 hover:scale-105 hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
           >
-            เข้าสู่ระบบ
+            {isSubmitting ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
           </button>
 
           <AuthSocialButtons />
