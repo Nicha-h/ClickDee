@@ -1,0 +1,40 @@
+import { z } from '@hono/zod-openapi'
+
+export const SignupSchema = z
+  .object({
+    email: z.string().email(),
+    password: z.string().min(8),
+    businessName: z.string().min(1).optional(),
+    location: z.string().min(1).optional(),
+    category: z.string().min(1).optional(),
+    categoryOther: z.string().min(1).optional(),
+    adExperience: z.string().min(1).optional(),
+    budget: z.string().min(1).optional(),
+    goal: z.string().min(1).optional(),
+    signatureProduct: z.string().min(1).optional(),
+    platforms: z.array(z.string()).optional(),
+    peakHours: z.string().min(1).optional(),
+    promoHighlight: z.string().min(1).optional(),
+  })
+  .openapi('SignupInput')
+
+export const UserSchema = z
+  .object({
+    id: z.string(),
+    email: z.string(),
+    businessName: z.string().nullable(),
+    location: z.string().nullable(),
+    category: z.string().nullable(),
+    categoryOther: z.string().nullable(),
+    adExperience: z.string().nullable(),
+    budget: z.string().nullable(),
+    goal: z.string().nullable(),
+    signatureProduct: z.string().nullable(),
+    platforms: z.array(z.string()),
+    peakHours: z.string().nullable(),
+    promoHighlight: z.string().nullable(),
+    createdAt: z.string().datetime(),
+  })
+  .openapi('User')
+
+export type SignupInput = z.infer<typeof SignupSchema>
