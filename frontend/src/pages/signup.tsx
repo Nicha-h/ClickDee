@@ -11,11 +11,28 @@ function SignUp() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const navigate = useNavigate()
-  // TODO: wire up to the auth API once a client is available
+
+  // Account isn't created here — email/password are carried through the
+  // onboarding flow via route state, and the account is created once the
+  // full business profile exists too (see onboardingDone.tsx).
   const handleSubmit = (event: FormEvent) => {
-    navigate('/onboarding')
     event.preventDefault()
+    if (password.length < 8) {
+      setFormError('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร')
+      return
+    }
+    if (password !== confirmPassword) {
+      setFormError('รหัสผ่านไม่ตรงกัน')
+      return
+    }
+    if (!acceptedTerms) {
+      setFormError('กรุณายอมรับข้อกำหนดการใช้งาน')
+      return
+    }
+    setFormError(null)
+    navigate('/onboarding', { state: { email, password } })
   }
 
   return (
@@ -134,9 +151,12 @@ function SignUp() {
             </span>
           </label>
 
+          {formError && (
+            <p className="font-thai w-full text-sm text-red-500">{formError}</p>
+          )}
+
           <button
             type="submit"
-            onClick={handleSubmit}
             className="bg-citrus hover:bg-citrushover text-amalfi font-thai flex h-16 w-full items-center justify-center rounded-2xl text-lg font-bold transition-all duration-200 hover:scale-105 hover:cursor-pointer"
           >
             สมัครสมาชิก

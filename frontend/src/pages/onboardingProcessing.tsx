@@ -6,21 +6,27 @@ import type { OnboardingAnswers } from '@/components/onboardingWizard'
 
 const PROCESSING_DELAY_MS = 3200
 
+type ProcessingState = {
+  answers?: OnboardingAnswers
+  email?: string
+  password?: string
+}
+
 function OnboardingProcessing() {
   const navigate = useNavigate()
   const location = useLocation()
-  const answers = (location.state as { answers?: OnboardingAnswers } | null)
-    ?.answers
+  const { answers, email, password } =
+    (location.state as ProcessingState | null) ?? {}
 
   useEffect(() => {
     const timeout = setTimeout(() => {
       navigate('/onboarding/personalize', {
-        state: { answers },
+        state: { answers, email, password },
         replace: true,
       })
     }, PROCESSING_DELAY_MS)
     return () => clearTimeout(timeout)
-  }, [navigate, answers])
+  }, [navigate, answers, email, password])
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-white">

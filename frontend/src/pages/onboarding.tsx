@@ -1,15 +1,19 @@
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import OnboardingTopbar from '@/components/onboardingTopbar'
 import OnboardingWizard, {
   type OnboardingAnswers,
 } from '@/components/onboardingWizard'
 import { ONBOARDING_STEPS } from '@/data/onboarding'
 
+type SignupState = { email?: string; password?: string }
+
 function Onboarding() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { email, password } = (location.state as SignupState | null) ?? {}
 
   const handleComplete = (answers: OnboardingAnswers) => {
-    navigate('/onboarding/processing', { state: { answers } })
+    navigate('/onboarding/processing', { state: { answers, email, password } })
   }
 
   return (

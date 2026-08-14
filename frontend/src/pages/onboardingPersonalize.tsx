@@ -5,15 +5,23 @@ import OnboardingWizard, {
 } from '@/components/onboardingWizard'
 import { AI_FOLLOWUP_STEPS } from '@/data/onboarding'
 
+type PersonalizeState = {
+  answers?: OnboardingAnswers
+  email?: string
+  password?: string
+}
+
 function OnboardingPersonalize() {
   const navigate = useNavigate()
   const location = useLocation()
-  const initialAnswers = (
-    location.state as { answers?: OnboardingAnswers } | null
-  )?.answers
+  const {
+    answers: initialAnswers,
+    email,
+    password,
+  } = (location.state as PersonalizeState | null) ?? {}
 
   const handleComplete = (answers: OnboardingAnswers) => {
-    navigate('/onboarding/done', { state: { answers } })
+    navigate('/onboarding/done', { state: { answers, email, password } })
   }
 
   return (

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ArrowRight, CheckCircle2, PartyPopper } from 'lucide-react'
 import type { OnboardingAnswers } from '@/components/onboardingWizard'
@@ -5,6 +6,22 @@ import OnboardingTopbar from '@/components/onboardingTopbar'
 import { AI_FOLLOWUP_STEPS, ONBOARDING_STEPS } from '@/data/onboarding'
 import ellipseTop from '@/assets/decorative/welcome-ellipse-top.svg'
 import ellipseBottom from '@/assets/decorative/welcome-ellipse-bottom.svg'
+import { postApiAuthSignup } from '@/api/generated/client'
+import { setUserId } from '@/lib/userId'
+
+type DoneState = {
+  answers?: OnboardingAnswers
+  email?: string
+  password?: string
+}
+
+function asString(value: string | string[] | undefined) {
+  return typeof value === 'string' ? value : undefined
+}
+
+function asStringArray(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value : undefined
+}
 
 const ALL_STEPS = [...ONBOARDING_STEPS, ...AI_FOLLOWUP_STEPS]
 
@@ -44,10 +61,52 @@ function buildSummaryRows(answers: OnboardingAnswers): SummaryRow[] {
 function OnboardingDone() {
   const navigate = useNavigate()
   const location = useLocation()
-  const answers =
-    (location.state as { answers?: OnboardingAnswers } | null)?.answers ?? {}
+  const {
+    answers = {},
+    email,
+    password,
+  } = (location.state as DoneState | null) ?? {}
 
   const summaryRows = buildSummaryRows(answers)
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleEnterDashboard = async () => {
+    if (!email || !password) {
+      setError('เซสชันหมดอายุ กรุณาสมัครสมาชิกใหม่')
+      return
+    }
+    setError(null)
+    setIsSubmitting(true)
+    try {
+      const res = await postApiAuthSignup({
+        email,
+        password,
+        businessName: asString(answers.businessName),
+        location: asString(answers.location),
+        category: asString(answers.category),
+        categoryOther: asString(answers.categoryOther),
+        adExperience: asString(answers.adExperience),
+        budget: asString(answers.budget),
+        goal: asString(answers.goal),
+        signatureProduct: asString(answers.signatureProduct),
+        platforms: asStringArray(answers.platforms),
+        peakHours: asString(answers.peakHours),
+        promoHighlight: asString(answers.promoHighlight),
+      })
+      if (res.status === 409) {
+        setError('อีเมลนี้ถูกใช้งานแล้ว')
+        return
+      }
+      setUserId(res.data.id)
+      navigate('/home')
+    } catch {
+      setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-white">
@@ -109,13 +168,20 @@ function OnboardingDone() {
             )}
           </div>
 
+          {error && (
+            <p className="font-thai w-full max-w-80 text-center text-sm text-red-500">
+              {error}
+            </p>
+          )}
+
           <button
             type="button"
-            onClick={() => navigate('/home')}
-            className="bg-citrus hover:bg-citrushover text-amalfi font-thai flex h-14 w-full max-w-80 items-center justify-center gap-2 rounded-2xl text-lg font-bold transition-all hover:scale-105 hover:cursor-pointer"
+            onClick={handleEnterDashboard}
+            disabled={isSubmitting}
+            className="bg-citrus hover:bg-citrushover text-amalfi font-thai flex h-14 w-full max-w-80 items-center justify-center gap-2 rounded-2xl text-lg font-bold transition-all hover:scale-105 hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
           >
-            เข้าสู่แดชบอร์ด
-            <ArrowRight className="h-5 w-5" />
+            {isSubmitting ? 'กำลังสร้างบัญชี...' : 'เข้าสู่แดชบอร์ด'}
+            {!isSubmitting && <ArrowRight className="h-5 w-5" />}
           </button>
         </div>
       </div>
