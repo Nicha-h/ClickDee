@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import {
   Zap,
   ChevronRight,
@@ -14,6 +14,9 @@ import type { LucideIcon } from 'lucide-react'
 import aiMascot from '@/assets/placeholders/ai-mascot.png'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import AiSkeleton from '@/components/aiSkeleton'
+import { getApiAiMessages, postApiAiMessages } from '@/api/generated/client'
+import type { AiMessage as ApiAiMessage } from '@/api/generated/client'
+import { getUserId } from '@/lib/userId'
 
 type ChatMessage = {
   id: string
@@ -24,35 +27,42 @@ type ChatMessage = {
   time: string
 }
 
-{
-  /** Chat history PLACEHOLDER*/
+function formatTime(iso: string) {
+  const date = new Date(iso)
+  const hours24 = date.getHours()
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+  const period = hours24 >= 12 ? 'pm' : 'am'
+  const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12
+  return `${hours12}:${minutes} ${period}`
 }
-const initialMessages: ChatMessage[] = [
-  {
-    id: '1',
+
+function toChatMessage(message: ApiAiMessage): ChatMessage {
+  return {
+    id: message.id,
+    sender: message.role === 'assistant' ? 'ai' : 'user',
+    text: message.text,
+    list: message.list ?? undefined,
+    closing: message.closing ?? undefined,
+    time: formatTime(message.createdAt),
+  }
+}
+
+function errorChatMessage(status: number): ChatMessage {
+  const text =
+    status === 429
+      ? 'ตอนนี้มีคนใช้งานเยอะ กรุณาลองใหม่อีกครั้งค่ะ'
+      : status === 422
+        ? 'ข้อความนี้ถูกบล็อกโดยระบบตรวจสอบความปลอดภัย กรุณาลองใหม่อีกครั้งค่ะ'
+        : status === 503
+          ? 'ระบบ AI ยังไม่พร้อมใช้งานในขณะนี้ค่ะ'
+          : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้งค่ะ'
+  return {
+    id: `error-${Date.now()}`,
     sender: 'ai',
-    time: '7:10 pm',
-    text: 'สวัสดีค่ะคุณลูกค้า! ฉัน "น้อง ดี" พร้อมช่วยวางแผนการตลาดให้ธุรกิจของคุณแล้วค่ะ!',
-  },
-  {
-    id: '2',
-    sender: 'user',
-    time: '7:17 pm',
-    text: 'อยากทำแคมเปญกระตุ้นยอดขายช่วงหน้าร้อนนี้ครับ ร้านผมขายเครื่องดื่มเล็กๆ',
-  },
-  {
-    id: '3',
-    sender: 'ai',
-    time: '7:17 pm',
-    text: 'ยินดีเลยค่ะ! จากข้อมูลพฤติกรรมผู้บริโภคในช่วงนี้ ฉันขอแนะนำ "แคมเปญเครื่องดื่มเย็นดับร้อน" โดยเน้นกลุ่มเป้าหมายในพื้นที่รัศมี 3 กม. รอบร้านค่ะ',
-    list: [
-      'เน้นภาพเครื่องดื่มที่มีหยดน้ำเกาะดูเย็นสดชื่น',
-      'ช่วงเวลาแนะนำ: 11:30 - 15:00 น. (ช่วงอากาศร้อนจัด)',
-      'งบประมาณเริ่มต้นเพียง 100 บาท/วัน',
-    ],
-    closing: 'คุณต้องการให้ฉันร่างข้อความโฆษณาให้เลยไหมคะ? ✨',
-  },
-]
+    text,
+    time: formatTime(new Date().toISOString()),
+  }
+}
 
 type QuickAction = {
   id: string
@@ -182,7 +192,51 @@ function QuickActionCard({
 function Ai() {
   const [inputValue, setInputValue] = useState('')
   const [quickActionsOpen, setQuickActionsOpen] = useState(true)
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [userId] = useState(() => getUserId())
+  const [isSending, setIsSending] = useState(false)
   const isLoading = useSimulatedLoading()
+
+  useEffect(() => {
+    if (!userId) return
+    getApiAiMessages({ userId }).then((res) => {
+      if (res.status === 200) {
+        setMessages(res.data.map(toChatMessage))
+      }
+    })
+  }, [userId])
+
+  const handleSend = async (event: FormEvent) => {
+    event.preventDefault()
+    const text = inputValue.trim()
+    if (!text || !userId || isSending) return
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `local-${Date.now()}`,
+        sender: 'user',
+        text,
+        time: formatTime(new Date().toISOString()),
+      },
+    ])
+    setInputValue('')
+    setIsSending(true)
+
+    try {
+      const res = await postApiAiMessages({ userId, text })
+      setMessages((prev) => [
+        ...prev,
+        res.status === 201
+          ? toChatMessage(res.data.assistantMessage)
+          : errorChatMessage(res.status),
+      ])
+    } catch {
+      setMessages((prev) => [...prev, errorChatMessage(0)])
+    } finally {
+      setIsSending(false)
+    }
+  }
 
   if (isLoading) return <AiSkeleton />
 
@@ -196,7 +250,7 @@ function Ai() {
         {/** Chat column */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 xl:pr-6">
           <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-2">
-            {initialMessages.map((message) =>
+            {messages.map((message) =>
               message.sender === 'ai' ? (
                 <AiBubble key={message.id} message={message} />
               ) : (
@@ -204,21 +258,27 @@ function Ai() {
               ),
             )}
           </div>
+          {!userId && (
+            <p className="font-thai text-sm text-red-500">
+              กรุณาสมัครสมาชิกก่อนใช้งานแชท AI
+            </p>
+          )}
           <form
-            onSubmit={(e) => e.preventDefault()}
+            onSubmit={handleSend}
             className="border-seadark mt-2 mb-2 flex shrink-0 items-center gap-2 rounded-full border-2 bg-white px-4 py-2"
           >
-            {/* TODO: wire up real send/AI response once a backend exists */}
             <input
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               type="text"
               placeholder="พิมพ์คำถามของคุณ..."
-              className="font-thai flex-1 px-3 text-lg outline-none"
+              disabled={!userId || isSending}
+              className="font-thai flex-1 px-3 text-lg outline-none disabled:opacity-50"
             />
             <button
               type="submit"
-              className="bg-sealight-hover flex h-12 w-10 shrink-0 items-center justify-center rounded-full *:transition-all hover:scale-105 hover:*:cursor-pointer"
+              disabled={!userId || isSending}
+              className="bg-sealight-hover flex h-12 w-10 shrink-0 items-center justify-center rounded-full *:transition-all hover:scale-105 hover:*:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
             >
               <Send className="text-amalfidark h-6 w-6" />
             </button>
