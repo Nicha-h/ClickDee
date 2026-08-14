@@ -11,3 +11,23 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+model Campaign {
+  id        String         @id @default(cuid())
+  name      String
+  status    CampaignStatus @default(DRAFT)
+  budget    Decimal        @db.Decimal(12, 2)
+  startDate DateTime
+  endDate   DateTime?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@map("campaigns")
+}
