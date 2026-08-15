@@ -115,6 +115,28 @@ describe('POST /api/auth/login', () => {
   })
 })
 
+describe('GET /api/auth/account/:id', () => {
+  it('returns the account and omits passwordHash from the response', async () => {
+    vi.mocked(userService.findUserById).mockResolvedValueOnce(sampleUser)
+    const res = await app.request('/api/auth/account/user-1', {
+      method: 'GET',
+    })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.id).toBe('user-1')
+    expect(body.businessName).toBe('ร้านกาแฟบ้านสวน')
+    expect(body.passwordHash).toBeUndefined()
+  })
+
+  it('returns 404 for an unknown user', async () => {
+    vi.mocked(userService.findUserById).mockResolvedValueOnce(null)
+    const res = await app.request('/api/auth/account/nobody', {
+      method: 'GET',
+    })
+    expect(res.status).toBe(404)
+  })
+})
+
 describe('DELETE /api/auth/account/:id', () => {
   it('deletes the account with the correct password', async () => {
     vi.mocked(userService.findUserById).mockResolvedValueOnce(sampleUser)

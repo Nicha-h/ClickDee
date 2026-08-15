@@ -99,6 +99,31 @@ authApp.openapi(loginRoute, async (c) => {
   return c.json(serializeUser(user), 200)
 })
 
+const getAccountRoute = createRoute({
+  method: 'get',
+  path: '/account/{id}',
+  tags: ['Auth'],
+  request: { params: DeleteAccountParamSchema },
+  responses: {
+    200: {
+      content: { 'application/json': { schema: UserSchema } },
+      description: 'Account found',
+    },
+    404: {
+      content: { 'application/json': { schema: ErrorSchema } },
+      description: 'User not found',
+    },
+  },
+})
+authApp.openapi(getAccountRoute, async (c) => {
+  const { id } = c.req.valid('param')
+  const user = await userService.findUserById(id)
+  if (!user) {
+    return c.json({ message: 'User not found' }, 404)
+  }
+  return c.json(serializeUser(user), 200)
+})
+
 const deleteAccountRoute = createRoute({
   method: 'delete',
   path: '/account/{id}',
