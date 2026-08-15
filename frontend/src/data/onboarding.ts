@@ -17,7 +17,6 @@ import {
   Users,
   Megaphone,
   Heart,
-  Sun,
 } from 'lucide-react'
 import facebookIcon from '@/assets/logos/facebook.svg'
 import instagramIcon from '@/assets/logos/instagram.svg'
@@ -131,11 +130,11 @@ export const ONBOARDING_STEPS: OnboardingStepConfig[] = [
   {
     type: 'fill-in',
     id: 'signatureProduct',
-    question: 'สินค้า/เมนูเด่นของร้านคืออะไร?',
+    question: 'จุดขายหรือบริการเด่นของธุรกิจคุณคืออะไร?',
     subtext: 'AI จะใช้จุดเด่นนี้ช่วยเขียนแคปชั่นและครีเอทีฟโฆษณาให้คุณ',
     placeholder: 'เช่น ลาเต้เย็นสูตรพิเศษ, เค้กกล้วยหอมโฮมเมด',
     multiline: true,
-    summaryLabel: 'สินค้า/เมนูเด่น',
+    summaryLabel: 'สินค้า/เมนูเด่น/บริการ',
   },
   {
     type: 'choice',
@@ -165,31 +164,5 @@ export const ONBOARDING_STEPS: OnboardingStepConfig[] = [
         comingSoon: true,
       },
     ],
-  },
-]
-
-export const AI_FOLLOWUP_STEPS: OnboardingStepConfig[] = [
-  {
-    type: 'choice',
-    id: 'peakHours',
-    question: 'ช่วงเวลาที่ลูกค้าเข้าร้านเยอะที่สุด?',
-    subtext: 'AI จะปรับเวลาแสดงโฆษณาให้ตรงกับช่วงที่ลูกค้าพร้อมซื้อ',
-    summaryLabel: 'ช่วงเวลาลูกค้าเข้าร้าน',
-    choices: [
-      { id: 'morning', label: 'เช้า', icon: Sun },
-      { id: 'afternoon', label: 'กลางวัน', icon: Sun },
-      { id: 'evening', label: 'เย็น', icon: Sun },
-      { id: 'allday', label: 'ตลอดวัน', icon: Sun },
-    ],
-  },
-  {
-    type: 'fill-in',
-    id: 'promoHighlight',
-    question: 'มีโปรโมชั่นหรือจุดเด่นที่อยากให้ AI เน้นเป็นพิเศษไหม?',
-    subtext: 'ไม่บังคับ แต่ช่วยให้แคมเปญแรกของคุณโดนใจลูกค้ามากขึ้น',
-    placeholder: 'เช่น ซื้อ 1 แถม 1 ทุกวันศุกร์',
-    multiline: true,
-    required: false,
-    summaryLabel: 'โปรโมชั่น/จุดเด่น',
   },
 ]

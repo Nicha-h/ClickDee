@@ -53,10 +53,24 @@ model User {
   peakHours        String?
   promoHighlight   String?        @db.Text
   conversations    Conversation[]
+  aiMemory         AiMemory[]
+  aiMemoryConsentAt DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
   @@map("users")
+}
+
+model AiMemory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question  String   @db.Text
+  answer    String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("ai_memory")
 }
 
 model Conversation {

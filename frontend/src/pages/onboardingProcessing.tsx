@@ -3,13 +3,38 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Sparkles } from 'lucide-react'
 import OnboardingTopbar from '@/components/onboardingTopbar'
 import type { OnboardingAnswers } from '@/components/onboardingWizard'
+import { postApiOnboardingFollowupQuestion } from '@/api/generated/client'
+import type { FollowupQuestionRequestBusinessProfile } from '@/api/generated/client'
 
-const PROCESSING_DELAY_MS = 3200
+const MIN_DISPLAY_MS = 1200
 
 type ProcessingState = {
   answers?: OnboardingAnswers
   email?: string
   password?: string
+}
+
+function asString(value: string | string[] | undefined) {
+  return typeof value === 'string' && value.trim() ? value : undefined
+}
+
+function toBusinessProfile(
+  answers: OnboardingAnswers,
+): FollowupQuestionRequestBusinessProfile {
+  return {
+    businessName: asString(answers.businessName),
+    category:
+      answers.category === 'other'
+        ? asString(answers.categoryOther)
+        : asString(answers.category),
+    goal: asString(answers.goal),
+    signatureProduct: asString(answers.signatureProduct),
+    location: asString(answers.location),
+  }
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 function OnboardingProcessing() {
@@ -19,14 +44,42 @@ function OnboardingProcessing() {
     (location.state as ProcessingState | null) ?? {}
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
+    let cancelled = false
+    const controller = new AbortController()
+    const businessProfile = toBusinessProfile(answers ?? {})
+
+    const run = async () => {
+      const [firstFollowup] = await Promise.all([
+        postApiOnboardingFollowupQuestion(
+          { businessProfile, previousAnswers: [] },
+          { signal: controller.signal },
+        )
+          .then((res) =>
+            res.status === 200 ? res.data : { done: true, question: null },
+          )
+          .catch(() => ({ done: true, question: null })),
+        delay(MIN_DISPLAY_MS),
+      ])
+      if (cancelled) return
       navigate('/onboarding/personalize', {
-        state: { answers, email, password },
+        state: {
+          answers,
+          email,
+          password,
+          businessProfile,
+          firstQuestion: firstFollowup.done ? null : firstFollowup.question,
+        },
         replace: true,
       })
-    }, PROCESSING_DELAY_MS)
-    return () => clearTimeout(timeout)
-  }, [navigate, answers, email, password])
+    }
+
+    run()
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-white">

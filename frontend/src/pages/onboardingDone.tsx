@@ -3,16 +3,19 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { ArrowRight, CheckCircle2, PartyPopper } from 'lucide-react'
 import type { OnboardingAnswers } from '@/components/onboardingWizard'
 import OnboardingTopbar from '@/components/onboardingTopbar'
-import { AI_FOLLOWUP_STEPS, ONBOARDING_STEPS } from '@/data/onboarding'
+import { ONBOARDING_STEPS } from '@/data/onboarding'
+import type { FollowupQa } from '@/components/onboardingAiFollowup'
 import ellipseTop from '@/assets/decorative/welcome-ellipse-top.svg'
 import ellipseBottom from '@/assets/decorative/welcome-ellipse-bottom.svg'
 import { postApiAuthSignup } from '@/api/generated/client'
-import { setUserId } from '@/lib/userId'
+import { setAuthToken, setUserId } from '@/lib/userId'
 
 type DoneState = {
   answers?: OnboardingAnswers
   email?: string
   password?: string
+  aiMemory?: FollowupQa[]
+  aiMemoryConsent?: boolean
 }
 
 function asString(value: string | string[] | undefined) {
@@ -23,12 +26,10 @@ function asStringArray(value: string | string[] | undefined) {
   return Array.isArray(value) ? value : undefined
 }
 
-const ALL_STEPS = [...ONBOARDING_STEPS, ...AI_FOLLOWUP_STEPS]
-
 type SummaryRow = { label: string; value: string }
 
 function buildSummaryRows(answers: OnboardingAnswers): SummaryRow[] {
-  return ALL_STEPS.flatMap((step): SummaryRow[] => {
+  return ONBOARDING_STEPS.flatMap((step): SummaryRow[] => {
     const value = answers[step.id]
 
     if (step.type === 'fill-in') {
@@ -65,9 +66,16 @@ function OnboardingDone() {
     answers = {},
     email,
     password,
+    aiMemory = [],
+    aiMemoryConsent = false,
   } = (location.state as DoneState | null) ?? {}
 
-  const summaryRows = buildSummaryRows(answers)
+  const summaryRows = [
+    ...buildSummaryRows(answers),
+    ...(aiMemoryConsent
+      ? aiMemory.map((qa) => ({ label: qa.question, value: qa.answer }))
+      : []),
+  ]
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -94,12 +102,16 @@ function OnboardingDone() {
         platforms: asStringArray(answers.platforms),
         peakHours: asString(answers.peakHours),
         promoHighlight: asString(answers.promoHighlight),
+        aiMemory: aiMemoryConsent && aiMemory.length > 0 ? aiMemory : undefined,
+        aiMemoryConsent:
+          aiMemoryConsent && aiMemory.length > 0 ? true : undefined,
       })
       if (res.status === 409) {
         setError('อีเมลนี้ถูกใช้งานแล้ว')
         return
       }
       setUserId(res.data.id)
+      setAuthToken(res.data.token)
       navigate('/home')
     } catch {
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')

@@ -6,6 +6,7 @@ import { healthApp } from './routes/health.js'
 import { campaignsApp } from './routes/campaigns.js'
 import { authApp } from './routes/auth.js'
 import { aiApp } from './routes/ai.js'
+import { onboardingApp } from './routes/onboarding.js'
 
 export const app = new OpenAPIHono()
 
@@ -15,6 +16,7 @@ app.route('/api/health', healthApp)
 app.route('/api/campaigns', campaignsApp)
 app.route('/api/auth', authApp)
 app.route('/api/ai', aiApp)
+app.route('/api/onboarding', onboardingApp)
 
 app.doc('/openapi.json', {
   openapi: '3.0.0',
