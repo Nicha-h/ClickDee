@@ -92,6 +92,23 @@ export interface User {
   createdAt: string;
 }
 
+export type AuthResponse = User & {
+  token: string;
+};
+
+export type SignupInputAiMemoryItem = {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  question: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  answer: string;
+};
+
 export interface SignupInput {
   email: string;
   /** @minLength 8 */
@@ -117,6 +134,9 @@ export interface SignupInput {
   peakHours?: string;
   /** @minLength 1 */
   promoHighlight?: string;
+  /** @maxItems 5 */
+  aiMemory?: SignupInputAiMemoryItem[];
+  aiMemoryConsent?: boolean;
 }
 
 export interface LoginInput {
@@ -155,8 +175,6 @@ export interface SendAiMessageResponse {
 }
 
 export interface SendAiMessageInput {
-  /** @minLength 1 */
-  userId: string;
   /**
      * @minLength 1
      * @maxLength 4000
@@ -164,12 +182,43 @@ export interface SendAiMessageInput {
   text: string;
 }
 
-export type GetApiAiMessagesParams = {
-/**
- * @minLength 1
- */
-userId: string;
+export interface FollowupQuestionResponse {
+  done: boolean;
+  /** @nullable */
+  question: string | null;
+}
+
+export type FollowupQuestionRequestBusinessProfile = {
+  /** @maxLength 200 */
+  businessName?: string;
+  /** @maxLength 100 */
+  category?: string;
+  /** @maxLength 100 */
+  goal?: string;
+  /** @maxLength 1000 */
+  signatureProduct?: string;
+  /** @maxLength 200 */
+  location?: string;
 };
+
+export type FollowupQuestionRequestPreviousAnswersItem = {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  question: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  answer: string;
+};
+
+export interface FollowupQuestionRequest {
+  businessProfile: FollowupQuestionRequestBusinessProfile;
+  /** @maxItems 5 */
+  previousAnswers: FollowupQuestionRequestPreviousAnswersItem[];
+}
 
 export type getApiHealthResponse200 = {
   data: Health
@@ -339,7 +388,7 @@ export const getApiCampaignsId = async (id: string, options?: RequestInit): Prom
 
 
 export type postApiAuthSignupResponse201 = {
-  data: User
+  data: AuthResponse
   status: 201
 }
 
@@ -386,7 +435,7 @@ export const postApiAuthSignup = async (signupInput?: SignupInput, options?: Req
 
 
 export type postApiAuthLoginResponse200 = {
-  data: User
+  data: AuthResponse
   status: 200
 }
 
@@ -437,6 +486,11 @@ export type getApiAuthAccountIdResponse200 = {
   status: 200
 }
 
+export type getApiAuthAccountIdResponse403 = {
+  data: Error
+  status: 403
+}
+
 export type getApiAuthAccountIdResponse404 = {
   data: Error
   status: 404
@@ -445,7 +499,7 @@ export type getApiAuthAccountIdResponse404 = {
 export type getApiAuthAccountIdResponseSuccess = (getApiAuthAccountIdResponse200) & {
   headers: Headers;
 };
-export type getApiAuthAccountIdResponseError = (getApiAuthAccountIdResponse404) & {
+export type getApiAuthAccountIdResponseError = (getApiAuthAccountIdResponse403 | getApiAuthAccountIdResponse404) & {
   headers: Headers;
 };
 
@@ -489,6 +543,11 @@ export type deleteApiAuthAccountIdResponse401 = {
   status: 401
 }
 
+export type deleteApiAuthAccountIdResponse403 = {
+  data: Error
+  status: 403
+}
+
 export type deleteApiAuthAccountIdResponse404 = {
   data: Error
   status: 404
@@ -497,7 +556,7 @@ export type deleteApiAuthAccountIdResponse404 = {
 export type deleteApiAuthAccountIdResponseSuccess = (deleteApiAuthAccountIdResponse204) & {
   headers: Headers;
 };
-export type deleteApiAuthAccountIdResponseError = (deleteApiAuthAccountIdResponse401 | deleteApiAuthAccountIdResponse404) & {
+export type deleteApiAuthAccountIdResponseError = (deleteApiAuthAccountIdResponse401 | deleteApiAuthAccountIdResponse403 | deleteApiAuthAccountIdResponse404) & {
   headers: Headers;
 };
 
@@ -544,24 +603,17 @@ export type getApiAiMessagesResponseSuccess = (getApiAiMessagesResponse200) & {
 
 export type getApiAiMessagesResponse = (getApiAiMessagesResponseSuccess)
 
-export const getGetApiAiMessagesUrl = (params: GetApiAiMessagesParams,) => {
-  const normalizedParams = new URLSearchParams();
+export const getGetApiAiMessagesUrl = () => {
 
-  Object.entries(params || {}).forEach(([key, value]) => {
 
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
 
-  const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `${apiBaseUrl}/api/ai/messages?${stringifiedParams}` : `${apiBaseUrl}/api/ai/messages`
+  return `${apiBaseUrl}/api/ai/messages`
 }
 
-export const getApiAiMessages = async (params: GetApiAiMessagesParams, options?: RequestInit): Promise<getApiAiMessagesResponse> => {
+export const getApiAiMessages = async ( options?: RequestInit): Promise<getApiAiMessagesResponse> => {
 
-  const res = await fetch(getGetApiAiMessagesUrl(params),
+  const res = await fetch(getGetApiAiMessagesUrl(),
   {
     ...options,
     method: 'GET'
@@ -632,4 +684,56 @@ export const postApiAiMessages = async (sendAiMessageInput?: SendAiMessageInput,
 
   const data: postApiAiMessagesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiAiMessagesResponse
+}
+
+
+
+export type postApiOnboardingFollowupQuestionResponse200 = {
+  data: FollowupQuestionResponse
+  status: 200
+}
+
+export type postApiOnboardingFollowupQuestionResponse429 = {
+  data: Error
+  status: 429
+}
+
+export type postApiOnboardingFollowupQuestionResponse503 = {
+  data: Error
+  status: 503
+}
+
+export type postApiOnboardingFollowupQuestionResponseSuccess = (postApiOnboardingFollowupQuestionResponse200) & {
+  headers: Headers;
+};
+export type postApiOnboardingFollowupQuestionResponseError = (postApiOnboardingFollowupQuestionResponse429 | postApiOnboardingFollowupQuestionResponse503) & {
+  headers: Headers;
+};
+
+export type postApiOnboardingFollowupQuestionResponse = (postApiOnboardingFollowupQuestionResponseSuccess | postApiOnboardingFollowupQuestionResponseError)
+
+export const getPostApiOnboardingFollowupQuestionUrl = () => {
+
+
+
+
+  return `${apiBaseUrl}/api/onboarding/followup-question`
+}
+
+export const postApiOnboardingFollowupQuestion = async (followupQuestionRequest?: FollowupQuestionRequest, options?: RequestInit): Promise<postApiOnboardingFollowupQuestionResponse> => {
+
+  const res = await fetch(getPostApiOnboardingFollowupQuestionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(followupQuestionRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiOnboardingFollowupQuestionResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiOnboardingFollowupQuestionResponse
 }
