@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-This is an early-stage frontend — a React + TypeScript + Vite scaffold with Tailwind CSS v4 added. There is no router, no state management library, no test runner, and no API client wired up yet. `src/App.tsx`, `src/pages/home.tsx`, and `src/components/navbar.tsx` are currently empty shells. Don't assume conventions beyond what's actually in the code; this file will need to grow as the app takes shape.
+This is a React + TypeScript + Vite app with Tailwind CSS v4. Routing is `react-router-dom` v7 (see `src/App.tsx` for the full route table — signup/login, a multi-step onboarding flow, and an authenticated dashboard layout). Backend calls go through an orval-generated OpenAPI client (`src/api/generated/client.ts`) — see **API client & auth** below. There is still no state management library and no test runner. This section was originally written when the app was an early scaffold; the note about `src/pages/home.tsx`/`src/components/navbar.tsx` being empty shells is no longer true — verify against the actual code rather than this doc for anything not covered by a specific note below.
 
 Package manager is **pnpm** (see `packageManager` in package.json — use pnpm, not npm/yarn).
 
@@ -25,9 +25,15 @@ There is no test script configured. There is no single-file/single-test invocati
 - Tailwind CSS v4 via `@tailwindcss/vite` plugin (not the PostCSS-config approach from v3) — global styles/entry point is `src/index.css` (`@import "tailwindcss";`). `@tailwindcss/postcss` is also a dependency; if a `postcss.config` shows up, check it isn't duplicating the Vite plugin.
 - Entry point: `src/main.tsx` mounts `App` from `src/App.tsx` into `#root` (defined in `index.html`).
 - `src/pages/` holds page-level components, `src/components/` holds shared/reusable components. Existing files (`home.tsx`, `navbar.tsx`) use lowercase function names and default exports — follow that pattern unless asked to change it, since it's the only convention established so far.
-- `orval` is a devDependency (OpenAPI-to-TypeScript client/hook generator) but has no config file yet (no `orval.config.ts`) — an API client generation step is anticipated but not yet set up.
+- `orval` generates the API client from the backend's OpenAPI spec — see **API client & auth** below.
 - TypeScript project uses solution-style config: `tsconfig.json` references `tsconfig.app.json` (app code, `src/`) and `tsconfig.node.json` (Vite config). `tsconfig.app.json` has `noUnusedLocals`/`noUnusedParameters`/`verbatimModuleSyntax` enabled — unused imports/vars and non-type-only type imports will fail the build.
 - ESLint flat config (`eslint.config.js`) extends `js.configs.recommended`, `typescript-eslint` recommended, `eslint-plugin-react-hooks` recommended, and `eslint-plugin-react-refresh` (Vite variant). `dist` is ignored.
+
+## API client & auth
+
+- `orval.config.ts` generates `src/api/generated/client.ts` from the backend's live OpenAPI spec (`pnpm generate:api`, requires the backend dev server running on `http://localhost:3000`) — **do not hand-edit** the generated file. Every generated function takes an optional trailing `options?: RequestInit`, which is how per-call headers get attached (see below); there is no orval `mutator` configured.
+- Auth is a bearer JWT returned as `token` by `postApiAuthSignup`/`postApiAuthLogin`. `src/lib/userId.ts` stores it (`getAuthToken`/`setAuthToken`/`clearAuthToken`, `localStorage`, alongside the pre-existing `userId` helpers) and exports `authHeaders()` — pass `authHeaders()` as the trailing `options` argument on any call to an auth-protected endpoint, e.g. `getApiAuthAccountId(id, authHeaders())` or `postApiAiMessages({ text }, authHeaders())`. This is the established pattern for attaching auth; a global orval mutator was deliberately not used (would require guessing at its exact fetch-client contract for a "minimal auth" scope) — keep following the per-call pattern rather than introducing a mutator later without a reason.
+- On logout / account deletion, clear both `clearUserId()` and `clearAuthToken()` (see `setting.tsx`).
 
 ## Design system & Figma integration
 
@@ -59,7 +65,7 @@ All design tokens live in **`src/index.css`**, defined CSS-first via Tailwind v4
 ### Component library
 
 - `src/components/` — shared/reusable components (`navbar.tsx`, `Topbar.tsx`, `notification.tsx`). File casing is inconsistent (`Topbar.tsx` vs `navbar.tsx`); match whichever a sibling file already does rather than establishing a new casing.
-- `src/pages/` — route-level components (`home.tsx`, `account.tsx`, `campaign.tsx`, `setting.tsx`). Most are still empty shells (`export default function account() { return <div></div> }`).
+- `src/pages/` — route-level components. Coverage is uneven: `home.tsx`, `setting.tsx`, `ai.tsx`, and the `onboarding*.tsx` pages are fully built; don't assume any other page still matches the old "empty shell" (`export default function x() { return <div></div> }`) placeholder pattern without checking — verify the specific file rather than assuming either way.
 - No component library dependency (no shadcn/ui, Radix, MUI, etc.) and no Storybook — components are hand-built with Tailwind utility classes directly in JSX.
 - No variant system (no `class-variance-authority`/`cva`, no `clsx`/`tailwind-merge`) — conditional styling is done with plain template-literal ternaries reading local `useState`, e.g. in `navbar.tsx`:
   ```tsx
@@ -67,14 +73,14 @@ All design tokens live in **`src/index.css`**, defined CSS-first via Tailwind v4
   ```
   Follow this pattern for now rather than introducing `cva`/`clsx` unasked. Note `react-router-dom`'s `NavLink` already supports an `isActive` render-prop pattern that would replace the manual `activeButton` state — worth flagging if refactoring, not silently changing.
 - Default exports, one component per file, matching the file's base name.
+- Onboarding has two distinct step patterns — pick the matching one when extending it, don't blend them: `onboardingWizard.tsx` renders a **fixed, known-in-advance** `OnboardingStepConfig[]` (used for the base business-info steps, `data/onboarding.ts`). `onboardingAiFollowup.tsx` instead drives a loop of **AI-generated, one-at-a-time** questions (`pages/onboardingProcessing.tsx` fetches the first via `postApiOnboardingFollowupQuestion`, then the component fetches each next one after an answer is submitted) — the step count isn't known upfront, only capped (`MAX_FOLLOWUP_QUESTIONS = 5`, mirrored from the backend's own hard cap; the backend cap is authoritative, the frontend one is just so the UI doesn't wait on a network round-trip it already knows will be refused). It also gates on an explicit consent checkbox before collecting anything — see `docs`/`backend/CLAUDE.md`'s **Sensitive data** section for where those answers end up.
 
 ### Frameworks & libraries
 
 - React 19 + TypeScript, bundled with Vite 8 (`@vitejs/plugin-react`).
-- Routing: `react-router-dom` v7 (`BrowserRouter` in `main.tsx`, `Routes`/`Route` in `App.tsx`). Currently only `"/"` → `Home` is wired up; `navbar.tsx` links to `/home`, `/campaign`, `/ai`, `/overview`, `/integration`, `/logout` but most have no matching `<Route>` yet — don't assume a nav link implies a working route.
+- Routing: `react-router-dom` v7 (`BrowserRouter` in `main.tsx`, `Routes`/`Route` in `App.tsx`). The route table is built out (auth, onboarding, and an authenticated dashboard layout) — see `App.tsx` directly for the current list rather than assuming from nav links, since `navbar.tsx` may still link to routes ahead of or behind what's actually mounted.
 - Styling: Tailwind CSS v4 via `@tailwindcss/vite` (CSS-first config, no `tailwind.config.js`). `@tailwindcss/postcss` is also present as a dependency but unused while the Vite plugin is active.
 - Formatting: Prettier with `prettier-plugin-tailwindcss` (auto-sorts class lists) and `singleQuote`/no-semi — run `pnpm format` after generating new components so class order matches the rest of the repo.
-- `orval` is installed but has no config yet (planned OpenAPI → TS client generation, not usable today).
 
 ### Asset management
 
@@ -110,10 +116,12 @@ Guidance until the team consolidates: use `lucide-react` for generic/interactive
 
 ```
 src/
+  api/          # env.ts (apiBaseUrl) + generated/client.ts (orval, do not hand-edit)
   assets/       # images & icons, imported as ES modules
-  components/   # shared components (Navbar, Topbar, notification)
-  pages/        # route-level components (home, account, campaign, setting)
-  App.tsx       # shell layout (Navbar + Topbar + Routes) — mostly empty route table
+  components/   # shared components (Navbar, Topbar, notification, onboarding*)
+  lib/          # small stateful helpers, e.g. userId.ts (auth/session storage)
+  pages/        # route-level components (home, account, campaign, setting, onboarding*, ai, ...)
+  App.tsx       # shell layout (Navbar + Topbar + Routes)
   main.tsx      # entry point: StrictMode > BrowserRouter > App
   index.css     # Tailwind entry point + @theme design tokens
 ```
