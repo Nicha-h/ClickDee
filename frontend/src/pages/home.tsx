@@ -19,7 +19,7 @@ import { campaigns } from '@/data/campaigns'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import HomeSkeleton from '@/components/homeSkeleton'
 import { getApiAuthAccountId } from '@/api/generated/client'
-import { getUserId } from '@/lib/userId'
+import { authHeaders, getUserId } from '@/lib/userId'
 
 const salesRangeOptions = [
   { value: '7d', label: '7 วัน' },
@@ -110,7 +110,7 @@ function Home() {
   useEffect(() => {
     const userId = getUserId()
     if (!userId) return
-    getApiAuthAccountId(userId).then((res) => {
+    getApiAuthAccountId(userId, authHeaders()).then((res) => {
       if (res.status === 200) setBusinessName(res.data.businessName)
     })
   }, [])

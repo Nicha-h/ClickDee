@@ -1,5 +1,6 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
 import {
+  AuthResponseSchema,
   DeleteAccountParamSchema,
   DeleteAccountSchema,
   LoginSchema,
@@ -7,7 +8,10 @@ import {
   UserSchema,
 } from '../schemas/auth.schema.js'
 import * as userService from '../services/user.service.js'
+import { saveAiMemory } from '../services/onboarding.service.js'
 import { verifyPassword } from '../lib/password.js'
+import { signSessionToken } from '../lib/auth.js'
+import { requireAuth, type AuthVariables } from '../middleware/auth.js'
 import { Prisma } from '../generated/prisma/client.js'
 import type { UserModel } from '../generated/prisma/models.js'
 
@@ -32,7 +36,7 @@ function serializeUser(user: UserModel) {
   }
 }
 
-export const authApp = new OpenAPIHono()
+export const authApp = new OpenAPIHono<{ Variables: AuthVariables }>()
 
 const signupRoute = createRoute({
   method: 'post',
@@ -43,7 +47,7 @@ const signupRoute = createRoute({
   },
   responses: {
     201: {
-      content: { 'application/json': { schema: UserSchema } },
+      content: { 'application/json': { schema: AuthResponseSchema } },
       description: 'Account created',
     },
     409: {
@@ -60,7 +64,11 @@ authApp.openapi(signupRoute, async (c) => {
   }
   try {
     const user = await userService.createUser(input)
-    return c.json(serializeUser(user), 201)
+    if (input.aiMemory?.length && input.aiMemoryConsent === true) {
+      await saveAiMemory(user.id, input.aiMemory)
+    }
+    const token = await signSessionToken(user.id)
+    return c.json({ ...serializeUser(user), token }, 201)
   } catch (err) {
     if (
       err instanceof Prisma.PrismaClientKnownRequestError &&
@@ -81,7 +89,7 @@ const loginRoute = createRoute({
   },
   responses: {
     200: {
-      content: { 'application/json': { schema: UserSchema } },
+      content: { 'application/json': { schema: AuthResponseSchema } },
       description: 'Login successful',
     },
     401: {
@@ -96,18 +104,24 @@ authApp.openapi(loginRoute, async (c) => {
   if (!user || !(await verifyPassword(password, user.passwordHash))) {
     return c.json({ message: 'Invalid email or password' }, 401)
   }
-  return c.json(serializeUser(user), 200)
+  const token = await signSessionToken(user.id)
+  return c.json({ ...serializeUser(user), token }, 200)
 })
 
 const getAccountRoute = createRoute({
   method: 'get',
   path: '/account/{id}',
   tags: ['Auth'],
+  middleware: [requireAuth] as const,
   request: { params: DeleteAccountParamSchema },
   responses: {
     200: {
       content: { 'application/json': { schema: UserSchema } },
       description: 'Account found',
+    },
+    403: {
+      content: { 'application/json': { schema: ErrorSchema } },
+      description: 'Not the account owner',
     },
     404: {
       content: { 'application/json': { schema: ErrorSchema } },
@@ -117,6 +131,9 @@ const getAccountRoute = createRoute({
 })
 authApp.openapi(getAccountRoute, async (c) => {
   const { id } = c.req.valid('param')
+  if (c.get('userId') !== id) {
+    return c.json({ message: 'Forbidden' }, 403)
+  }
   const user = await userService.findUserById(id)
   if (!user) {
     return c.json({ message: 'User not found' }, 404)
@@ -128,6 +145,7 @@ const deleteAccountRoute = createRoute({
   method: 'delete',
   path: '/account/{id}',
   tags: ['Auth'],
+  middleware: [requireAuth] as const,
   request: {
     params: DeleteAccountParamSchema,
     body: {
@@ -142,6 +160,10 @@ const deleteAccountRoute = createRoute({
       content: { 'application/json': { schema: ErrorSchema } },
       description: 'Invalid password',
     },
+    403: {
+      content: { 'application/json': { schema: ErrorSchema } },
+      description: 'Not the account owner',
+    },
     404: {
       content: { 'application/json': { schema: ErrorSchema } },
       description: 'User not found',
@@ -150,6 +172,9 @@ const deleteAccountRoute = createRoute({
 })
 authApp.openapi(deleteAccountRoute, async (c) => {
   const { id } = c.req.valid('param')
+  if (c.get('userId') !== id) {
+    return c.json({ message: 'Forbidden' }, 403)
+  }
   const { password } = c.req.valid('json')
   const user = await userService.findUserById(id)
   if (!user) {

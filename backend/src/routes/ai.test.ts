@@ -38,10 +38,17 @@ import {
   AiRateLimitError,
   AiContentFilterError,
 } from '../lib/openai.js'
+import { signSessionToken } from '../lib/auth.js'
+
+const authHeader = async () => ({
+  Authorization: `Bearer ${await signSessionToken('user-1')}`,
+})
 
 describe('GET /api/ai/messages', () => {
   it('returns the serialized conversation history', async () => {
-    const res = await app.request('/api/ai/messages?userId=user-1')
+    const res = await app.request('/api/ai/messages', {
+      headers: await authHeader(),
+    })
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body).toEqual([
@@ -66,15 +73,27 @@ describe('GET /api/ai/messages', () => {
 })
 
 describe('POST /api/ai/messages', () => {
-  const sendRequest = (body: unknown) =>
+  const sendRequest = async (body: unknown) =>
     app.request('/api/ai/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await authHeader()),
+      },
       body: JSON.stringify(body),
     })
 
+  it('returns 401 without a token', async () => {
+    const res = await app.request('/api/ai/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: 'สวัสดี' }),
+    })
+    expect(res.status).toBe(401)
+  })
+
   it('returns the user + assistant messages on success', async () => {
-    const res = await sendRequest({ userId: 'user-1', text: 'สวัสดี' })
+    const res = await sendRequest({ text: 'สวัสดี' })
     expect(res.status).toBe(201)
     const body = await res.json()
     expect(body.userMessage.text).toBe('สวัสดี')
@@ -85,7 +104,7 @@ describe('POST /api/ai/messages', () => {
     vi.mocked(aiService.sendMessage).mockRejectedValueOnce(
       new AiNotConfiguredError(),
     )
-    const res = await sendRequest({ userId: 'user-1', text: 'สวัสดี' })
+    const res = await sendRequest({ text: 'สวัสดี' })
     expect(res.status).toBe(503)
   })
 
@@ -93,7 +112,7 @@ describe('POST /api/ai/messages', () => {
     vi.mocked(aiService.sendMessage).mockRejectedValueOnce(
       new AiRateLimitError(),
     )
-    const res = await sendRequest({ userId: 'user-1', text: 'สวัสดี' })
+    const res = await sendRequest({ text: 'สวัสดี' })
     expect(res.status).toBe(429)
   })
 
@@ -101,7 +120,7 @@ describe('POST /api/ai/messages', () => {
     vi.mocked(aiService.sendMessage).mockRejectedValueOnce(
       new AiContentFilterError(),
     )
-    const res = await sendRequest({ userId: 'user-1', text: 'สวัสดี' })
+    const res = await sendRequest({ text: 'สวัสดี' })
     expect(res.status).toBe(422)
   })
 })

@@ -6,7 +6,12 @@ import ConfirmDialog from '@/components/confirmDialog'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import SettingSkeleton from '@/components/settingSkeleton'
 import { deleteApiAuthAccountId } from '@/api/generated/client'
-import { clearUserId, getUserId } from '@/lib/userId'
+import {
+  authHeaders,
+  clearAuthToken,
+  clearUserId,
+  getUserId,
+} from '@/lib/userId'
 
 type PlanKey = 'free' | 'starter' | 'pro'
 
@@ -83,6 +88,7 @@ function Setting() {
 
   const logout = () => {
     clearUserId()
+    clearAuthToken()
     navigate('/login')
   }
 
@@ -95,12 +101,17 @@ function Setting() {
     setIsDeleting(true)
     setDeleteError(null)
     try {
-      const res = await deleteApiAuthAccountId(id, { password: deletePassword })
+      const res = await deleteApiAuthAccountId(
+        id,
+        { password: deletePassword },
+        authHeaders(),
+      )
       if (res.status === 401) {
         setDeleteError('รหัสผ่านไม่ถูกต้อง')
         return
       }
       clearUserId()
+      clearAuthToken()
       navigate('/login')
     } catch {
       setDeleteError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')

@@ -10,6 +10,8 @@ const EnvSchema = z.object({
   AZURE_OPENAI_ENDPOINT: z.string().url().optional(),
   AZURE_OPENAI_KEY: z.string().min(1).optional(),
   AZURE_OPENAI_DEPLOYMENT: z.string().min(1).optional(),
+  AUTH_JWT_SECRET: z.string().min(32),
+  AI_MEMORY_ENCRYPTION_KEY: z.string().min(32),
 })
 
 export const env = EnvSchema.parse(process.env)

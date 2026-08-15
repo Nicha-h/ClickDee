@@ -15,7 +15,6 @@ export const AiMessageSchema = z
 
 export const SendAiMessageSchema = z
   .object({
-    userId: z.string().min(1),
     text: z.string().min(1).max(4000),
   })
   .openapi('SendAiMessageInput')
@@ -26,12 +25,5 @@ export const SendAiMessageResponseSchema = z
     assistantMessage: AiMessageSchema,
   })
   .openapi('SendAiMessageResponse')
-
-export const AiMessagesQuerySchema = z.object({
-  userId: z
-    .string()
-    .min(1)
-    .openapi({ param: { name: 'userId', in: 'query' } }),
-})
 
 export type SendAiMessageInput = z.infer<typeof SendAiMessageSchema>

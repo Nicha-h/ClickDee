@@ -35,6 +35,11 @@ vi.mock('../lib/password.js', () => ({
 import { app } from '../app.js'
 import * as userService from '../services/user.service.js'
 import * as passwordLib from '../lib/password.js'
+import { signSessionToken } from '../lib/auth.js'
+
+const authHeader = async (userId: string) => ({
+  Authorization: `Bearer ${await signSessionToken(userId)}`,
+})
 
 describe('POST /api/auth/signup', () => {
   it('creates an account and omits passwordHash from the response', async () => {
@@ -120,6 +125,7 @@ describe('GET /api/auth/account/:id', () => {
     vi.mocked(userService.findUserById).mockResolvedValueOnce(sampleUser)
     const res = await app.request('/api/auth/account/user-1', {
       method: 'GET',
+      headers: await authHeader('user-1'),
     })
     expect(res.status).toBe(200)
     const body = await res.json()
@@ -128,10 +134,26 @@ describe('GET /api/auth/account/:id', () => {
     expect(body.passwordHash).toBeUndefined()
   })
 
+  it('returns 401 without a token', async () => {
+    const res = await app.request('/api/auth/account/user-1', {
+      method: 'GET',
+    })
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 403 when the token belongs to a different account', async () => {
+    const res = await app.request('/api/auth/account/someone-else', {
+      method: 'GET',
+      headers: await authHeader('user-1'),
+    })
+    expect(res.status).toBe(403)
+  })
+
   it('returns 404 for an unknown user', async () => {
     vi.mocked(userService.findUserById).mockResolvedValueOnce(null)
     const res = await app.request('/api/auth/account/nobody', {
       method: 'GET',
+      headers: await authHeader('nobody'),
     })
     expect(res.status).toBe(404)
   })
@@ -143,7 +165,10 @@ describe('DELETE /api/auth/account/:id', () => {
     vi.mocked(passwordLib.verifyPassword).mockResolvedValueOnce(true)
     const res = await app.request('/api/auth/account/user-1', {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await authHeader('user-1')),
+      },
       body: JSON.stringify({ password: 'password123' }),
     })
     expect(res.status).toBe(204)
@@ -155,17 +180,35 @@ describe('DELETE /api/auth/account/:id', () => {
     vi.mocked(passwordLib.verifyPassword).mockResolvedValueOnce(false)
     const res = await app.request('/api/auth/account/user-1', {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await authHeader('user-1')),
+      },
       body: JSON.stringify({ password: 'wrong-password' }),
     })
     expect(res.status).toBe(401)
+  })
+
+  it('returns 403 when the token belongs to a different account', async () => {
+    const res = await app.request('/api/auth/account/someone-else', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await authHeader('user-1')),
+      },
+      body: JSON.stringify({ password: 'password123' }),
+    })
+    expect(res.status).toBe(403)
   })
 
   it('returns 404 for an unknown user', async () => {
     vi.mocked(userService.findUserById).mockResolvedValueOnce(null)
     const res = await app.request('/api/auth/account/nobody', {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await authHeader('nobody')),
+      },
       body: JSON.stringify({ password: 'password123' }),
     })
     expect(res.status).toBe(404)

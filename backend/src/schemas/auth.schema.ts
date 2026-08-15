@@ -1,5 +1,10 @@
 import { z } from '@hono/zod-openapi'
 
+export const AiMemoryQaSchema = z.object({
+  question: z.string().min(1).max(500),
+  answer: z.string().min(1).max(2000),
+})
+
 export const SignupSchema = z
   .object({
     email: z.string().email(),
@@ -15,6 +20,8 @@ export const SignupSchema = z
     platforms: z.array(z.string()).optional(),
     peakHours: z.string().min(1).optional(),
     promoHighlight: z.string().min(1).optional(),
+    aiMemory: z.array(AiMemoryQaSchema).max(5).optional(),
+    aiMemoryConsent: z.boolean().optional(),
   })
   .openapi('SignupInput')
 
@@ -43,6 +50,10 @@ export const UserSchema = z
     createdAt: z.string().datetime(),
   })
   .openapi('User')
+
+export const AuthResponseSchema = UserSchema.extend({
+  token: z.string(),
+}).openapi('AuthResponse')
 
 export const DeleteAccountParamSchema = z.object({
   id: z.string().openapi({ param: { name: 'id', in: 'path' } }),
