@@ -432,6 +432,53 @@ export const postApiAuthLogin = async (loginInput?: LoginInput, options?: Reques
 
 
 
+export type getApiAuthAccountIdResponse200 = {
+  data: User
+  status: 200
+}
+
+export type getApiAuthAccountIdResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type getApiAuthAccountIdResponseSuccess = (getApiAuthAccountIdResponse200) & {
+  headers: Headers;
+};
+export type getApiAuthAccountIdResponseError = (getApiAuthAccountIdResponse404) & {
+  headers: Headers;
+};
+
+export type getApiAuthAccountIdResponse = (getApiAuthAccountIdResponseSuccess | getApiAuthAccountIdResponseError)
+
+export const getGetApiAuthAccountIdUrl = (id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/auth/account/${id}`
+}
+
+export const getApiAuthAccountId = async (id: string, options?: RequestInit): Promise<getApiAuthAccountIdResponse> => {
+
+  const res = await fetch(getGetApiAuthAccountIdUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiAuthAccountIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiAuthAccountIdResponse
+}
+
+
+
 export type deleteApiAuthAccountIdResponse204 = {
   data: void
   status: 204

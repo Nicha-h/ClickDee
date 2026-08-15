@@ -18,6 +18,8 @@ import Sparkline from '@/components/sparkline'
 import { campaigns } from '@/data/campaigns'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import HomeSkeleton from '@/components/homeSkeleton'
+import { getApiAuthAccountId } from '@/api/generated/client'
+import { getUserId } from '@/lib/userId'
 
 const salesRangeOptions = [
   { value: '7d', label: '7 วัน' },
@@ -60,9 +62,18 @@ const salesDataByRange: Record<string, TrendPoint[]> = {
 const rainPromoCampaign = campaigns.find((c) => c.id === 'rain-promo-2026')!
 const miloPromoCampaign = campaigns.find((c) => c.id === 'milo-promo-2026')!
 
+function getTimeGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 12) return 'สวัสดีตอนเช้า ☀️'
+  if (hour >= 12 && hour < 17) return 'สวัสดีตอนบ่าย 🌤️'
+  if (hour >= 17 && hour < 21) return 'สวัสดีตอนเย็น 🌇'
+  return 'สวัสดีตอนดึก 🌙'
+}
+
 function Home() {
   const navigate = useNavigate()
   const isLoading = useSimulatedLoading()
+  const [businessName, setBusinessName] = useState<string | null>(null)
   {
     /** Summary data PLACEHOLDER*/
   }
@@ -96,6 +107,14 @@ function Home() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  useEffect(() => {
+    const userId = getUserId()
+    if (!userId) return
+    getApiAuthAccountId(userId).then((res) => {
+      if (res.status === 200) setBusinessName(res.data.businessName)
+    })
+  }, [])
+
   if (isLoading) return <HomeSkeleton />
 
   return (
@@ -104,7 +123,8 @@ function Home() {
       <div className="flex w-full max-w-7xl flex-col items-start justify-between gap-5 sm:flex-row sm:items-center">
         <div className="font-thai flex flex-col items-start justify-start gap-2 font-semibold">
           <div className="text-amalfidark text-2xl sm:text-3xl lg:text-4xl">
-            สวัสดีตอนเช้า ☀️ ทีมLulu!
+            {getTimeGreeting()}{' '}
+            {businessName ? `ทีม${businessName}` : 'ทีมของคุณ'}!
           </div>
           <div className="text-xl">
             วันนี้ AI ดูแลโฆษณาให้คุณอยู่นะ
@@ -264,7 +284,7 @@ function Home() {
       <div className="mt-10 flex flex-col items-start gap-5 md:flex-row">
         {/** Left column */}
         <div className="flex w-full flex-col gap-8 md:w-[60%] lg:w-3xl">
-          <div className="flex h-64 w-full flex-col">
+          <div className="flex w-full flex-col">
             <div className="font-thai flex flex-row items-center justify-between gap-2 p-4 text-2xl font-semibold">
               <h2 className="font-thai text-amalfidark text-xl font-semibold sm:text-2xl lg:text-3xl">
                 โฆษณาที่กำลังรันอยู่
@@ -277,7 +297,7 @@ function Home() {
                 <ArrowRight className="-mt-1 ml-2 inline-block h-6 w-6" />
               </NavLink>
             </div>
-            <div className="items-between flex h-auto w-full flex-row justify-start rounded-xl border-2 border-[#8E98A8] px-4 py-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30 sm:h-60 sm:px-6">
+            <div className="items-between flex h-auto w-full flex-row justify-start rounded-xl border-2 border-[#8E98A8] px-4 py-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30 sm:px-6">
               <img
                 src={rain}
                 alt="Campaign1"
@@ -302,7 +322,7 @@ function Home() {
                 />
               </div>
             </div>
-            <div className="items-between mt-5 flex h-auto w-full flex-row justify-start rounded-xl border-2 border-[#8E98A8] px-4 py-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30 sm:h-60 sm:px-6">
+            <div className="items-between mt-5 flex h-auto w-full flex-row justify-start rounded-xl border-2 border-[#8E98A8] px-4 py-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30 sm:px-6">
               <img
                 src={milo}
                 alt="Campaign2"
@@ -331,7 +351,7 @@ function Home() {
           </div>
 
           {/** Sales overview */}
-          <div className="mt-8 w-full rounded-xl border-2 border-[#8E98A8] px-10 py-6 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+          <div className="w-full rounded-xl border-2 border-[#8E98A8] px-10 py-6 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
             <div className="flex flex-row flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="font-thai text-amalfidark text-2xl font-semibold">
