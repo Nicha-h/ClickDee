@@ -21,6 +21,8 @@ enum CampaignStatus {
 
 model Campaign {
   id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String
   status    CampaignStatus @default(DRAFT)
   budget    Decimal        @db.Decimal(12, 2)
@@ -29,6 +31,7 @@ model Campaign {
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
+  @@index([userId])
   @@map("campaigns")
 }
 
@@ -54,6 +57,7 @@ model User {
   promoHighlight   String?        @db.Text
   conversations    Conversation[]
   aiMemory         AiMemory[]
+  campaigns        Campaign[]
   aiMemoryConsentAt DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt

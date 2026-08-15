@@ -5,6 +5,7 @@ export class InvalidSessionTokenError extends Error {}
 
 const secretKey = new TextEncoder().encode(env.AUTH_JWT_SECRET)
 const SESSION_DURATION = '24h'
+export const SESSION_DURATION_SECONDS = 24 * 60 * 60
 
 export async function signSessionToken(userId: string): Promise<string> {
   return new SignJWT({ sub: userId })

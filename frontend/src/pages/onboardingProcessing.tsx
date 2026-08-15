@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Sparkles } from 'lucide-react'
 import OnboardingTopbar from '@/components/onboardingTopbar'
 import type { OnboardingAnswers } from '@/components/onboardingWizard'
+import { ONBOARDING_STEPS } from '@/data/onboarding'
 import { postApiOnboardingFollowupQuestion } from '@/api/generated/client'
 import type { FollowupQuestionRequestBusinessProfile } from '@/api/generated/client'
 
@@ -18,18 +19,39 @@ function asString(value: string | string[] | undefined) {
   return typeof value === 'string' && value.trim() ? value : undefined
 }
 
+function labelFor(stepId: string, choiceId: string | undefined) {
+  if (!choiceId) return undefined
+  const step = ONBOARDING_STEPS.find((s) => s.id === stepId)
+  if (!step || step.type !== 'choice') return choiceId
+  return step.choices.find((c) => c.id === choiceId)?.label ?? choiceId
+}
+
+function labelsFor(stepId: string, choiceIds: string[] | undefined) {
+  if (!choiceIds || choiceIds.length === 0) return undefined
+  return choiceIds
+    .map((id) => labelFor(stepId, id))
+    .filter((label): label is string => Boolean(label))
+}
+
 function toBusinessProfile(
   answers: OnboardingAnswers,
 ): FollowupQuestionRequestBusinessProfile {
+  const categoryId = asString(answers.category)
   return {
     businessName: asString(answers.businessName),
     category:
-      answers.category === 'other'
+      categoryId === 'other'
         ? asString(answers.categoryOther)
-        : asString(answers.category),
-    goal: asString(answers.goal),
+        : labelFor('category', categoryId),
+    goal: labelFor('goal', asString(answers.goal)),
     signatureProduct: asString(answers.signatureProduct),
     location: asString(answers.location),
+    adExperience: labelFor('adExperience', asString(answers.adExperience)),
+    budget: labelFor('budget', asString(answers.budget)),
+    platforms: labelsFor(
+      'platforms',
+      Array.isArray(answers.platforms) ? answers.platforms : undefined,
+    ),
   }
 }
 

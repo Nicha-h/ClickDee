@@ -6,10 +6,13 @@ import {
   AiContentFilterError,
 } from '../lib/openai.js'
 import { env } from '../config/env.js'
+import { CLICKDEE_PRODUCT_CONTEXT } from '../lib/product-context.js'
+import { getAiMemoryQas } from './onboarding.service.js'
 import type { MessageModel, UserModel } from '../generated/prisma/models.js'
 
-const SYSTEM_PROMPT =
-  'You are "น้อง ดี", a friendly Thai-language marketing assistant inside ClickDee, an ad-campaign management tool for small businesses. Reply in Thai. You may use light Markdown formatting (**bold**, bullet lists with "-") to make responses easy to scan — do not output JSON, tables, or code blocks.'
+const SYSTEM_PROMPT = `${CLICKDEE_PRODUCT_CONTEXT}
+
+You are "น้อง ดี", a friendly Thai-language marketing assistant inside ClickDee. Reply in Thai. You may use light Markdown formatting (**bold**, bullet lists with "-") to make responses easy to scan — do not output JSON, tables, or code blocks.`
 
 const HISTORY_LIMIT = 20
 
@@ -21,14 +24,41 @@ async function getOrCreateConversation(userId: string) {
   return existing ?? prisma.conversation.create({ data: { userId } })
 }
 
+function buildContextLine(user: UserModel | null): string | undefined {
+  if (!user?.businessName) return undefined
+  const fields: [string, string | null | undefined][] = [
+    ['category', user.category],
+    ['goal', user.goal],
+    ['location', user.location],
+    ['signatureProduct', user.signatureProduct],
+    ['adExperience', user.adExperience],
+    ['budget', user.budget],
+  ]
+  const parts = fields.filter(([, v]) => v).map(([k, v]) => `${k}=${v}`)
+  if (user.platforms.length > 0) {
+    parts.push(`platforms=${user.platforms.join(', ')}`)
+  }
+  return `Business context: name=${user.businessName}${parts.length ? ', ' + parts.join(', ') : ''}.`
+}
+
+function buildAiMemoryBlock(
+  aiMemory: { question: string; answer: string }[],
+): string | undefined {
+  if (aiMemory.length === 0) return undefined
+  const lines = aiMemory
+    .map((qa, i) => `Q${i + 1}: ${qa.question}\nA${i + 1}: ${qa.answer}`)
+    .join('\n')
+  return `Onboarding notes (from the user's earlier AI follow-up answers):\n${lines}`
+}
+
 async function generateAssistantReply(
   user: UserModel | null,
   history: MessageModel[],
+  aiMemory: { question: string; answer: string }[],
 ): Promise<string> {
   const client = getOpenAiClient()
-  const contextLine = user?.businessName
-    ? `Business context: name=${user.businessName}, category=${user.category ?? 'unknown'}, goal=${user.goal ?? 'unknown'}.`
-    : undefined
+  const contextLine = buildContextLine(user)
+  const aiMemoryBlock = buildAiMemoryBlock(aiMemory)
 
   try {
     const completion = await client.chat.completions.create({
@@ -36,7 +66,9 @@ async function generateAssistantReply(
       messages: [
         {
           role: 'system',
-          content: [SYSTEM_PROMPT, contextLine].filter(Boolean).join('\n'),
+          content: [SYSTEM_PROMPT, contextLine, aiMemoryBlock]
+            .filter(Boolean)
+            .join('\n'),
         },
         ...history.slice(-HISTORY_LIMIT).map((m) => ({
           role: m.role === 'USER' ? ('user' as const) : ('assistant' as const),
@@ -90,7 +122,8 @@ export async function sendMessage(userId: string, text: string) {
     orderBy: { createdAt: 'asc' },
   })
 
-  const assistantText = await generateAssistantReply(user, history)
+  const aiMemory = await getAiMemoryQas(userId)
+  const assistantText = await generateAssistantReply(user, history, aiMemory)
 
   const assistantMessage = await prisma.message.create({
     data: {

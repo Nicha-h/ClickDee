@@ -11,6 +11,7 @@ import * as userService from '../services/user.service.js'
 import { saveAiMemory } from '../services/onboarding.service.js'
 import { verifyPassword } from '../lib/password.js'
 import { signSessionToken } from '../lib/auth.js'
+import { setSessionCookie, clearSessionCookie } from '../lib/cookie.js'
 import { requireAuth, type AuthVariables } from '../middleware/auth.js'
 import { Prisma } from '../generated/prisma/client.js'
 import type { UserModel } from '../generated/prisma/models.js'
@@ -68,7 +69,8 @@ authApp.openapi(signupRoute, async (c) => {
       await saveAiMemory(user.id, input.aiMemory)
     }
     const token = await signSessionToken(user.id)
-    return c.json({ ...serializeUser(user), token }, 201)
+    setSessionCookie(c, token)
+    return c.json(serializeUser(user), 201)
   } catch (err) {
     if (
       err instanceof Prisma.PrismaClientKnownRequestError &&
@@ -105,7 +107,24 @@ authApp.openapi(loginRoute, async (c) => {
     return c.json({ message: 'Invalid email or password' }, 401)
   }
   const token = await signSessionToken(user.id)
-  return c.json({ ...serializeUser(user), token }, 200)
+  setSessionCookie(c, token)
+  return c.json(serializeUser(user), 200)
+})
+
+const logoutRoute = createRoute({
+  method: 'post',
+  path: '/logout',
+  tags: ['Auth'],
+  middleware: [requireAuth] as const,
+  responses: {
+    204: {
+      description: 'Logged out',
+    },
+  },
+})
+authApp.openapi(logoutRoute, async (c) => {
+  clearSessionCookie(c)
+  return c.body(null, 204)
 })
 
 const getAccountRoute = createRoute({
@@ -184,5 +203,6 @@ authApp.openapi(deleteAccountRoute, async (c) => {
     return c.json({ message: 'Invalid password' }, 401)
   }
   await userService.deleteUser(id)
+  clearSessionCookie(c)
   return c.body(null, 204)
 })

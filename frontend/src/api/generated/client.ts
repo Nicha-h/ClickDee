@@ -65,7 +65,7 @@ export interface CreateCampaignInput {
   endDate?: string;
 }
 
-export interface User {
+export interface AuthResponse {
   id: string;
   email: string;
   /** @nullable */
@@ -91,10 +91,6 @@ export interface User {
   promoHighlight: string | null;
   createdAt: string;
 }
-
-export type AuthResponse = User & {
-  token: string;
-};
 
 export type SignupInputAiMemoryItem = {
   /**
@@ -143,6 +139,33 @@ export interface LoginInput {
   email: string;
   /** @minLength 1 */
   password: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  /** @nullable */
+  businessName: string | null;
+  /** @nullable */
+  location: string | null;
+  /** @nullable */
+  category: string | null;
+  /** @nullable */
+  categoryOther: string | null;
+  /** @nullable */
+  adExperience: string | null;
+  /** @nullable */
+  budget: string | null;
+  /** @nullable */
+  goal: string | null;
+  /** @nullable */
+  signatureProduct: string | null;
+  platforms: string[];
+  /** @nullable */
+  peakHours: string | null;
+  /** @nullable */
+  promoHighlight: string | null;
+  createdAt: string;
 }
 
 export interface DeleteAccountInput {
@@ -199,6 +222,12 @@ export type FollowupQuestionRequestBusinessProfile = {
   signatureProduct?: string;
   /** @maxLength 200 */
   location?: string;
+  /** @maxLength 100 */
+  adExperience?: string;
+  /** @maxLength 100 */
+  budget?: string;
+  /** @maxItems 10 */
+  platforms?: string[];
 };
 
 export type FollowupQuestionRequestPreviousAnswersItem = {
@@ -218,6 +247,13 @@ export interface FollowupQuestionRequest {
   businessProfile: FollowupQuestionRequestBusinessProfile;
   /** @maxItems 5 */
   previousAnswers: FollowupQuestionRequestPreviousAnswersItem[];
+}
+
+export interface AiMemoryItem {
+  id: string;
+  question: string;
+  answer: string;
+  createdAt: string;
 }
 
 export type getApiHealthResponse200 = {
@@ -481,6 +517,46 @@ export const postApiAuthLogin = async (loginInput?: LoginInput, options?: Reques
 
 
 
+export type postApiAuthLogoutResponse204 = {
+  data: void
+  status: 204
+}
+
+export type postApiAuthLogoutResponseSuccess = (postApiAuthLogoutResponse204) & {
+  headers: Headers;
+};
+;
+
+export type postApiAuthLogoutResponse = (postApiAuthLogoutResponseSuccess)
+
+export const getPostApiAuthLogoutUrl = () => {
+
+
+
+
+  return `${apiBaseUrl}/api/auth/logout`
+}
+
+export const postApiAuthLogout = async ( options?: RequestInit): Promise<postApiAuthLogoutResponse> => {
+
+  const res = await fetch(getPostApiAuthLogoutUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiAuthLogoutResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as postApiAuthLogoutResponse
+}
+
+
+
 export type getApiAuthAccountIdResponse200 = {
   data: User
   status: 200
@@ -736,4 +812,131 @@ export const postApiOnboardingFollowupQuestion = async (followupQuestionRequest?
 
   const data: postApiOnboardingFollowupQuestionResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiOnboardingFollowupQuestionResponse
+}
+
+
+
+export type getApiAiMemoryResponse200 = {
+  data: AiMemoryItem[]
+  status: 200
+}
+
+export type getApiAiMemoryResponseSuccess = (getApiAiMemoryResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiAiMemoryResponse = (getApiAiMemoryResponseSuccess)
+
+export const getGetApiAiMemoryUrl = () => {
+
+
+
+
+  return `${apiBaseUrl}/api/ai-memory`
+}
+
+export const getApiAiMemory = async ( options?: RequestInit): Promise<getApiAiMemoryResponse> => {
+
+  const res = await fetch(getGetApiAiMemoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiAiMemoryResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiAiMemoryResponse
+}
+
+
+
+export type deleteApiAiMemoryResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteApiAiMemoryResponseSuccess = (deleteApiAiMemoryResponse204) & {
+  headers: Headers;
+};
+;
+
+export type deleteApiAiMemoryResponse = (deleteApiAiMemoryResponseSuccess)
+
+export const getDeleteApiAiMemoryUrl = () => {
+
+
+
+
+  return `${apiBaseUrl}/api/ai-memory`
+}
+
+export const deleteApiAiMemory = async ( options?: RequestInit): Promise<deleteApiAiMemoryResponse> => {
+
+  const res = await fetch(getDeleteApiAiMemoryUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteApiAiMemoryResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as deleteApiAiMemoryResponse
+}
+
+
+
+export type deleteApiAiMemoryIdResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteApiAiMemoryIdResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type deleteApiAiMemoryIdResponseSuccess = (deleteApiAiMemoryIdResponse204) & {
+  headers: Headers;
+};
+export type deleteApiAiMemoryIdResponseError = (deleteApiAiMemoryIdResponse404) & {
+  headers: Headers;
+};
+
+export type deleteApiAiMemoryIdResponse = (deleteApiAiMemoryIdResponseSuccess | deleteApiAiMemoryIdResponseError)
+
+export const getDeleteApiAiMemoryIdUrl = (id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/ai-memory/${id}`
+}
+
+export const deleteApiAiMemoryId = async (id: string, options?: RequestInit): Promise<deleteApiAiMemoryIdResponse> => {
+
+  const res = await fetch(getDeleteApiAiMemoryIdUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteApiAiMemoryIdResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as deleteApiAiMemoryIdResponse
 }

@@ -7,16 +7,21 @@ import { campaignsApp } from './routes/campaigns.js'
 import { authApp } from './routes/auth.js'
 import { aiApp } from './routes/ai.js'
 import { onboardingApp } from './routes/onboarding.js'
+import { aiMemoryApp } from './routes/ai-memory.js'
 
 export const app = new OpenAPIHono()
 
-app.use('/api/*', cors({ origin: ['http://localhost:5173'] }))
+app.use(
+  '/api/*',
+  cors({ origin: ['http://localhost:5173'], credentials: true }),
+)
 
 app.route('/api/health', healthApp)
 app.route('/api/campaigns', campaignsApp)
 app.route('/api/auth', authApp)
 app.route('/api/ai', aiApp)
 app.route('/api/onboarding', onboardingApp)
+app.route('/api/ai-memory', aiMemoryApp)
 
 app.doc('/openapi.json', {
   openapi: '3.0.0',

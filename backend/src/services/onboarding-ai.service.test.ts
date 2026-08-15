@@ -15,11 +15,9 @@ vi.mock('../lib/openai.js', async () => {
   }
 })
 
-import {
-  generateFollowupQuestion,
-  MAX_FOLLOWUP_QUESTIONS,
-} from './onboarding-ai.service.js'
+import { generateFollowupQuestion } from './onboarding-ai.service.js'
 import { AiNotConfiguredError } from '../lib/openai.js'
+import { env } from '../config/env.js'
 
 beforeEach(() => {
   createMock.mockReset()
@@ -28,7 +26,7 @@ beforeEach(() => {
 describe('generateFollowupQuestion', () => {
   it('stops without calling the AI once the question cap is reached', async () => {
     const previousAnswers = Array.from(
-      { length: MAX_FOLLOWUP_QUESTIONS },
+      { length: env.MAX_FOLLOWUP_QUESTIONS },
       (_, i) => ({ question: `Q${i}`, answer: `A${i}` }),
     )
     const result = await generateFollowupQuestion({}, previousAnswers)

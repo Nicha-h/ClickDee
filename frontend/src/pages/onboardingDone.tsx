@@ -8,7 +8,7 @@ import type { FollowupQa } from '@/components/onboardingAiFollowup'
 import ellipseTop from '@/assets/decorative/welcome-ellipse-top.svg'
 import ellipseBottom from '@/assets/decorative/welcome-ellipse-bottom.svg'
 import { postApiAuthSignup } from '@/api/generated/client'
-import { setAuthToken, setUserId } from '@/lib/userId'
+import { setUserId, withCredentials } from '@/lib/userId'
 
 type DoneState = {
   answers?: OnboardingAnswers
@@ -88,30 +88,33 @@ function OnboardingDone() {
     setError(null)
     setIsSubmitting(true)
     try {
-      const res = await postApiAuthSignup({
-        email,
-        password,
-        businessName: asString(answers.businessName),
-        location: asString(answers.location),
-        category: asString(answers.category),
-        categoryOther: asString(answers.categoryOther),
-        adExperience: asString(answers.adExperience),
-        budget: asString(answers.budget),
-        goal: asString(answers.goal),
-        signatureProduct: asString(answers.signatureProduct),
-        platforms: asStringArray(answers.platforms),
-        peakHours: asString(answers.peakHours),
-        promoHighlight: asString(answers.promoHighlight),
-        aiMemory: aiMemoryConsent && aiMemory.length > 0 ? aiMemory : undefined,
-        aiMemoryConsent:
-          aiMemoryConsent && aiMemory.length > 0 ? true : undefined,
-      })
+      const res = await postApiAuthSignup(
+        {
+          email,
+          password,
+          businessName: asString(answers.businessName),
+          location: asString(answers.location),
+          category: asString(answers.category),
+          categoryOther: asString(answers.categoryOther),
+          adExperience: asString(answers.adExperience),
+          budget: asString(answers.budget),
+          goal: asString(answers.goal),
+          signatureProduct: asString(answers.signatureProduct),
+          platforms: asStringArray(answers.platforms),
+          peakHours: asString(answers.peakHours),
+          promoHighlight: asString(answers.promoHighlight),
+          aiMemory:
+            aiMemoryConsent && aiMemory.length > 0 ? aiMemory : undefined,
+          aiMemoryConsent:
+            aiMemoryConsent && aiMemory.length > 0 ? true : undefined,
+        },
+        withCredentials(),
+      )
       if (res.status === 409) {
         setError('อีเมลนี้ถูกใช้งานแล้ว')
         return
       }
       setUserId(res.data.id)
-      setAuthToken(res.data.token)
       navigate('/home')
     } catch {
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')

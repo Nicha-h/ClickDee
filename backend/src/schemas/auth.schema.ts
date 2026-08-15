@@ -51,9 +51,7 @@ export const UserSchema = z
   })
   .openapi('User')
 
-export const AuthResponseSchema = UserSchema.extend({
-  token: z.string(),
-}).openapi('AuthResponse')
+export const AuthResponseSchema = UserSchema.openapi('AuthResponse')
 
 export const DeleteAccountParamSchema = z.object({
   id: z.string().openapi({ param: { name: 'id', in: 'path' } }),

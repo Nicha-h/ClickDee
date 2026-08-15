@@ -41,8 +41,9 @@ import {
 import { signSessionToken } from '../lib/auth.js'
 
 const authHeader = async () => ({
-  Authorization: `Bearer ${await signSessionToken('user-1')}`,
+  Cookie: `session=${await signSessionToken('user-1')}`,
 })
+const csrfHeader = { 'X-Requested-With': 'XMLHttpRequest' }
 
 describe('GET /api/ai/messages', () => {
   it('returns the serialized conversation history', async () => {
@@ -78,6 +79,7 @@ describe('POST /api/ai/messages', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...csrfHeader,
         ...(await authHeader()),
       },
       body: JSON.stringify(body),
@@ -86,10 +88,22 @@ describe('POST /api/ai/messages', () => {
   it('returns 401 without a token', async () => {
     const res = await app.request('/api/ai/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...csrfHeader },
       body: JSON.stringify({ text: 'สวัสดี' }),
     })
     expect(res.status).toBe(401)
+  })
+
+  it('returns 403 when the CSRF header is missing, even with a valid cookie', async () => {
+    const res = await app.request('/api/ai/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await authHeader()),
+      },
+      body: JSON.stringify({ text: 'สวัสดี' }),
+    })
+    expect(res.status).toBe(403)
   })
 
   it('returns the user + assistant messages on success', async () => {

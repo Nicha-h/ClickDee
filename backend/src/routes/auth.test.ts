@@ -38,8 +38,9 @@ import * as passwordLib from '../lib/password.js'
 import { signSessionToken } from '../lib/auth.js'
 
 const authHeader = async (userId: string) => ({
-  Authorization: `Bearer ${await signSessionToken(userId)}`,
+  Cookie: `session=${await signSessionToken(userId)}`,
 })
+const csrfHeader = { 'X-Requested-With': 'XMLHttpRequest' }
 
 describe('POST /api/auth/signup', () => {
   it('creates an account and omits passwordHash from the response', async () => {
@@ -57,6 +58,8 @@ describe('POST /api/auth/signup', () => {
     expect(body.id).toBe('user-1')
     expect(body.email).toBe('business@example.com')
     expect(body.passwordHash).toBeUndefined()
+    expect(body.token).toBeUndefined()
+    expect(res.headers.get('Set-Cookie')).toMatch(/^session=/)
   })
 
   it('returns 409 when the email is already registered', async () => {
@@ -90,6 +93,8 @@ describe('POST /api/auth/login', () => {
     expect(body.id).toBe('user-1')
     expect(body.email).toBe('business@example.com')
     expect(body.passwordHash).toBeUndefined()
+    expect(body.token).toBeUndefined()
+    expect(res.headers.get('Set-Cookie')).toMatch(/^session=/)
   })
 
   it('returns 401 for a wrong password', async () => {
@@ -167,12 +172,14 @@ describe('DELETE /api/auth/account/:id', () => {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
+        ...csrfHeader,
         ...(await authHeader('user-1')),
       },
       body: JSON.stringify({ password: 'password123' }),
     })
     expect(res.status).toBe(204)
     expect(userService.deleteUser).toHaveBeenCalledWith('user-1')
+    expect(res.headers.get('Set-Cookie')).toMatch(/session=;/)
   })
 
   it('returns 401 for a wrong password', async () => {
@@ -182,6 +189,7 @@ describe('DELETE /api/auth/account/:id', () => {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
+        ...csrfHeader,
         ...(await authHeader('user-1')),
       },
       body: JSON.stringify({ password: 'wrong-password' }),
@@ -194,6 +202,7 @@ describe('DELETE /api/auth/account/:id', () => {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
+        ...csrfHeader,
         ...(await authHeader('user-1')),
       },
       body: JSON.stringify({ password: 'password123' }),
@@ -207,10 +216,42 @@ describe('DELETE /api/auth/account/:id', () => {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
+        ...csrfHeader,
         ...(await authHeader('nobody')),
       },
       body: JSON.stringify({ password: 'password123' }),
     })
     expect(res.status).toBe(404)
+  })
+
+  it('returns 403 when the CSRF header is missing, even with a valid cookie', async () => {
+    const res = await app.request('/api/auth/account/user-1', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await authHeader('user-1')),
+      },
+      body: JSON.stringify({ password: 'password123' }),
+    })
+    expect(res.status).toBe(403)
+  })
+})
+
+describe('POST /api/auth/logout', () => {
+  it('clears the session cookie', async () => {
+    const res = await app.request('/api/auth/logout', {
+      method: 'POST',
+      headers: { ...csrfHeader, ...(await authHeader('user-1')) },
+    })
+    expect(res.status).toBe(204)
+    expect(res.headers.get('Set-Cookie')).toMatch(/session=;/)
+  })
+
+  it('returns 401 without a cookie', async () => {
+    const res = await app.request('/api/auth/logout', {
+      method: 'POST',
+      headers: { ...csrfHeader },
+    })
+    expect(res.status).toBe(401)
   })
 })

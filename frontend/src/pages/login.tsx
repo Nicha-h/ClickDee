@@ -6,7 +6,7 @@ import AuthBrandPanel from '@/components/authBrandPanel'
 import AuthSocialButtons from '@/components/authSocialButtons'
 import { useNavigate } from 'react-router-dom'
 import { postApiAuthLogin } from '@/api/generated/client'
-import { setAuthToken, setUserId } from '@/lib/userId'
+import { setUserId, withCredentials } from '@/lib/userId'
 
 const loginSchema = z.object({
   email: z.string().email('กรุณากรอกอีเมลให้ถูกต้อง'),
@@ -34,13 +34,12 @@ function Login() {
     setError(null)
     setIsSubmitting(true)
     try {
-      const res = await postApiAuthLogin(result.data)
+      const res = await postApiAuthLogin(result.data, withCredentials())
       if (res.status === 401) {
         setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง')
         return
       }
       setUserId(res.data.id)
-      setAuthToken(res.data.token)
       navigate('/home')
     } catch {
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')

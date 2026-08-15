@@ -19,7 +19,7 @@ import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import AiSkeleton from '@/components/aiSkeleton'
 import { getApiAiMessages, postApiAiMessages } from '@/api/generated/client'
 import type { AiMessage as ApiAiMessage } from '@/api/generated/client'
-import { authHeaders, getAuthToken } from '@/lib/userId'
+import { getUserId, withCredentials } from '@/lib/userId'
 
 type ChatMessage = {
   id: string
@@ -220,23 +220,23 @@ function Ai() {
   const [inputValue, setInputValue] = useState('')
   const [quickActionsOpen, setQuickActionsOpen] = useState(true)
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [token] = useState(() => getAuthToken())
+  const [userId] = useState(() => getUserId())
   const [isSending, setIsSending] = useState(false)
   const isLoading = useSimulatedLoading()
 
   useEffect(() => {
-    if (!token) return
-    getApiAiMessages(authHeaders()).then((res) => {
+    if (!userId) return
+    getApiAiMessages(withCredentials()).then((res) => {
       if (res.status === 200) {
         setMessages(res.data.map(toChatMessage))
       }
     })
-  }, [token])
+  }, [userId])
 
   const handleSend = async (event: FormEvent) => {
     event.preventDefault()
     const text = inputValue.trim()
-    if (!text || !token || isSending) return
+    if (!text || !userId || isSending) return
 
     setMessages((prev) => [
       ...prev,
@@ -251,7 +251,7 @@ function Ai() {
     setIsSending(true)
 
     try {
-      const res = await postApiAiMessages({ text }, authHeaders())
+      const res = await postApiAiMessages({ text }, withCredentials())
       setMessages((prev) => [
         ...prev,
         res.status === 201
@@ -285,7 +285,7 @@ function Ai() {
               ),
             )}
           </div>
-          {!token && (
+          {!userId && (
             <p className="font-thai text-sm text-red-500">
               กรุณาสมัครสมาชิกก่อนใช้งานแชท AI
             </p>
@@ -299,12 +299,12 @@ function Ai() {
               onChange={(e) => setInputValue(e.target.value)}
               type="text"
               placeholder="พิมพ์คำถามของคุณ..."
-              disabled={!token || isSending}
+              disabled={!userId || isSending}
               className="font-thai flex-1 px-3 text-lg outline-none disabled:opacity-50"
             />
             <button
               type="submit"
-              disabled={!token || isSending}
+              disabled={!userId || isSending}
               className="bg-sealight-hover flex h-12 w-10 shrink-0 items-center justify-center rounded-full *:transition-all hover:scale-105 hover:*:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
             >
               <Send className="text-amalfidark h-6 w-6" />

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { CircleUserRound, Pencil } from 'lucide-react'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import AccountSkeleton from '@/components/accountSkeleton'
+import AiMemoryCard from '@/components/aiMemoryCard'
 
 type EditableFieldProps = {
   fieldKey: string
@@ -96,10 +97,18 @@ const initialBusiness = {
     'กลุ่มเป้าหมายตัวจริงของร้านคุณคือ พนักงานออฟฟิศแถวร้าน ที่มักเลือกซื้อในช่วงมื้อเที่ยง และประทับใจร้านคุณเรื่องรสชาติ/คุณภาพจัดเต็ม',
 }
 
+type AccountTab = 'profile' | 'ai-memory'
+
+const tabs: { key: AccountTab; label: string }[] = [
+  { key: 'profile', label: 'โปรไฟล์' },
+  { key: 'ai-memory', label: 'ความจำ AI' },
+]
+
 function Account() {
   const [profile, setProfile] = useState(initialProfile)
   const [business, setBusiness] = useState(initialBusiness)
   const [editingKey, setEditingKey] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<AccountTab>('profile')
   const isLoading = useSimulatedLoading()
 
   const updateProfile = (key: string, value: string) => {
@@ -121,111 +130,136 @@ function Account() {
         ข้อมูลส่วนตัวและข้อมูลธุรกิจที่น้องดี AI ใช้วางแผนแคมเปญให้คุณ
       </p>
 
-      <div className="mt-8 rounded-xl border border-[#8E98A8] bg-white p-6 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
-        <div className="mb-6 flex items-center gap-5">
-          <div className="bg-amalfilight flex h-18 w-18 shrink-0 items-center justify-center rounded-full">
-            <CircleUserRound className="text-amalfidark h-19 w-19" />
+      <div className="font-thai mt-6 flex w-full gap-2 border-b border-[#E4E1EC]">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setActiveTab(tab.key)}
+            className={`-mb-px border-b-2 px-4 py-3 text-lg font-semibold transition-colors ${
+              activeTab === tab.key
+                ? 'border-amalfidark text-amalfidark'
+                : 'border-transparent text-[#8E98A8] hover:text-[#6B7280]'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'profile' ? (
+        <>
+          <div className="mt-8 rounded-xl border border-[#8E98A8] bg-white p-6 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+            <div className="mb-6 flex items-center gap-5">
+              <div className="bg-amalfilight flex h-18 w-18 shrink-0 items-center justify-center rounded-full">
+                <CircleUserRound className="text-amalfidark h-19 w-19" />
+              </div>
+              <div>
+                <p className="font-thai text-2xl font-bold text-[#1F2937]">
+                  {profile.name}
+                </p>
+                <p className="font-thai text-xl text-[#6B7280]">
+                  {profile.email}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3.5">
+              <EditableField
+                fieldKey="name"
+                label="ชื่อ-นามสกุล"
+                value={profile.name}
+                editingKey={editingKey}
+                onEdit={setEditingKey}
+                onSave={saveEditing}
+                onChange={updateProfile}
+              />
+              <EditableField
+                fieldKey="email"
+                label="อีเมล"
+                value={profile.email}
+                editingKey={editingKey}
+                onEdit={setEditingKey}
+                onSave={saveEditing}
+                onChange={updateProfile}
+              />
+            </div>
           </div>
-          <div>
-            <p className="font-thai text-2xl font-bold text-[#1F2937]">
-              {profile.name}
+
+          <div className="mt-7 rounded-xl border border-[#8E98A8] bg-white p-6 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+            <h2 className="font-thai text-amalfidark text-2xl font-bold">
+              ข้อมูลธุรกิจ
+            </h2>
+            <p className="font-thai mt-1 mb-6 text-lg text-[#6B7280]">
+              แก้ไขได้ทุกเมื่อ — น้องดี AI
+              จะใช้ข้อมูลนี้วางแผนแคมเปญให้ตรงกลุ่มลูกค้ามากขึ้น
             </p>
-            <p className="font-thai text-xl text-[#6B7280]">{profile.email}</p>
+
+            <div className="flex flex-col gap-3.5">
+              <EditableField
+                fieldKey="storeName"
+                label="ชื่อร้าน/ธุรกิจ"
+                value={business.storeName}
+                editingKey={editingKey}
+                onEdit={setEditingKey}
+                onSave={saveEditing}
+                onChange={updateBusiness}
+              />
+              <EditableField
+                fieldKey="category"
+                label="ประเภทธุรกิจ"
+                value={business.category}
+                editingKey={editingKey}
+                onEdit={setEditingKey}
+                onSave={saveEditing}
+                onChange={updateBusiness}
+              />
+              <EditableField
+                fieldKey="budget"
+                label="งบโฆษณาต่อเดือน"
+                value={business.budget}
+                editingKey={editingKey}
+                onEdit={setEditingKey}
+                onSave={saveEditing}
+                onChange={updateBusiness}
+              />
+              <EditableField
+                fieldKey="location"
+                label="ทำเลที่ตั้ง"
+                value={business.location}
+                editingKey={editingKey}
+                onEdit={setEditingKey}
+                onSave={saveEditing}
+                onChange={updateBusiness}
+              />
+              <EditableField
+                fieldKey="products"
+                label="สินค้า/เมนูเด่น"
+                value={business.products}
+                multiline
+                rows={3}
+                editingKey={editingKey}
+                onEdit={setEditingKey}
+                onSave={saveEditing}
+                onChange={updateBusiness}
+              />
+              <EditableField
+                fieldKey="persona"
+                label="AI Insight: ลูกค้าตัวจริงของคุณ"
+                value={business.persona}
+                multiline
+                rows={4}
+                editingKey={editingKey}
+                onEdit={setEditingKey}
+                onSave={saveEditing}
+                onChange={updateBusiness}
+              />
+            </div>
           </div>
-        </div>
-
-        <div className="flex flex-col gap-3.5">
-          <EditableField
-            fieldKey="name"
-            label="ชื่อ-นามสกุล"
-            value={profile.name}
-            editingKey={editingKey}
-            onEdit={setEditingKey}
-            onSave={saveEditing}
-            onChange={updateProfile}
-          />
-          <EditableField
-            fieldKey="email"
-            label="อีเมล"
-            value={profile.email}
-            editingKey={editingKey}
-            onEdit={setEditingKey}
-            onSave={saveEditing}
-            onChange={updateProfile}
-          />
-        </div>
-      </div>
-
-      <div className="mt-7 rounded-xl border border-[#8E98A8] bg-white p-6 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
-        <h2 className="font-thai text-amalfidark text-2xl font-bold">
-          ข้อมูลธุรกิจ
-        </h2>
-        <p className="font-thai mt-1 mb-6 text-lg text-[#6B7280]">
-          แก้ไขได้ทุกเมื่อ — น้องดี AI
-          จะใช้ข้อมูลนี้วางแผนแคมเปญให้ตรงกลุ่มลูกค้ามากขึ้น
-        </p>
-
-        <div className="flex flex-col gap-3.5">
-          <EditableField
-            fieldKey="storeName"
-            label="ชื่อร้าน/ธุรกิจ"
-            value={business.storeName}
-            editingKey={editingKey}
-            onEdit={setEditingKey}
-            onSave={saveEditing}
-            onChange={updateBusiness}
-          />
-          <EditableField
-            fieldKey="category"
-            label="ประเภทธุรกิจ"
-            value={business.category}
-            editingKey={editingKey}
-            onEdit={setEditingKey}
-            onSave={saveEditing}
-            onChange={updateBusiness}
-          />
-          <EditableField
-            fieldKey="budget"
-            label="งบโฆษณาต่อเดือน"
-            value={business.budget}
-            editingKey={editingKey}
-            onEdit={setEditingKey}
-            onSave={saveEditing}
-            onChange={updateBusiness}
-          />
-          <EditableField
-            fieldKey="location"
-            label="ทำเลที่ตั้ง"
-            value={business.location}
-            editingKey={editingKey}
-            onEdit={setEditingKey}
-            onSave={saveEditing}
-            onChange={updateBusiness}
-          />
-          <EditableField
-            fieldKey="products"
-            label="สินค้า/เมนูเด่น"
-            value={business.products}
-            multiline
-            rows={3}
-            editingKey={editingKey}
-            onEdit={setEditingKey}
-            onSave={saveEditing}
-            onChange={updateBusiness}
-          />
-          <EditableField
-            fieldKey="persona"
-            label="AI Insight: ลูกค้าตัวจริงของคุณ"
-            value={business.persona}
-            multiline
-            rows={4}
-            editingKey={editingKey}
-            onEdit={setEditingKey}
-            onSave={saveEditing}
-            onChange={updateBusiness}
-          />
-        </div>
-      </div>
+        </>
+      ) : (
+        <AiMemoryCard />
+      )}
 
       <div className="h-10 w-full shrink-0" />
     </div>

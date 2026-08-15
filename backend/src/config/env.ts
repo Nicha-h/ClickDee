@@ -12,6 +12,7 @@ const EnvSchema = z.object({
   AZURE_OPENAI_DEPLOYMENT: z.string().min(1).optional(),
   AUTH_JWT_SECRET: z.string().min(32),
   AI_MEMORY_ENCRYPTION_KEY: z.string().min(32),
+  MAX_FOLLOWUP_QUESTIONS: z.coerce.number().int().positive().default(5),
 })
 
 export const env = EnvSchema.parse(process.env)

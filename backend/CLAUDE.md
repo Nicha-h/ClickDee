@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-This backend has a layered structure (routes/services/schemas/middleware/db/config). `Campaign` is still the minimal CRUD vertical slice (list/get/create) — the reference pattern for a plain, unauthenticated resource. It was intentionally left without auth when auth was added elsewhere; don't assume that's an oversight to fix.
+This backend has a layered structure (routes/services/schemas/middleware/db/config). `Campaign` is a minimal CRUD vertical slice (list/get/create), now `userId`-owned and behind `requireAuth` like every other resource — it used to be the unauthenticated reference slice before auth existed everywhere, that's no longer the case.
 
-Auth now exists: bearer JWT sessions protect `User`-owned resources (`/api/auth/account/:id`, `/api/ai/*`). See **Auth** below before adding a new authenticated route. Domain models in Prisma: `Campaign` (standalone), and `User` with `Conversation`/`Message` (AI chat history) and `AiMemory` (encrypted onboarding follow-up answers) cascade-linked to it. Extend existing conventions rather than inventing new ones.
+Auth: httpOnly session cookies protect every `User`-owned resource (`/api/auth/account/:id`, `/api/ai/*`, `/api/ai-memory/*`, `/api/campaigns/*`). See **Auth** below before adding a new authenticated route. Domain models in Prisma: `User` with `Campaign`, `Conversation`/`Message` (AI chat history), and `AiMemory` (encrypted onboarding follow-up answers) all cascade-linked to it. Extend existing conventions rather than inventing new ones.
 
 ## Monorepo layout
 
@@ -51,23 +51,27 @@ Install deps: `pnpm install` from the repo root (workspace-aware).
 
 ## Auth
 
-Bearer JWT sessions, not cookies. `POST /api/auth/signup` and `POST /api/auth/login` return the user object plus a `token` field (HS256, 24h expiry, signed with `AUTH_JWT_SECRET`). Clients send it back as `Authorization: Bearer <token>`.
+httpOnly session cookies, not bearer tokens. `POST /api/auth/signup` and `POST /api/auth/login` sign a JWT (HS256, 24h expiry, `AUTH_JWT_SECRET`) and set it via `Set-Cookie: session=<token>; HttpOnly; SameSite=Lax` (see `lib/cookie.ts`'s `setSessionCookie`/`clearSessionCookie`) — the response body no longer includes the token. The browser attaches the cookie automatically on same-site requests; CORS is configured with `credentials: true` to allow this across the dev `localhost:5173` → `localhost:3000` port split. `POST /api/auth/logout` (`requireAuth`) clears the cookie server-side — there's no client-side token to simply drop anymore.
+
+`requireAuth` (`middleware/auth.ts`) reads the `session` cookie via `hono/cookie`'s `getCookie`, not an `Authorization` header. It also enforces a lightweight CSRF check: any `POST`/`PUT`/`PATCH`/`DELETE` request through it must carry `X-Requested-With: XMLHttpRequest`, or it 403s — `SameSite=Lax` already blocks the cookie on most cross-site requests, this closes the remaining simple-cross-site-form gap without a double-submit token. `GET`/`HEAD` are exempt.
 
 To protect a new route:
 1. Type the app as `new OpenAPIHono<{ Variables: AuthVariables }>()` (see `routes/auth.ts` / `routes/ai.ts`).
 2. Add `middleware: [requireAuth] as const` to the route's `createRoute({...})` config — `@hono/zod-openapi` infers the handler's context type from this, so `c.get('userId')` is typed without extra casts.
 3. In the handler, read the caller's identity from `c.get('userId')` — **never** trust a client-supplied `userId` in the body/query/params for anything auth already tells you.
-4. If the route also takes a resource id in the URL (e.g. `/account/:id`), `requireAuth` only proves *who* the caller is — it does not check they own `:id`. Add an explicit `if (c.get('userId') !== id) return c.json({ message: 'Forbidden' }, 403)` (see `getAccountRoute`/`deleteAccountRoute` in `routes/auth.ts`).
+4. If the route also takes a resource id in the URL (e.g. `/account/:id`), `requireAuth` only proves *who* the caller is — it does not check they own `:id`. Add an explicit `if (c.get('userId') !== id) return c.json({ message: 'Forbidden' }, 403)` (see `getAccountRoute`/`deleteAccountRoute` in `routes/auth.ts`), or — the pattern used for `Campaign`/`AiMemory` — scope the resource query itself by `userId` so "not found" and "not yours" collapse into the same 404 without an extra existence-leaking check.
 
-`Campaign` is intentionally **not** behind `requireAuth` — it predates auth and was left as the plain-CRUD reference. Don't retrofit auth onto it without being asked; it isn't an oversight.
+`Campaign` is behind `requireAuth` and scoped per-owner (`Campaign.userId`), same as `AiMemory`/`Conversation`. It was the plain-CRUD reference slice before auth existed; that's no longer the case, so don't treat it as the unauthenticated example anymore.
 
 ## Sensitive data
 
-`AiMemory.answer` is encrypted at rest with AES-256-GCM (`lib/encryption.ts`, key from `AI_MEMORY_ENCRYPTION_KEY`) — encrypt immediately before the Prisma write, decrypt only where actually needed (there is currently no endpoint that returns decrypted memory; it's write-only from the API's perspective). `AiMemory.question` is stored in plaintext — it's the AI's own generated prompt text, not user-supplied business data, so it isn't treated as sensitive. Follow this same pattern (encrypt at the service layer, right before the write) for any new column holding user-authored business/PII content.
+`AiMemory.question` and `AiMemory.answer` are both encrypted at rest with AES-256-GCM (`lib/encryption.ts`, key from `AI_MEMORY_ENCRYPTION_KEY`) — encrypt immediately before the Prisma write, decrypt only where actually needed (`getAiMemoryQas`/`getAiMemoryItems` in `services/onboarding.service.ts`, used by the AI chat context and the account-page AI Memory viewer respectively). `question` used to be left in plaintext (it's the AI's own generated prompt text, not user-typed input) but is now encrypted too for defense-in-depth, since it's dynamically generated per business context and could hint at business specifics in aggregate. Follow this same pattern (encrypt at the service layer, right before the write) for any new column holding user-authored business/PII content.
+
+Full Postgres row-level security (RLS) and transparent data encryption (TDE) at the database layer are a deliberately separate, larger future initiative — not part of this field-level encryption. TDE is a setting on the Postgres hosting provider, not application code. RLS would need a non-superuser app DB role, policy migrations, and per-request session-variable middleware; don't attempt it as a side effect of a "should this field be encrypted" change.
 
 ## Rate limiting
 
-`middleware/rate-limit.ts`'s limiter keeps its counters in an in-memory `Map` — it works correctly for a single process but does **not** coordinate across multiple instances. It's applied to `POST /api/onboarding/followup-question` because that route is unauthenticated (see below) and spends real Azure OpenAI budget per call. If the app is ever horizontally scaled, this needs to move to a shared store (Redis, etc.) — that's a known gap, not a bug.
+`middleware/rate-limit.ts`'s limiter keeps its counters in an in-memory `Map` — it works correctly for a single process but does **not** coordinate across multiple instances. It's applied to `POST /api/onboarding/followup-question` because that route is unauthenticated (see below) and spends real Azure OpenAI budget per call. This is intentional tech debt, deliberately left as-is while the app runs as a single backend process — the trigger condition to revisit it is any horizontal scale-out (multiple instances behind a load balancer, serverless scale-to-many, etc.), at which point it must move to a shared store (Redis or similar) or per-instance limits become trivially bypassable by spreading requests across instances. Don't treat the in-memory implementation as an oversight to "fix" before that trigger condition is actually met.
 
 `POST /api/onboarding/followup-question` is the one intentionally public, unauthenticated endpoint in the API: it runs during onboarding, before an account/token exists, and only proxies to the AI (no DB write), so it carries no PII-at-rest risk. It's guarded by the rate limiter plus request size caps instead of `requireAuth`.
 

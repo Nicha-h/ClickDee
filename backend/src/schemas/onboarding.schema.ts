@@ -6,6 +6,9 @@ export const BusinessProfileSchema = z.object({
   goal: z.string().max(100).optional(),
   signatureProduct: z.string().max(1000).optional(),
   location: z.string().max(200).optional(),
+  adExperience: z.string().max(100).optional(),
+  budget: z.string().max(100).optional(),
+  platforms: z.array(z.string()).max(10).optional(),
 })
 
 export const FollowupQaSchema = z.object({
