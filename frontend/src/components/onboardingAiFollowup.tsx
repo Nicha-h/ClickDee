@@ -140,13 +140,26 @@ function OnboardingAiFollowup({
       />
 
       <div className="font-thai flex w-full flex-col items-center gap-2.5 text-center">
-        <span className="bg-sealight text-seadark-active font-thai mb-1 flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium">
-          <Sparkles className="h-3.5 w-3.5" />
-          คำตอบนี้จะถูกส่งให้ AI ช่วยปรับแต่งระบบให้คุณ
-        </span>
-        <h1 className="text-amalfidark text-xl font-bold sm:text-2xl lg:text-3xl">
-          {currentQuestion}
-        </h1>
+        {isLoading ? (
+          <div className="flex flex-col items-center gap-3 py-2">
+            <span className="bg-sea flex h-12 w-12 animate-[breathe_2.4s_ease-in-out_infinite] items-center justify-center rounded-full shadow-lg">
+              <Sparkles className="h-6 w-6 animate-[spin_2s_linear_infinite] text-white" />
+            </span>
+            <p className="text-amalfidark text-base font-medium">
+              AI กำลังคิดคำถามถัดไป...
+            </p>
+          </div>
+        ) : (
+          <>
+            <span className="bg-sealight text-seadark-active font-thai mb-1 flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium">
+              <Sparkles className="h-3.5 w-3.5" />
+              คำตอบนี้จะถูกส่งให้ AI ช่วยปรับแต่งระบบให้คุณ
+            </span>
+            <h1 className="text-amalfidark text-xl font-bold sm:text-2xl lg:text-3xl">
+              {currentQuestion}
+            </h1>
+          </>
+        )}
       </div>
 
       <textarea

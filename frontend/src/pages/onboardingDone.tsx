@@ -164,14 +164,16 @@ function OnboardingDone() {
               summaryRows.map((row) => (
                 <div
                   key={row.label}
-                  className="flex items-center gap-3 text-sm"
+                  className="flex flex-wrap items-start gap-x-3 gap-y-1 text-sm"
                 >
-                  <span className="bg-amalfilight text-amalfi flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold">
+                  <span className="bg-amalfilight text-amalfi mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold">
                     ✓
                   </span>
-                  <span className="shrink-0 text-[#8e98a8]">{row.label}</span>
-                  <span className="bg-amalfilight-hover h-px flex-1" />
-                  <span className="text-amalfidark text-right font-medium">
+                  <span className="min-w-0 shrink break-words text-[#8e98a8]">
+                    {row.label}
+                  </span>
+                  <span className="bg-amalfilight-hover mt-3 h-px min-w-4 flex-1" />
+                  <span className="text-amalfidark max-w-full min-w-0 shrink text-right font-medium break-words">
                     {row.value}
                   </span>
                 </div>

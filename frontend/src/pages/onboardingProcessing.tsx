@@ -76,10 +76,23 @@ function OnboardingProcessing() {
           { businessProfile, previousAnswers: [] },
           { signal: controller.signal },
         )
-          .then((res) =>
-            res.status === 200 ? res.data : { done: true, question: null },
-          )
-          .catch(() => ({ done: true, question: null })),
+          .then((res) => {
+            if (res.status === 200) return res.data
+            console.error(
+              `Onboarding follow-up question request failed (status ${res.status}); skipping AI follow-up.`,
+            )
+            return { done: true, question: null }
+          })
+          .catch((err) => {
+            if (err instanceof DOMException && err.name === 'AbortError') {
+              return { done: true, question: null }
+            }
+            console.error(
+              'Onboarding follow-up question request failed; skipping AI follow-up.',
+              err,
+            )
+            return { done: true, question: null }
+          }),
         delay(MIN_DISPLAY_MS),
       ])
       if (cancelled) return

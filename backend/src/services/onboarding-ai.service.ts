@@ -41,6 +41,7 @@ Rules:
 - If you need one more piece of information, set "done" to false and "question" to a single short, specific Thai-language question (not a summary, not multiple questions).
 - Prefer questions that clarify who the business's real customers are (age range/generation, habits, what draws them back) over questions that just restate business profile fields.
 - If you already have enough information, or the previous answers already cover the business well, set "done" to true and "question" to null.
+- If the most recent answer is vague, uncertain, or a non-answer (e.g. "ไม่ทราบ", "ไม่แน่ใจ", "ไม่รู้", "unsure", "idk"), do NOT treat that as sufficient information to finish. Set "done" to false and ask a different, more concrete and easier-to-answer question — narrow the scope or offer a concrete example — rather than repeating the same abstract question or ending the flow.
 - Never repeat a question that was already asked.`
 
 function buildUserContent(
