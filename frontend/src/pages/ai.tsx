@@ -11,12 +11,15 @@ import {
   BarChart3,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import type { Components } from 'react-markdown'
 import aiMascot from '@/assets/placeholders/ai-mascot.png'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import AiSkeleton from '@/components/aiSkeleton'
 import { getApiAiMessages, postApiAiMessages } from '@/api/generated/client'
 import type { AiMessage as ApiAiMessage } from '@/api/generated/client'
-import { getUserId } from '@/lib/userId'
+import { authHeaders, getAuthToken } from '@/lib/userId'
 
 type ChatMessage = {
   id: string
@@ -114,6 +117,25 @@ const quickActions: QuickAction[] = [
   },
 ]
 
+const markdownComponents: Components = {
+  p: ({ children }) => (
+    <p className="font-thai text-xl text-black not-last:mb-2 last:mb-0">
+      {children}
+    </p>
+  ),
+  strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+  em: ({ children }) => <em className="italic">{children}</em>,
+  ul: ({ children }) => (
+    <ul className="font-thai list-disc pl-6 text-xl text-black">{children}</ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="font-thai list-decimal pl-6 text-xl text-black">
+      {children}
+    </ol>
+  ),
+  li: ({ children }) => <li>{children}</li>,
+}
+
 function AiBubble({ message }: { message: ChatMessage }) {
   return (
     <div className="flex flex-row items-start gap-3">
@@ -124,7 +146,12 @@ function AiBubble({ message }: { message: ChatMessage }) {
       />
       <div>
         <div className="bg-sealight-hover max-w-xl rounded-tr-xl rounded-br-xl rounded-bl-xl border border-[#8E98A8] p-4">
-          <p className="font-thai text-xl text-black">{message.text}</p>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={markdownComponents}
+          >
+            {message.text}
+          </ReactMarkdown>
           {message.list && (
             <div className="font-thai mt-2 text-lg text-black">
               <p>ข้อแนะนำ:</p>
@@ -193,23 +220,23 @@ function Ai() {
   const [inputValue, setInputValue] = useState('')
   const [quickActionsOpen, setQuickActionsOpen] = useState(true)
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [userId] = useState(() => getUserId())
+  const [token] = useState(() => getAuthToken())
   const [isSending, setIsSending] = useState(false)
   const isLoading = useSimulatedLoading()
 
   useEffect(() => {
-    if (!userId) return
-    getApiAiMessages({ userId }).then((res) => {
+    if (!token) return
+    getApiAiMessages(authHeaders()).then((res) => {
       if (res.status === 200) {
         setMessages(res.data.map(toChatMessage))
       }
     })
-  }, [userId])
+  }, [token])
 
   const handleSend = async (event: FormEvent) => {
     event.preventDefault()
     const text = inputValue.trim()
-    if (!text || !userId || isSending) return
+    if (!text || !token || isSending) return
 
     setMessages((prev) => [
       ...prev,
@@ -224,7 +251,7 @@ function Ai() {
     setIsSending(true)
 
     try {
-      const res = await postApiAiMessages({ userId, text })
+      const res = await postApiAiMessages({ text }, authHeaders())
       setMessages((prev) => [
         ...prev,
         res.status === 201
@@ -258,7 +285,7 @@ function Ai() {
               ),
             )}
           </div>
-          {!userId && (
+          {!token && (
             <p className="font-thai text-sm text-red-500">
               กรุณาสมัครสมาชิกก่อนใช้งานแชท AI
             </p>
@@ -272,12 +299,12 @@ function Ai() {
               onChange={(e) => setInputValue(e.target.value)}
               type="text"
               placeholder="พิมพ์คำถามของคุณ..."
-              disabled={!userId || isSending}
+              disabled={!token || isSending}
               className="font-thai flex-1 px-3 text-lg outline-none disabled:opacity-50"
             />
             <button
               type="submit"
-              disabled={!userId || isSending}
+              disabled={!token || isSending}
               className="bg-sealight-hover flex h-12 w-10 shrink-0 items-center justify-center rounded-full *:transition-all hover:scale-105 hover:*:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
             >
               <Send className="text-amalfidark h-6 w-6" />

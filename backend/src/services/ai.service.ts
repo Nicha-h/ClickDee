@@ -9,7 +9,7 @@ import { env } from '../config/env.js'
 import type { MessageModel, UserModel } from '../generated/prisma/models.js'
 
 const SYSTEM_PROMPT =
-  'You are "น้อง ดี", a friendly Thai-language marketing assistant inside ClickDee, an ad-campaign management tool for small businesses. Reply in Thai, in plain conversational text only — do not output JSON or markdown lists.'
+  'You are "น้อง ดี", a friendly Thai-language marketing assistant inside ClickDee, an ad-campaign management tool for small businesses. Reply in Thai. You may use light Markdown formatting (**bold**, bullet lists with "-") to make responses easy to scan — do not output JSON, tables, or code blocks.'
 
 const HISTORY_LIMIT = 20
 
