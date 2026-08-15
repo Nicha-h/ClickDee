@@ -14,6 +14,8 @@ import CampaignCreate from '@/pages/campaignCreate'
 import CampaignProcessing from '@/pages/campaignProcessing'
 import CampaignReview from '@/pages/campaignReview'
 import CampaignEdit from '@/pages/campaignEdit'
+import CreativeCreate from '@/pages/creativeCreate'
+import CreativeProcessing from '@/pages/creativeProcessing'
 import Ai from '@/pages/ai'
 import Overview from '@/pages/overview'
 import Integration from '@/pages/integration'
@@ -99,6 +101,14 @@ const App = () => {
           element={<CampaignReport />}
         />
         <Route path="/campaign/:campaignId/edit" element={<CampaignEdit />} />
+        <Route
+          path="/campaign/:campaignId/creative/new"
+          element={<CreativeCreate />}
+        />
+        <Route
+          path="/campaign/:campaignId/creative/new/processing"
+          element={<CreativeProcessing />}
+        />
         <Route path="/ai" element={<Ai />} />
         <Route path="/overview" element={<Overview />} />
         <Route path="/integration" element={<Integration />} />

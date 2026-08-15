@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import {
   Users,
   MousePointerClick,
@@ -139,6 +139,28 @@ function CampaignReportView({
   const [status, setStatus] = useState<ReportStatus>(
     campaign.status === 'ended' ? 'stopped' : campaign.status,
   )
+
+  const location = useLocation()
+  const [creatives] = useState<Creative[]>(() => {
+    const newCreative = (
+      location.state as {
+        newCreative?: Omit<Creative, 'rank' | 'badgeBorderColor'>
+      } | null
+    )?.newCreative
+    if (!newCreative) return campaign.creatives
+    const worst = campaign.creatives.reduce((min, c) =>
+      c.ctr < min.ctr ? c : min,
+    )
+    return campaign.creatives.map((c) =>
+      c.rank === worst.rank
+        ? {
+            ...newCreative,
+            rank: worst.rank,
+            badgeBorderColor: worst.rank === 1 ? '#477099' : '#7f66ba',
+          }
+        : c,
+    )
+  })
 
   return (
     <div className="min-h-full min-w-full py-10">
@@ -333,14 +355,16 @@ function CampaignReportView({
               AI ทดสอบ A/B/C อัตโนมัติ เพื่อหาว่าใบไหนได้ผลที่สุด
             </p>
           </div>
-          {/* TODO: implement real creative creation flow */}
-          <button className="bg-seaactive font-thai hover:bg-seadark flex items-center gap-1 rounded-[15px] px-4 py-2 text-base text-white transition-all hover:scale-105 hover:cursor-pointer">
+          <Link
+            to={`/campaign/${campaign.id}/creative/new`}
+            className="bg-seaactive font-thai hover:bg-seadark flex items-center gap-1 rounded-[15px] px-4 py-2 text-base text-white transition-all hover:scale-105 hover:cursor-pointer"
+          >
             <Plus className="h-5 w-5" />
             สร้างครีเอทีฟใหม่
-          </button>
+          </Link>
         </div>
         <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {campaign.creatives.map((creative) => (
+          {creatives.map((creative) => (
             <CreativeCard key={creative.rank} creative={creative} />
           ))}
           <div className="h-69 w-full rounded-xl border-2 border-dashed border-[#8E98A8] bg-[rgba(142,152,168,0.1)]" />
