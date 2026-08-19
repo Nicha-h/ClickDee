@@ -32,6 +32,8 @@ export const CampaignStatus = {
 export interface Campaign {
   id: string;
   name: string;
+  /** @nullable */
+  caption: string | null;
   status: CampaignStatus;
   budget: string;
   startDate: string;
@@ -58,11 +60,39 @@ export const CreateCampaignInputStatus = {
 export interface CreateCampaignInput {
   /** @minLength 1 */
   name: string;
+  /** @maxLength 2000 */
+  caption?: string;
   status?: CreateCampaignInputStatus;
   /** @exclusiveMinimum 0 */
   budget: number;
   startDate: string;
   endDate?: string;
+}
+
+export type UpdateCampaignInputStatus = typeof UpdateCampaignInputStatus[keyof typeof UpdateCampaignInputStatus];
+
+
+export const UpdateCampaignInputStatus = {
+  DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
+  PAUSED: 'PAUSED',
+  COMPLETED: 'COMPLETED',
+} as const;
+
+export interface UpdateCampaignInput {
+  /** @minLength 1 */
+  name?: string;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  caption?: string | null;
+  /** @exclusiveMinimum 0 */
+  budget?: number;
+  startDate?: string;
+  /** @nullable */
+  endDate?: string | null;
+  status?: UpdateCampaignInputStatus;
 }
 
 export interface AuthResponse {
@@ -181,6 +211,61 @@ export const AiMessageRole = {
   assistant: 'assistant',
 } as const;
 
+export type PendingAiActionType = typeof PendingAiActionType[keyof typeof PendingAiActionType];
+
+
+export const PendingAiActionType = {
+  CREATE: 'CREATE',
+  UPDATE: 'UPDATE',
+  DELETE: 'DELETE',
+} as const;
+
+export type PendingAiActionPayloadProposedStatus = typeof PendingAiActionPayloadProposedStatus[keyof typeof PendingAiActionPayloadProposedStatus];
+
+
+export const PendingAiActionPayloadProposedStatus = {
+  DRAFT: 'DRAFT',
+} as const;
+
+export type PendingAiActionStatus = typeof PendingAiActionStatus[keyof typeof PendingAiActionStatus];
+
+
+export const PendingAiActionStatus = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  CANCELED: 'CANCELED',
+  EXPIRED: 'EXPIRED',
+} as const;
+
+export type PendingAiActionPayload = {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  name?: string;
+  /** @exclusiveMinimum 0 */
+  budget?: number;
+  startDate?: string;
+  /** @nullable */
+  endDate?: string | null;
+  /** @maxLength 2000 */
+  caption?: string;
+  proposedStatus?: PendingAiActionPayloadProposedStatus;
+};
+
+/**
+ * @nullable
+ */
+export type PendingAiAction = {
+  id: string;
+  type: PendingAiActionType;
+  /** @nullable */
+  targetCampaignId: string | null;
+  payload: PendingAiActionPayload;
+  status: PendingAiActionStatus;
+  createdAt: string;
+} | null;
+
 export interface AiMessage {
   id: string;
   role: AiMessageRole;
@@ -190,11 +275,14 @@ export interface AiMessage {
   /** @nullable */
   closing: string | null;
   createdAt: string;
+  pendingAction?: PendingAiAction | null;
+  redacted?: boolean;
 }
 
 export interface SendAiMessageResponse {
   userMessage: AiMessage;
-  assistantMessage: AiMessage;
+  /** @minItems 1 */
+  assistantMessages: AiMessage[];
 }
 
 export interface SendAiMessageInput {
@@ -205,10 +293,55 @@ export interface SendAiMessageInput {
   text: string;
 }
 
+export type ConfirmPendingActionResponseStatus = typeof ConfirmPendingActionResponseStatus[keyof typeof ConfirmPendingActionResponseStatus];
+
+
+export const ConfirmPendingActionResponseStatus = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  CANCELED: 'CANCELED',
+  EXPIRED: 'EXPIRED',
+} as const;
+
+export interface ConfirmPendingActionResponse {
+  /** @nullable */
+  campaignId: string | null;
+  status: ConfirmPendingActionResponseStatus;
+}
+
+export interface ConfirmPendingActionInput {
+  publish?: boolean;
+}
+
+export type CancelPendingActionResponseStatus = typeof CancelPendingActionResponseStatus[keyof typeof CancelPendingActionResponseStatus];
+
+
+export const CancelPendingActionResponseStatus = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  CANCELED: 'CANCELED',
+  EXPIRED: 'EXPIRED',
+} as const;
+
+export interface CancelPendingActionResponse {
+  status: CancelPendingActionResponseStatus;
+}
+
+export type FollowupQuestionResponseType = typeof FollowupQuestionResponseType[keyof typeof FollowupQuestionResponseType];
+
+
+export const FollowupQuestionResponseType = {
+  text: 'text',
+  choice: 'choice',
+} as const;
+
 export interface FollowupQuestionResponse {
   done: boolean;
   /** @nullable */
   question: string | null;
+  type: FollowupQuestionResponseType;
+  /** @nullable */
+  choices: string[] | null;
 }
 
 export type FollowupQuestionRequestBusinessProfile = {
@@ -255,6 +388,49 @@ export interface AiMemoryItem {
   answer: string;
   createdAt: string;
 }
+
+export type NotificationType = typeof NotificationType[keyof typeof NotificationType];
+
+
+export const NotificationType = {
+  AI_TASK: 'AI_TASK',
+  SYSTEM: 'SYSTEM',
+} as const;
+
+/**
+ * @nullable
+ */
+export type NotificationPendingActionStatus = typeof NotificationPendingActionStatus[keyof typeof NotificationPendingActionStatus] | null;
+
+
+export const NotificationPendingActionStatus = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  CANCELED: 'CANCELED',
+  EXPIRED: 'EXPIRED',
+} as const;
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  text: string;
+  /** @nullable */
+  link: string | null;
+  /** @nullable */
+  pendingActionId: string | null;
+  /** @nullable */
+  pendingActionStatus: NotificationPendingActionStatus;
+  read: boolean;
+  createdAt: string;
+}
+
+export type PostApiNotificationsIdRead200 = {
+  success: boolean;
+};
+
+export type PostApiNotificationsReadAll200 = {
+  success: boolean;
+};
 
 export type getApiHealthResponse200 = {
   data: Health
@@ -419,6 +595,101 @@ export const getApiCampaignsId = async (id: string, options?: RequestInit): Prom
 
   const data: getApiCampaignsIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiCampaignsIdResponse
+}
+
+
+
+export type patchApiCampaignsIdResponse200 = {
+  data: Campaign
+  status: 200
+}
+
+export type patchApiCampaignsIdResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type patchApiCampaignsIdResponseSuccess = (patchApiCampaignsIdResponse200) & {
+  headers: Headers;
+};
+export type patchApiCampaignsIdResponseError = (patchApiCampaignsIdResponse404) & {
+  headers: Headers;
+};
+
+export type patchApiCampaignsIdResponse = (patchApiCampaignsIdResponseSuccess | patchApiCampaignsIdResponseError)
+
+export const getPatchApiCampaignsIdUrl = (id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/campaigns/${id}`
+}
+
+export const patchApiCampaignsId = async (id: string,
+    updateCampaignInput?: UpdateCampaignInput, options?: RequestInit): Promise<patchApiCampaignsIdResponse> => {
+
+  const res = await fetch(getPatchApiCampaignsIdUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateCampaignInput)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: patchApiCampaignsIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as patchApiCampaignsIdResponse
+}
+
+
+
+export type deleteApiCampaignsIdResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteApiCampaignsIdResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type deleteApiCampaignsIdResponseSuccess = (deleteApiCampaignsIdResponse204) & {
+  headers: Headers;
+};
+export type deleteApiCampaignsIdResponseError = (deleteApiCampaignsIdResponse404) & {
+  headers: Headers;
+};
+
+export type deleteApiCampaignsIdResponse = (deleteApiCampaignsIdResponseSuccess | deleteApiCampaignsIdResponseError)
+
+export const getDeleteApiCampaignsIdUrl = (id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/campaigns/${id}`
+}
+
+export const deleteApiCampaignsId = async (id: string, options?: RequestInit): Promise<deleteApiCampaignsIdResponse> => {
+
+  const res = await fetch(getDeleteApiCampaignsIdUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteApiCampaignsIdResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as deleteApiCampaignsIdResponse
 }
 
 
@@ -764,6 +1035,111 @@ export const postApiAiMessages = async (sendAiMessageInput?: SendAiMessageInput,
 
 
 
+export type postApiAiActionsIdConfirmResponse200 = {
+  data: ConfirmPendingActionResponse
+  status: 200
+}
+
+export type postApiAiActionsIdConfirmResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type postApiAiActionsIdConfirmResponse409 = {
+  data: Error
+  status: 409
+}
+
+export type postApiAiActionsIdConfirmResponseSuccess = (postApiAiActionsIdConfirmResponse200) & {
+  headers: Headers;
+};
+export type postApiAiActionsIdConfirmResponseError = (postApiAiActionsIdConfirmResponse404 | postApiAiActionsIdConfirmResponse409) & {
+  headers: Headers;
+};
+
+export type postApiAiActionsIdConfirmResponse = (postApiAiActionsIdConfirmResponseSuccess | postApiAiActionsIdConfirmResponseError)
+
+export const getPostApiAiActionsIdConfirmUrl = (id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/ai/actions/${id}/confirm`
+}
+
+export const postApiAiActionsIdConfirm = async (id: string,
+    confirmPendingActionInput?: ConfirmPendingActionInput, options?: RequestInit): Promise<postApiAiActionsIdConfirmResponse> => {
+
+  const res = await fetch(getPostApiAiActionsIdConfirmUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(confirmPendingActionInput)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiAiActionsIdConfirmResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiAiActionsIdConfirmResponse
+}
+
+
+
+export type postApiAiActionsIdCancelResponse200 = {
+  data: CancelPendingActionResponse
+  status: 200
+}
+
+export type postApiAiActionsIdCancelResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type postApiAiActionsIdCancelResponse409 = {
+  data: Error
+  status: 409
+}
+
+export type postApiAiActionsIdCancelResponseSuccess = (postApiAiActionsIdCancelResponse200) & {
+  headers: Headers;
+};
+export type postApiAiActionsIdCancelResponseError = (postApiAiActionsIdCancelResponse404 | postApiAiActionsIdCancelResponse409) & {
+  headers: Headers;
+};
+
+export type postApiAiActionsIdCancelResponse = (postApiAiActionsIdCancelResponseSuccess | postApiAiActionsIdCancelResponseError)
+
+export const getPostApiAiActionsIdCancelUrl = (id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/ai/actions/${id}/cancel`
+}
+
+export const postApiAiActionsIdCancel = async (id: string, options?: RequestInit): Promise<postApiAiActionsIdCancelResponse> => {
+
+  const res = await fetch(getPostApiAiActionsIdCancelUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiAiActionsIdCancelResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiAiActionsIdCancelResponse
+}
+
+
+
 export type postApiOnboardingFollowupQuestionResponse200 = {
   data: FollowupQuestionResponse
   status: 200
@@ -939,4 +1315,124 @@ export const deleteApiAiMemoryId = async (id: string, options?: RequestInit): Pr
 
   const data: deleteApiAiMemoryIdResponse['data'] = body ? JSON.parse(body) : undefined
   return { data, status: res.status, headers: res.headers } as deleteApiAiMemoryIdResponse
+}
+
+
+
+export type getApiNotificationsResponse200 = {
+  data: Notification[]
+  status: 200
+}
+
+export type getApiNotificationsResponseSuccess = (getApiNotificationsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiNotificationsResponse = (getApiNotificationsResponseSuccess)
+
+export const getGetApiNotificationsUrl = () => {
+
+
+
+
+  return `${apiBaseUrl}/api/notifications`
+}
+
+export const getApiNotifications = async ( options?: RequestInit): Promise<getApiNotificationsResponse> => {
+
+  const res = await fetch(getGetApiNotificationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiNotificationsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiNotificationsResponse
+}
+
+
+
+export type postApiNotificationsIdReadResponse200 = {
+  data: PostApiNotificationsIdRead200
+  status: 200
+}
+
+export type postApiNotificationsIdReadResponseSuccess = (postApiNotificationsIdReadResponse200) & {
+  headers: Headers;
+};
+;
+
+export type postApiNotificationsIdReadResponse = (postApiNotificationsIdReadResponseSuccess)
+
+export const getPostApiNotificationsIdReadUrl = (id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/notifications/${id}/read`
+}
+
+export const postApiNotificationsIdRead = async (id: string, options?: RequestInit): Promise<postApiNotificationsIdReadResponse> => {
+
+  const res = await fetch(getPostApiNotificationsIdReadUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiNotificationsIdReadResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiNotificationsIdReadResponse
+}
+
+
+
+export type postApiNotificationsReadAllResponse200 = {
+  data: PostApiNotificationsReadAll200
+  status: 200
+}
+
+export type postApiNotificationsReadAllResponseSuccess = (postApiNotificationsReadAllResponse200) & {
+  headers: Headers;
+};
+;
+
+export type postApiNotificationsReadAllResponse = (postApiNotificationsReadAllResponseSuccess)
+
+export const getPostApiNotificationsReadAllUrl = () => {
+
+
+
+
+  return `${apiBaseUrl}/api/notifications/read-all`
+}
+
+export const postApiNotificationsReadAll = async ( options?: RequestInit): Promise<postApiNotificationsReadAllResponse> => {
+
+  const res = await fetch(getPostApiNotificationsReadAllUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiNotificationsReadAllResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiNotificationsReadAllResponse
 }

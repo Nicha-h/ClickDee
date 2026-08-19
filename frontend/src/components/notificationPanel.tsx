@@ -1,15 +1,21 @@
 import type { CSSProperties, Ref } from 'react'
+import { X } from 'lucide-react'
 
 export type NotificationItem = {
   id: string
   text: string
   time: string
   read: boolean
+  link: string | null
+  pendingActionId: string | null
+  pendingActionStatus: 'PENDING' | 'CONFIRMED' | 'CANCELED' | 'EXPIRED' | null
 }
 
 type NotificationPanelProps = {
   notifications: NotificationItem[]
   onMarkAllRead: () => void
+  onItemClick: (notification: NotificationItem) => void
+  onCancel: (notification: NotificationItem) => void
   panelRef?: Ref<HTMLDivElement>
   style?: CSSProperties
 }
@@ -17,6 +23,8 @@ type NotificationPanelProps = {
 function NotificationPanel({
   notifications,
   onMarkAllRead,
+  onItemClick,
+  onCancel,
   panelRef,
   style,
 }: NotificationPanelProps) {
@@ -42,17 +50,31 @@ function NotificationPanel({
         {notifications.map((n) => (
           <div
             key={n.id}
-            className={`flex gap-3 border-b border-[#F6F4FB] px-5 py-4 ${n.read ? 'bg-white' : 'bg-amalfilight/40'}`}
+            onClick={() => onItemClick(n)}
+            className={`group relative flex cursor-pointer gap-3 border-b border-[#F6F4FB] px-5 py-4 hover:bg-[#F6F4FB] ${n.read ? 'bg-white' : 'bg-amalfilight/40'}`}
           >
             <div
               className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.read ? 'bg-[#E4E1EC]' : 'bg-amalfidark'}`}
             />
-            <div>
+            <div className="pr-8">
               <p className="font-thai text-base leading-normal font-medium text-[#1F2937]">
                 {n.text}
               </p>
               <p className="font-thai mt-1 text-lg text-[#9AA5B1]">{n.time}</p>
             </div>
+            {n.pendingActionId && n.pendingActionStatus === 'PENDING' && (
+              <button
+                type="button"
+                aria-label="ยกเลิก"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onCancel(n)
+                }}
+                className="absolute top-4 right-4 rounded-full p-1 text-[#9AA5B1] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[#E4E1EC] hover:text-[#1F2937]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
         ))}
       </div>

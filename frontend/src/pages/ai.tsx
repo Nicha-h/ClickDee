@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Zap,
   ChevronRight,
@@ -9,6 +10,8 @@ import {
   TrendingUp,
   PenTool,
   BarChart3,
+  Loader2,
+  ShieldAlert,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
@@ -17,8 +20,16 @@ import type { Components } from 'react-markdown'
 import aiMascot from '@/assets/placeholders/ai-mascot.png'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import AiSkeleton from '@/components/aiSkeleton'
-import { getApiAiMessages, postApiAiMessages } from '@/api/generated/client'
-import type { AiMessage as ApiAiMessage } from '@/api/generated/client'
+import {
+  getApiAiMessages,
+  postApiAiMessages,
+  postApiAiActionsIdConfirm,
+  postApiAiActionsIdCancel,
+} from '@/api/generated/client'
+import type {
+  AiMessage as ApiAiMessage,
+  PendingAiAction,
+} from '@/api/generated/client'
 import { getUserId, withCredentials } from '@/lib/userId'
 
 type ChatMessage = {
@@ -28,6 +39,8 @@ type ChatMessage = {
   list?: string[]
   closing?: string
   time: string
+  pendingAction?: NonNullable<PendingAiAction>
+  redacted?: boolean
 }
 
 function formatTime(iso: string) {
@@ -47,6 +60,17 @@ function toChatMessage(message: ApiAiMessage): ChatMessage {
     list: message.list ?? undefined,
     closing: message.closing ?? undefined,
     time: formatTime(message.createdAt),
+    pendingAction: message.pendingAction ?? undefined,
+    redacted: message.redacted,
+  }
+}
+
+function greetingMessage(): ChatMessage {
+  return {
+    id: 'greeting',
+    sender: 'ai',
+    text: 'สวัสดีค่ะ ฉันชื่อ **น้องดี** ผู้ช่วย AI ของ ClickDee 👋 ถามอะไรเกี่ยวกับการตลาดหรือแคมเปญโฆษณาได้เลยค่ะ\n\nตอนนี้น้องดีช่วย**สร้างแคมเปญฉบับร่าง**ให้คุณได้ในแชทนี้เลย (ยังไม่เผยแพร่หรือใช้งบจริง — คุณต้องเปิดใช้งานเองอีกทีนะคะ) แค่บอกชื่อแคมเปญ งบประมาณ และวันเริ่มต้นมาได้เลยค่ะ',
+    time: formatTime(new Date().toISOString()),
   }
 }
 
@@ -134,9 +158,238 @@ const markdownComponents: Components = {
     </ol>
   ),
   li: ({ children }) => <li>{children}</li>,
+  h1: ({ children }) => (
+    <h1 className="font-thai mt-1 mb-2 text-2xl font-bold text-black">
+      {children}
+    </h1>
+  ),
+  h2: ({ children }) => (
+    <h2 className="font-thai mt-1 mb-2 text-xl font-bold text-black">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }) => (
+    <h3 className="font-thai mt-1 mb-1 text-lg font-bold text-black">
+      {children}
+    </h3>
+  ),
+  hr: () => <hr className="my-2 border-black/10" />,
+  a: ({ children, href }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-amalfi hover:text-amalfihover underline"
+    >
+      {children}
+    </a>
+  ),
+  blockquote: ({ children }) => (
+    <blockquote className="border-amalfi/40 font-thai my-2 border-l-4 pl-4 text-black/80 italic">
+      {children}
+    </blockquote>
+  ),
+  pre: ({ children }) => (
+    <pre className="my-2 overflow-x-auto rounded-lg bg-black/5 p-3 font-mono text-sm">
+      {children}
+    </pre>
+  ),
+  code: ({ children, className }) =>
+    className ? (
+      <code className={className}>{children}</code>
+    ) : (
+      <code className="rounded bg-black/10 px-1.5 py-0.5 font-mono text-[0.9em]">
+        {children}
+      </code>
+    ),
+  table: ({ children }) => (
+    <div className="my-2 overflow-x-auto">
+      <table className="font-thai min-w-full border-collapse text-left text-base">
+        {children}
+      </table>
+    </div>
+  ),
+  thead: ({ children }) => (
+    <thead className="border-b-2 border-black/20">{children}</thead>
+  ),
+  tbody: ({ children }) => <tbody>{children}</tbody>,
+  tr: ({ children }) => (
+    <tr className="border-b border-black/10">{children}</tr>
+  ),
+  th: ({ children }) => (
+    <th className="px-3 py-1.5 font-bold text-black">{children}</th>
+  ),
+  td: ({ children }) => <td className="px-3 py-1.5 text-black">{children}</td>,
 }
 
-function AiBubble({ message }: { message: ChatMessage }) {
+function pendingActionSummary(action: NonNullable<PendingAiAction>): {
+  label: string
+  rows: [string, string][]
+} {
+  const { payload } = action
+  if (action.type === 'DELETE') {
+    return { label: 'ลบแคมเปญ', rows: [] }
+  }
+  const rows: [string, string][] = []
+  if (payload.name) rows.push(['ชื่อแคมเปญ', payload.name])
+  if (payload.budget !== undefined)
+    rows.push(['งบประมาณ', `${payload.budget.toLocaleString('th-TH')} บาท`])
+  if (payload.startDate) rows.push(['เริ่ม', payload.startDate])
+  if (payload.endDate) rows.push(['สิ้นสุด', payload.endDate])
+  if (payload.caption) rows.push(['แคปชั่น', payload.caption])
+  return {
+    label: action.type === 'CREATE' ? 'สร้างแคมเปญใหม่' : 'แก้ไขแคมเปญ',
+    rows,
+  }
+}
+
+function PendingActionCard({
+  action,
+  onResolved,
+}: {
+  action: NonNullable<PendingAiAction>
+  onResolved: (result: {
+    status: 'CONFIRMED' | 'CANCELED'
+    campaignId?: string | null
+  }) => void
+}) {
+  const [isResolving, setIsResolving] = useState(false)
+  const [publish, setPublish] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { label, rows } = pendingActionSummary(action)
+
+  const handleConfirm = async () => {
+    setIsResolving(true)
+    setError(null)
+    try {
+      const res = await postApiAiActionsIdConfirm(
+        action.id,
+        { publish },
+        withCredentials(),
+      )
+      if (res.status === 200) {
+        onResolved({ status: 'CONFIRMED', campaignId: res.data.campaignId })
+      } else {
+        setError('ไม่สามารถยืนยันได้ กรุณาลองใหม่อีกครั้ง')
+      }
+    } catch {
+      setError('ไม่สามารถยืนยันได้ กรุณาลองใหม่อีกครั้ง')
+    } finally {
+      setIsResolving(false)
+    }
+  }
+
+  const handleCancel = async () => {
+    setIsResolving(true)
+    setError(null)
+    try {
+      const res = await postApiAiActionsIdCancel(action.id, withCredentials())
+      if (res.status === 200) {
+        onResolved({ status: 'CANCELED' })
+      } else {
+        setError('ไม่สามารถยกเลิกได้ กรุณาลองใหม่อีกครั้ง')
+      }
+    } catch {
+      setError('ไม่สามารถยกเลิกได้ กรุณาลองใหม่อีกครั้ง')
+    } finally {
+      setIsResolving(false)
+    }
+  }
+
+  return (
+    <div className="border-amalfi/40 mt-3 w-full max-w-xl rounded-xl border-2 border-dashed bg-white p-4">
+      <p className="font-thai text-amalfidark text-lg font-bold">{label}</p>
+      {rows.length > 0 && (
+        <dl className="font-thai mt-2 space-y-1 text-base text-black">
+          {rows.map(([k, v]) => (
+            <div key={k} className="flex gap-2">
+              <dt className="shrink-0 font-semibold text-[#6B7280]">{k}:</dt>
+              <dd>{v}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {action.type !== 'DELETE' && (
+        <label className="font-thai mt-3 flex items-center gap-2 text-base text-black">
+          <input
+            type="checkbox"
+            checked={publish}
+            onChange={(e) => setPublish(e.target.checked)}
+            disabled={isResolving}
+          />
+          เผยแพร่ทันที (ไม่เลือก = บันทึกเป็นแบบร่าง)
+        </label>
+      )}
+      {error && <p className="font-thai mt-2 text-sm text-red-500">{error}</p>}
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleConfirm}
+          disabled={isResolving}
+          className="bg-amalfi hover:bg-amalfihover font-thai flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+        >
+          {isResolving && <Loader2 className="h-4 w-4 animate-spin" />}
+          ยืนยัน
+        </button>
+        <button
+          type="button"
+          onClick={handleCancel}
+          disabled={isResolving}
+          className="font-thai rounded-full border border-[#8E98A8] px-4 py-2 text-sm font-bold text-[#6B7280] disabled:opacity-50"
+        >
+          ยกเลิก
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function PendingActionResolvedBadge({
+  action,
+}: {
+  action: NonNullable<PendingAiAction>
+}) {
+  if (action.status === 'CONFIRMED') {
+    return (
+      <div className="font-thai mt-3 text-base text-green-700">
+        ✓ ยืนยันแล้ว
+        {action.targetCampaignId && (
+          <>
+            {' — '}
+            <Link
+              to={`/campaign/${action.targetCampaignId}`}
+              className="text-amalfi hover:text-amalfihover underline"
+            >
+              ดูแคมเปญ
+            </Link>
+          </>
+        )}
+      </div>
+    )
+  }
+  if (action.status === 'CANCELED') {
+    return <p className="font-thai mt-3 text-base text-[#8E98A8]">ยกเลิกแล้ว</p>
+  }
+  if (action.status === 'EXPIRED') {
+    return (
+      <p className="font-thai mt-3 text-base text-[#8E98A8]">
+        หมดอายุการยืนยันแล้ว
+      </p>
+    )
+  }
+  return null
+}
+
+function AiBubble({
+  message,
+  onPendingActionResolved,
+}: {
+  message: ChatMessage
+  onPendingActionResolved: (
+    messageId: string,
+    result: { status: 'CONFIRMED' | 'CANCELED'; campaignId?: string | null },
+  ) => void
+}) {
   return (
     <div className="flex flex-row items-start gap-3">
       <img
@@ -168,6 +421,17 @@ function AiBubble({ message }: { message: ChatMessage }) {
             </p>
           )}
         </div>
+        {message.pendingAction &&
+          (message.pendingAction.status === 'PENDING' ? (
+            <PendingActionCard
+              action={message.pendingAction}
+              onResolved={(result) =>
+                onPendingActionResolved(message.id, result)
+              }
+            />
+          ) : (
+            <PendingActionResolvedBadge action={message.pendingAction} />
+          ))}
         <p className="font-thai mt-1 text-sm text-[#8E98A8]">{message.time}</p>
       </div>
     </div>
@@ -181,11 +445,34 @@ function UserBubble({ message }: { message: ChatMessage }) {
         <div className="max-w-xl rounded-tl-xl rounded-br-xl rounded-bl-xl border border-[#8E98A8] bg-white p-4">
           <p className="font-thai text-lg text-black">{message.text}</p>
         </div>
+        {message.redacted && (
+          <p className="font-thai mt-1 flex items-center justify-end gap-1 text-right text-sm text-amber-600">
+            <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
+            บางส่วนของข้อความถูกลบเนื่องจากอาจมีข้อมูลส่วนบุคคล
+          </p>
+        )}
         <p className="font-thai mt-1 text-right text-sm text-[#8E98A8]">
           {message.time}
         </p>
       </div>
       <CircleUserRound className="h-15 w-15 shrink-0 text-[#8E98A8]" />
+    </div>
+  )
+}
+
+function TypingBubble() {
+  return (
+    <div className="flex flex-row items-start gap-3">
+      <img
+        src={aiMascot}
+        alt="น้องดี"
+        className="h-15 w-15 shrink-0 rounded-full"
+      />
+      <div className="bg-sealight-hover flex items-center gap-1.5 rounded-tr-xl rounded-br-xl rounded-bl-xl border border-[#8E98A8] px-4 py-4.5">
+        <span className="h-2 w-2 animate-bounce rounded-full bg-[#8E98A8] [animation-delay:-0.3s]" />
+        <span className="h-2 w-2 animate-bounce rounded-full bg-[#8E98A8] [animation-delay:-0.15s]" />
+        <span className="h-2 w-2 animate-bounce rounded-full bg-[#8E98A8]" />
+      </div>
     </div>
   )
 }
@@ -228,10 +515,35 @@ function Ai() {
     if (!userId) return
     getApiAiMessages(withCredentials()).then((res) => {
       if (res.status === 200) {
-        setMessages(res.data.map(toChatMessage))
+        setMessages(
+          res.data.length > 0
+            ? res.data.map(toChatMessage)
+            : [greetingMessage()],
+        )
       }
     })
   }, [userId])
+
+  const handlePendingActionResolved = (
+    messageId: string,
+    result: { status: 'CONFIRMED' | 'CANCELED'; campaignId?: string | null },
+  ) => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId && m.pendingAction
+          ? {
+              ...m,
+              pendingAction: {
+                ...m.pendingAction,
+                status: result.status,
+                targetCampaignId:
+                  result.campaignId ?? m.pendingAction.targetCampaignId,
+              },
+            }
+          : m,
+      ),
+    )
+  }
 
   const handleSend = async (event: FormEvent) => {
     event.preventDefault()
@@ -254,9 +566,9 @@ function Ai() {
       const res = await postApiAiMessages({ text }, withCredentials())
       setMessages((prev) => [
         ...prev,
-        res.status === 201
-          ? toChatMessage(res.data.assistantMessage)
-          : errorChatMessage(res.status),
+        ...(res.status === 201
+          ? res.data.assistantMessages.map(toChatMessage)
+          : [errorChatMessage(res.status)]),
       ])
     } catch {
       setMessages((prev) => [...prev, errorChatMessage(0)])
@@ -279,11 +591,16 @@ function Ai() {
           <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-2">
             {messages.map((message) =>
               message.sender === 'ai' ? (
-                <AiBubble key={message.id} message={message} />
+                <AiBubble
+                  key={message.id}
+                  message={message}
+                  onPendingActionResolved={handlePendingActionResolved}
+                />
               ) : (
                 <UserBubble key={message.id} message={message} />
               ),
             )}
+            {isSending && <TypingBubble />}
           </div>
           {!userId && (
             <p className="font-thai text-sm text-red-500">

@@ -11,6 +11,7 @@ export const CampaignSchema = z
   .object({
     id: z.string(),
     name: z.string(),
+    caption: z.string().nullable(),
     status: CampaignStatusEnum,
     budget: z.string().openapi({ example: '1500.00' }),
     startDate: z.string().datetime(),
@@ -23,6 +24,7 @@ export const CampaignSchema = z
 export const CreateCampaignSchema = z
   .object({
     name: z.string().min(1),
+    caption: z.string().max(2000).optional(),
     status: CampaignStatusEnum.optional(),
     budget: z.number().positive(),
     startDate: z.string().datetime(),
@@ -30,8 +32,20 @@ export const CreateCampaignSchema = z
   })
   .openapi('CreateCampaignInput')
 
+export const UpdateCampaignSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    caption: z.string().max(2000).nullable().optional(),
+    budget: z.number().positive().optional(),
+    startDate: z.string().datetime().optional(),
+    endDate: z.string().datetime().nullable().optional(),
+    status: CampaignStatusEnum.optional(),
+  })
+  .openapi('UpdateCampaignInput')
+
 export const CampaignIdParamSchema = z.object({
   id: z.string().openapi({ param: { name: 'id', in: 'path' } }),
 })
 
 export type CreateCampaignInput = z.infer<typeof CreateCampaignSchema>
+export type UpdateCampaignInput = z.infer<typeof UpdateCampaignSchema>

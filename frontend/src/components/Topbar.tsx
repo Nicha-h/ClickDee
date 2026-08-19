@@ -1,38 +1,41 @@
 import { CircleUserRound, Settings, Bell, Menu } from 'lucide-react'
-import { useLayoutEffect, useRef, useState, type RefObject } from 'react'
-import { NavLink } from 'react-router-dom'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
 import NotificationPanel, {
   type NotificationItem,
 } from '@/components/notificationPanel'
 import Portal from '@/components/portal'
 import useScrollHidden from '@/components/useScrollHidden'
-
-{
-  /** Notification data PLACEHOLDER */
-}
-const initialNotifications: NotificationItem[] = [
-  {
-    id: 'n1',
-    text: "แคมเปญ 'ดีลฝนพรำ ลาเต้+ครัวซองต์' เริ่มทำงานแล้ว",
-    time: '2 ชั่วโมงที่แล้ว',
-    read: false,
-  },
-  {
-    id: 'n2',
-    text: 'งบประมาณใกล้ถึงเพดานที่ตั้งไว้ (80%)',
-    time: 'เมื่อวาน',
-    read: false,
-  },
-  {
-    id: 'n3',
-    text: 'น้องดี AI มีไอเดียแคมเปญใหม่ให้คุณ',
-    time: '2 วันที่แล้ว',
-    read: true,
-  },
-]
+import {
+  getApiNotifications,
+  postApiNotificationsIdRead,
+  postApiNotificationsReadAll,
+  postApiAiActionsIdCancel,
+} from '@/api/generated/client'
+import { withCredentials } from '@/lib/userId'
 
 const NOTIF_PANEL_GAP = 8
 const NOTIF_PANEL_MARGIN = 16
+const POLL_INTERVAL_MS = 20_000
+
+function formatRelativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime()
+  const minutes = Math.floor(diffMs / 60_000)
+  if (minutes < 1) return 'เมื่อสักครู่'
+  if (minutes < 60) return `${minutes} นาทีที่แล้ว`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours} ชั่วโมงที่แล้ว`
+  const days = Math.floor(hours / 24)
+  if (days === 1) return 'เมื่อวาน'
+  return `${days} วันที่แล้ว`
+}
 
 function Topbar({
   containerRef,
@@ -42,9 +45,10 @@ function Topbar({
   onMenuClick: () => void
 }) {
   const hidden = useScrollHidden(containerRef)
+  const navigate = useNavigate()
   const [activeButton, setActiveButton] = useState('')
   const [notifOpen, setNotifOpen] = useState(false)
-  const [notifications, setNotifications] = useState(initialNotifications)
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [notifPos, setNotifPos] = useState({ top: 0, left: 0 })
   const bellRef = useRef<HTMLButtonElement>(null)
   const notifPanelRef = useRef<HTMLDivElement>(null)
@@ -52,8 +56,65 @@ function Topbar({
     setActiveButton(buttonName)
   }
   const hasUnread = notifications.some((n) => !n.read)
-  const markAllRead = () => {
+
+  const mapNotifications = (
+    data: Awaited<ReturnType<typeof getApiNotifications>>['data'],
+  ): NotificationItem[] =>
+    data.map((n) => ({
+      id: n.id,
+      text: n.text,
+      time: formatRelativeTime(n.createdAt),
+      read: n.read,
+      link: n.link,
+      pendingActionId: n.pendingActionId,
+      pendingActionStatus: n.pendingActionStatus,
+    }))
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await getApiNotifications(withCredentials())
+      if (res.status !== 200) return
+      setNotifications(mapNotifications(res.data))
+    } catch {
+      // Silent — notifications are a non-critical, polled affordance; a
+      // transient failure shouldn't surface an error to the whole layout.
+    }
+  }, [])
+
+  useEffect(() => {
+    getApiNotifications(withCredentials()).then((res) => {
+      if (res.status === 200) setNotifications(mapNotifications(res.data))
+    })
+    const interval = setInterval(fetchNotifications, POLL_INTERVAL_MS)
+    return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const markAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+    await postApiNotificationsReadAll(withCredentials())
+  }
+
+  const handleItemClick = async (notification: NotificationItem) => {
+    if (!notification.read) {
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)),
+      )
+      postApiNotificationsIdRead(notification.id, withCredentials())
+    }
+    if (notification.link) {
+      setNotifOpen(false)
+      navigate(notification.link)
+    }
+  }
+
+  const handleCancel = async (notification: NotificationItem) => {
+    if (!notification.pendingActionId) return
+    await postApiAiActionsIdCancel(
+      notification.pendingActionId,
+      withCredentials(),
+    )
+    fetchNotifications()
   }
 
   // Anchor the dropdown to the bell's real screen position, matching the
@@ -98,6 +159,7 @@ function Topbar({
             onClick={() => {
               handleClick('bell')
               setNotifOpen((open) => !open)
+              if (!notifOpen) fetchNotifications()
             }}
             className="relative flex items-center justify-center p-0"
           >
@@ -117,6 +179,8 @@ function Topbar({
               <NotificationPanel
                 notifications={notifications}
                 onMarkAllRead={markAllRead}
+                onItemClick={handleItemClick}
+                onCancel={handleCancel}
                 panelRef={notifPanelRef}
                 style={{ top: notifPos.top, left: notifPos.left, zIndex: 50 }}
               />

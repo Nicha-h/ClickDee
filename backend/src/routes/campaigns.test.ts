@@ -4,6 +4,7 @@ const { sampleCampaign } = vi.hoisted(() => ({
   sampleCampaign: {
     id: 'campaign-1',
     name: 'Launch',
+    caption: null,
     status: 'DRAFT',
     budget: { toString: () => '1500.00' },
     startDate: new Date('2026-01-01T00:00:00.000Z'),
@@ -17,6 +18,8 @@ vi.mock('../services/campaign.service.js', () => ({
   listCampaigns: vi.fn().mockResolvedValue([sampleCampaign]),
   getCampaignById: vi.fn().mockResolvedValue(sampleCampaign),
   createCampaign: vi.fn().mockResolvedValue(sampleCampaign),
+  updateCampaign: vi.fn().mockResolvedValue({ count: 1 }),
+  deleteCampaign: vi.fn().mockResolvedValue(true),
 }))
 
 import { app } from '../app.js'
@@ -39,6 +42,7 @@ describe('GET /api/campaigns', () => {
       {
         id: 'campaign-1',
         name: 'Launch',
+        caption: null,
         status: 'DRAFT',
         budget: '1500.00',
         startDate: '2026-01-01T00:00:00.000Z',
@@ -104,6 +108,85 @@ describe('POST /api/campaigns', () => {
         budget: 1500,
         startDate: '2026-01-01T00:00:00.000Z',
       }),
+    })
+    expect(res.status).toBe(403)
+  })
+})
+
+describe('PATCH /api/campaigns/:id', () => {
+  it('updates a campaign owned by the caller', async () => {
+    const res = await app.request('/api/campaigns/campaign-1', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...csrfHeader,
+        ...(await authHeader('user-1')),
+      },
+      body: JSON.stringify({ budget: 2000 }),
+    })
+    expect(res.status).toBe(200)
+    expect(campaignService.updateCampaign).toHaveBeenCalledWith(
+      'user-1',
+      'campaign-1',
+      expect.objectContaining({ budget: 2000 }),
+    )
+  })
+
+  it('returns 404 when no row was updated', async () => {
+    vi.mocked(campaignService.updateCampaign).mockResolvedValueOnce({
+      count: 0,
+    })
+    const res = await app.request('/api/campaigns/campaign-1', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...csrfHeader,
+        ...(await authHeader('someone-else')),
+      },
+      body: JSON.stringify({ budget: 2000 }),
+    })
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 403 when the CSRF header is missing', async () => {
+    const res = await app.request('/api/campaigns/campaign-1', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await authHeader('user-1')),
+      },
+      body: JSON.stringify({ budget: 2000 }),
+    })
+    expect(res.status).toBe(403)
+  })
+})
+
+describe('DELETE /api/campaigns/:id', () => {
+  it('deletes a campaign owned by the caller', async () => {
+    const res = await app.request('/api/campaigns/campaign-1', {
+      method: 'DELETE',
+      headers: { ...csrfHeader, ...(await authHeader('user-1')) },
+    })
+    expect(res.status).toBe(204)
+    expect(campaignService.deleteCampaign).toHaveBeenCalledWith(
+      'user-1',
+      'campaign-1',
+    )
+  })
+
+  it('returns 404 when nothing was deleted', async () => {
+    vi.mocked(campaignService.deleteCampaign).mockResolvedValueOnce(false)
+    const res = await app.request('/api/campaigns/campaign-1', {
+      method: 'DELETE',
+      headers: { ...csrfHeader, ...(await authHeader('someone-else')) },
+    })
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 403 when the CSRF header is missing', async () => {
+    const res = await app.request('/api/campaigns/campaign-1', {
+      method: 'DELETE',
+      headers: await authHeader('user-1'),
     })
     expect(res.status).toBe(403)
   })

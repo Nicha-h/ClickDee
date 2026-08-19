@@ -24,6 +24,7 @@ model Campaign {
   userId    String
   user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String
+  caption   String?        @db.Text
   status    CampaignStatus @default(DRAFT)
   budget    Decimal        @db.Decimal(12, 2)
   startDate DateTime
@@ -38,6 +39,60 @@ model Campaign {
 enum MessageRole {
   USER
   ASSISTANT
+}
+
+enum PendingActionType {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+enum PendingActionStatus {
+  PENDING
+  CONFIRMED
+  CANCELED
+  EXPIRED
+}
+
+enum NotificationType {
+  AI_TASK
+  SYSTEM
+}
+
+model PendingAiAction {
+  id               String              @id @default(cuid())
+  userId           String
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversationId   String
+  conversation     Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  type             PendingActionType
+  targetCampaignId String?
+  payload          Json
+  status           PendingActionStatus @default(PENDING)
+  createdAt        DateTime            @default(now())
+  resolvedAt       DateTime?
+
+  messages      Message[]
+  notifications Notification[]
+
+  @@index([userId, status])
+  @@map("pending_ai_actions")
+}
+
+model Notification {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            NotificationType @default(SYSTEM)
+  text            String
+  link            String?
+  pendingActionId String?
+  pendingAction   PendingAiAction? @relation(fields: [pendingActionId], references: [id], onDelete: SetNull)
+  read            Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+
+  @@index([userId, createdAt])
+  @@map("notifications")
 }
 
 model User {
@@ -58,6 +113,8 @@ model User {
   conversations    Conversation[]
   aiMemory         AiMemory[]
   campaigns        Campaign[]
+  pendingAiActions PendingAiAction[]
+  notifications    Notification[]
   aiMemoryConsentAt DateTime?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
@@ -78,26 +135,30 @@ model AiMemory {
 }
 
 model Conversation {
-  id        String    @id @default(cuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages  Message[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id               String            @id @default(cuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages         Message[]
+  pendingAiActions PendingAiAction[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
   @@index([userId])
   @@map("conversations")
 }
 
 model Message {
-  id             String       @id @default(cuid())
-  conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  role           MessageRole
-  content        String       @db.Text
-  list           String[]     @default([])
-  closing        String?
-  createdAt      DateTime     @default(now())
+  id              String           @id @default(cuid())
+  conversationId  String
+  conversation    Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role            MessageRole
+  content         String           @db.Text
+  list            String[]         @default([])
+  closing         String?
+  redacted        Boolean          @default(false)
+  pendingActionId String?
+  pendingAction   PendingAiAction? @relation(fields: [pendingActionId], references: [id], onDelete: SetNull)
+  createdAt       DateTime         @default(now())
 
   @@index([conversationId, createdAt])
   @@map("messages")

@@ -2,6 +2,7 @@ import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
 import {
   CampaignSchema,
   CreateCampaignSchema,
+  UpdateCampaignSchema,
   CampaignIdParamSchema,
 } from '../schemas/campaign.schema.js'
 import * as campaignService from '../services/campaign.service.js'
@@ -14,6 +15,7 @@ function serializeCampaign(campaign: CampaignModel) {
   return {
     id: campaign.id,
     name: campaign.name,
+    caption: campaign.caption,
     status: campaign.status,
     budget: campaign.budget.toString(),
     startDate: campaign.startDate.toISOString(),
@@ -95,4 +97,62 @@ campaignsApp.openapi(createCampaignRoute, async (c) => {
   const input = c.req.valid('json')
   const campaign = await campaignService.createCampaign(userId, input)
   return c.json(serializeCampaign(campaign), 201)
+})
+
+const updateCampaignRoute = createRoute({
+  method: 'patch',
+  path: '/{id}',
+  tags: ['Campaigns'],
+  middleware: [requireAuth] as const,
+  request: {
+    params: CampaignIdParamSchema,
+    body: {
+      content: { 'application/json': { schema: UpdateCampaignSchema } },
+    },
+  },
+  responses: {
+    200: {
+      content: { 'application/json': { schema: CampaignSchema } },
+      description: 'Campaign updated',
+    },
+    404: {
+      content: { 'application/json': { schema: ErrorSchema } },
+      description: 'Campaign not found',
+    },
+  },
+})
+campaignsApp.openapi(updateCampaignRoute, async (c) => {
+  const userId = c.get('userId')
+  const { id } = c.req.valid('param')
+  const input = c.req.valid('json')
+  const result = await campaignService.updateCampaign(userId, id, input)
+  if (result.count === 0) {
+    return c.json({ message: 'Campaign not found' }, 404)
+  }
+  const campaign = await campaignService.getCampaignById(userId, id)
+  return c.json(serializeCampaign(campaign!), 200)
+})
+
+const deleteCampaignRoute = createRoute({
+  method: 'delete',
+  path: '/{id}',
+  tags: ['Campaigns'],
+  middleware: [requireAuth] as const,
+  request: { params: CampaignIdParamSchema },
+  responses: {
+    204: { description: 'Campaign deleted' },
+    404: {
+      content: { 'application/json': { schema: ErrorSchema } },
+      description: 'Campaign not found',
+    },
+  },
+})
+campaignsApp.openapi(deleteCampaignRoute, async (c) => {
+  const userId = c.get('userId')
+  const { id } = c.req.valid('param')
+  const deleted = await campaignService.deleteCampaign(userId, id)
+  if (!deleted) {
+    return c.json({ message: 'Campaign not found' }, 404)
+  }
+  return c.body(null, 204)
 })

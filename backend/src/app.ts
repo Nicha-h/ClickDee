@@ -8,6 +8,7 @@ import { authApp } from './routes/auth.js'
 import { aiApp } from './routes/ai.js'
 import { onboardingApp } from './routes/onboarding.js'
 import { aiMemoryApp } from './routes/ai-memory.js'
+import { notificationsApp } from './routes/notifications.js'
 
 export const app = new OpenAPIHono()
 
@@ -22,6 +23,7 @@ app.route('/api/auth', authApp)
 app.route('/api/ai', aiApp)
 app.route('/api/onboarding', onboardingApp)
 app.route('/api/ai-memory', aiMemoryApp)
+app.route('/api/notifications', notificationsApp)
 
 app.doc('/openapi.json', {
   openapi: '3.0.0',
