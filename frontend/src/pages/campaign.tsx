@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import useEmblaCarousel from 'embla-carousel-react'
 import {
@@ -14,11 +14,15 @@ import rocket from '@/assets/icons/rocket.svg'
 import cash from '@/assets/icons/cash.svg'
 import starcircle from '@/assets/icons/starcircle.svg'
 import sparklebold from '@/assets/icons/sparklebold.svg'
-import { campaigns, platformBadgeStyles } from '@/data/campaigns'
-import type { CampaignItem } from '@/data/campaigns'
+import aiMascot from '@/assets/placeholders/ai-mascot.png'
+import { campaigns as mockCampaigns, platformBadgeStyles } from '@/data/campaigns'
+import type { CampaignItem, CampaignStatus } from '@/data/campaigns'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import CampaignSkeleton from '@/components/campaignSkeleton'
 import Sparkline from '@/components/sparkline'
+import { getApiCampaigns } from '@/api/generated/client'
+import type { Campaign as ApiCampaign } from '@/api/generated/client'
+import { getUserId, withCredentials } from '@/lib/userId'
 
 {
   /** Summary data PLACEHOLDER*/
@@ -37,24 +41,31 @@ const aiSuggestionPrompt =
 
 type FilterTab = { key: string; label: string; count: number }
 
-const filterTabs: FilterTab[] = [
-  { key: 'all', label: 'ทั้งหมด', count: campaigns.length },
-  {
-    key: 'active',
-    label: 'กำลังทำงาน',
-    count: campaigns.filter((c) => c.status === 'active').length,
-  },
-  {
-    key: 'paused',
-    label: 'หยุดชั่วคราว',
-    count: campaigns.filter((c) => c.status === 'paused').length,
-  },
-  {
-    key: 'ended',
-    label: 'สิ้นสุดแล้ว',
-    count: campaigns.filter((c) => c.status === 'ended').length,
-  },
-]
+function buildFilterTabs(items: CampaignItem[]): FilterTab[] {
+  return [
+    { key: 'all', label: 'ทั้งหมด', count: items.length },
+    {
+      key: 'active',
+      label: 'กำลังทำงาน',
+      count: items.filter((c) => c.status === 'active').length,
+    },
+    {
+      key: 'paused',
+      label: 'หยุดชั่วคราว',
+      count: items.filter((c) => c.status === 'paused').length,
+    },
+    {
+      key: 'draft',
+      label: 'ฉบับร่าง',
+      count: items.filter((c) => c.status === 'draft').length,
+    },
+    {
+      key: 'ended',
+      label: 'สิ้นสุดแล้ว',
+      count: items.filter((c) => c.status === 'ended').length,
+    },
+  ]
+}
 
 const statusBadgeStyles: Record<
   CampaignItem['status'],
@@ -72,12 +83,82 @@ const statusBadgeStyles: Record<
     dotColor: 'bg-citrusdark',
     label: 'หยุดชั่วคราว',
   },
+  draft: {
+    bg: 'bg-sealight',
+    textColor: 'text-seadark-active',
+    dotColor: 'bg-seadark-active',
+    label: 'ฉบับร่าง',
+  },
   ended: {
     bg: 'bg-[#E5E7EB]',
     textColor: 'text-[#6B7280]',
     dotColor: 'bg-[#6B7280]',
     label: 'สิ้นสุดแล้ว',
   },
+}
+
+// The real Campaign model only has name/status/budget/dates — none of the
+// performance fields below exist server-side yet, so they default to
+// empty/zero rather than being a bug specific to this adapter.
+const API_STATUS_MAP: Record<ApiCampaign['status'], CampaignStatus> = {
+  ACTIVE: 'active',
+  PAUSED: 'paused',
+  DRAFT: 'draft',
+  COMPLETED: 'ended',
+}
+
+function toCampaignItem(campaign: ApiCampaign): CampaignItem {
+  const status = API_STATUS_MAP[campaign.status]
+  const endDate = campaign.endDate ? new Date(campaign.endDate) : null
+  const daysRemaining = endDate
+    ? Math.max(0, Math.ceil((endDate.getTime() - Date.now()) / 86_400_000))
+    : Number.POSITIVE_INFINITY
+
+  return {
+    id: campaign.id,
+    thumbnail: aiMascot,
+    title: campaign.name,
+    goal:
+      status === 'draft'
+        ? 'สร้างโดย AI ผู้ช่วย · ยังไม่เผยแพร่'
+        : `งบทั้งหมด ฿${Number(campaign.budget).toLocaleString()}`,
+    status,
+    source: 'api',
+    daysRemaining,
+    platforms: ['facebook'],
+    reach: 0,
+    clicks: 0,
+    orders: 0,
+    cpa: 0,
+    roi: 0,
+    adSpend: 0,
+    budgetSpent: 0,
+    budgetTotal: Number(campaign.budget),
+    dailyAvgSpend: 0,
+    roiBenchmark: 0,
+    insights: [
+      'แคมเปญนี้ยังไม่มีข้อมูลประสิทธิภาพ เนื่องจากยังไม่ได้เผยแพร่',
+      'เมื่อแคมเปญเริ่มทำงาน AI จะวิเคราะห์และแนะนำการปรับปรุงให้ที่นี่',
+      'เปิดใช้งานแคมเปญเพื่อเริ่มเก็บข้อมูลผลลัพธ์',
+    ],
+    dailyTrend: [],
+    channelReach: [],
+    creatives: [],
+  }
+}
+
+const STATUS_SORT_PRIORITY: Record<CampaignStatus, number> = {
+  active: 0,
+  paused: 1,
+  draft: 2,
+  ended: 3,
+}
+
+function compareCampaigns(a: CampaignItem, b: CampaignItem): number {
+  const statusDiff =
+    STATUS_SORT_PRIORITY[a.status] - STATUS_SORT_PRIORITY[b.status]
+  if (statusDiff !== 0) return statusDiff
+  return a.daysRemaining - b.daysRemaining
 }
 
 function CampaignCard({ campaign }: { campaign: CampaignItem }) {
@@ -103,12 +184,13 @@ function CampaignCard({ campaign }: { campaign: CampaignItem }) {
               />
               {statusBadge.label}
             </span>
-            {campaign.status !== 'ended' && (
-              <span className="font-thai text-citrusdark flex items-center gap-1 text-lg font-medium">
-                <Clock className="h-4 w-4" />
-                เหลือ {campaign.daysRemaining} วัน
-              </span>
-            )}
+            {campaign.status !== 'ended' &&
+              Number.isFinite(campaign.daysRemaining) && (
+                <span className="font-thai text-citrusdark flex items-center gap-1 text-lg font-medium">
+                  <Clock className="h-4 w-4" />
+                  เหลือ {campaign.daysRemaining} วัน
+                </span>
+              )}
           </div>
         </div>
         <div className="flex flex-row flex-wrap items-center gap-3">
@@ -190,25 +272,33 @@ function CampaignCard({ campaign }: { campaign: CampaignItem }) {
           <ChevronRight className="h-4 w-4" />
         </Link>
         <div className="flex flex-row flex-wrap items-center gap-4 lg:flex-col lg:items-end">
-          {campaign.status === 'active' && (
-            <button className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold">
-              <Pause className="h-5 w-5" />
-              หยุดชั่วคราว
-            </button>
+          {campaign.source === 'api' ? (
+            <p className="font-thai max-w-40 text-right text-sm text-[#8E98A8]">
+              จัดการแคมเปญนี้จะเปิดใช้งานเร็วๆ นี้
+            </p>
+          ) : (
+            <>
+              {campaign.status === 'active' && (
+                <button className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold">
+                  <Pause className="h-5 w-5" />
+                  หยุดชั่วคราว
+                </button>
+              )}
+              {campaign.status === 'paused' && (
+                <button className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold">
+                  <Play className="h-5 w-5" />
+                  เริ่มแคมเปญ
+                </button>
+              )}
+              <Link
+                to={`/campaign/${campaign.id}/edit`}
+                className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold"
+              >
+                <Pencil className="h-5 w-5" />
+                แก้ไข
+              </Link>
+            </>
           )}
-          {campaign.status === 'paused' && (
-            <button className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold">
-              <Play className="h-5 w-5" />
-              เริ่มแคมเปญ
-            </button>
-          )}
-          <Link
-            to={`/campaign/${campaign.id}/edit`}
-            className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold"
-          >
-            <Pencil className="h-5 w-5" />
-            แก้ไข
-          </Link>
         </div>
       </div>
     </div>
@@ -219,6 +309,8 @@ function Campaign() {
   const navigate = useNavigate()
   const [activeFilter, setActiveFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [userId] = useState(() => getUserId())
+  const [apiCampaigns, setApiCampaigns] = useState<CampaignItem[]>([])
   const isLoading = useSimulatedLoading()
   const [filterTabsRef] = useEmblaCarousel({
     axis: 'x',
@@ -226,9 +318,23 @@ function Campaign() {
     containScroll: 'trimSnaps',
   })
 
+  useEffect(() => {
+    if (!userId) return
+    getApiCampaigns(withCredentials()).then((res) => {
+      if (res.status === 200) {
+        setApiCampaigns(res.data.map(toCampaignItem))
+      }
+    })
+  }, [userId])
+
   if (isLoading) return <CampaignSkeleton />
 
-  const filteredCampaigns = campaigns.filter((campaign) => {
+  const allCampaigns = [...mockCampaigns, ...apiCampaigns].sort(
+    compareCampaigns,
+  )
+  const filterTabs = buildFilterTabs(allCampaigns)
+
+  const filteredCampaigns = allCampaigns.filter((campaign) => {
     const matchesStatus =
       activeFilter === 'all' || campaign.status === activeFilter
     const matchesSearch = campaign.title

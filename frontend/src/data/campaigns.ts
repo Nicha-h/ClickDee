@@ -6,7 +6,7 @@ import campaignReportCreative1 from '@/assets/placeholders/campaign-report-creat
 import campaignReportCreative2 from '@/assets/placeholders/campaign-report-creative-2.jpg'
 import campaignReportCreative3 from '@/assets/placeholders/campaign-report-creative-3.jpg'
 
-export type CampaignStatus = 'active' | 'paused' | 'ended'
+export type CampaignStatus = 'active' | 'paused' | 'ended' | 'draft'
 export type Platform = 'facebook'
 
 export type Creative = {
@@ -35,6 +35,8 @@ export type CampaignItem = {
   title: string
   goal: string
   status: CampaignStatus
+  /** Real campaigns fetched from the backend, vs. the static demo data below. */
+  source?: 'mock' | 'api'
   daysRemaining: number
   platforms: Platform[]
   reach: number

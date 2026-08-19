@@ -137,7 +137,9 @@ function CampaignReportView({
   budgetPct: number
 }) {
   const [status, setStatus] = useState<ReportStatus>(
-    campaign.status === 'ended' ? 'stopped' : campaign.status,
+    campaign.status === 'ended' || campaign.status === 'draft'
+      ? 'stopped'
+      : campaign.status,
   )
 
   const location = useLocation()
