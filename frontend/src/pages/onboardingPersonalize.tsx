@@ -3,6 +3,7 @@ import OnboardingTopbar from '@/components/onboardingTopbar'
 import type { OnboardingAnswers } from '@/components/onboardingWizard'
 import OnboardingAiFollowup, {
   type FollowupQa,
+  type FollowupQuestion,
 } from '@/components/onboardingAiFollowup'
 import type { FollowupQuestionRequestBusinessProfile } from '@/api/generated/client'
 
@@ -11,7 +12,7 @@ type PersonalizeState = {
   email?: string
   password?: string
   businessProfile?: FollowupQuestionRequestBusinessProfile
-  firstQuestion?: string | null
+  firstQuestion?: FollowupQuestion | null
 }
 
 function OnboardingPersonalize() {

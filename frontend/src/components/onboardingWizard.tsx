@@ -121,6 +121,12 @@ function OnboardingWizard({
             onChange={(e) =>
               setAnswers((prev) => ({ ...prev, [step.id]: e.target.value }))
             }
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                if (isStepValid) goNext()
+              }
+            }}
             placeholder={step.placeholder}
             rows={3}
             className="font-thai border-amalfilight-hover focus:border-amalfi w-full resize-none rounded-xl border-[1.5px] p-5 text-base outline-none placeholder:text-[#8e98a8]"
@@ -132,6 +138,12 @@ function OnboardingWizard({
             onChange={(e) =>
               setAnswers((prev) => ({ ...prev, [step.id]: e.target.value }))
             }
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                if (isStepValid) goNext()
+              }
+            }}
             placeholder={step.placeholder}
             className="font-thai border-amalfilight-hover focus:border-amalfi h-15 w-full rounded-xl border-[1.5px] px-5 text-base outline-none placeholder:text-[#8e98a8]"
           />
@@ -173,6 +185,12 @@ function OnboardingWizard({
                   [step.id]: e.target.value,
                 }))
               }
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  if (isStepValid) goNext()
+                }
+              }}
               placeholder="ระบุประเภทธุรกิจของคุณ"
               className="font-thai border-amalfilight-hover focus:border-amalfi h-13 w-full max-w-100 animate-[fade-in_0.2s_ease-out] rounded-xl border-[1.5px] px-5 text-base outline-none placeholder:text-[#8e98a8]"
             />

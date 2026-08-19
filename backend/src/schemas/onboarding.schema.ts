@@ -27,6 +27,8 @@ export const FollowupQuestionResponseSchema = z
   .object({
     done: z.boolean(),
     question: z.string().nullable(),
+    type: z.enum(['text', 'choice']),
+    choices: z.array(z.string()).nullable(),
   })
   .openapi('FollowupQuestionResponse')
 

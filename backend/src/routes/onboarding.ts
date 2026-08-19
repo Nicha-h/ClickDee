@@ -30,7 +30,8 @@ const followupQuestionRoute = createRoute({
       content: {
         'application/json': { schema: FollowupQuestionResponseSchema },
       },
-      description: 'Next AI follow-up question, or done',
+      description:
+        'Next AI follow-up question (free-text or multiple-choice), or done',
     },
     429: {
       content: { 'application/json': { schema: ErrorSchema } },

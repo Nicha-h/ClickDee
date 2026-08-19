@@ -81,17 +81,17 @@ function OnboardingProcessing() {
             console.error(
               `Onboarding follow-up question request failed (status ${res.status}); skipping AI follow-up.`,
             )
-            return { done: true, question: null }
+            return { done: true, question: null, type: 'text' as const, choices: null }
           })
           .catch((err) => {
             if (err instanceof DOMException && err.name === 'AbortError') {
-              return { done: true, question: null }
+              return { done: true, question: null, type: 'text' as const, choices: null }
             }
             console.error(
               'Onboarding follow-up question request failed; skipping AI follow-up.',
               err,
             )
-            return { done: true, question: null }
+            return { done: true, question: null, type: 'text' as const, choices: null }
           }),
         delay(MIN_DISPLAY_MS),
       ])
@@ -102,7 +102,14 @@ function OnboardingProcessing() {
           email,
           password,
           businessProfile,
-          firstQuestion: firstFollowup.done ? null : firstFollowup.question,
+          firstQuestion:
+            firstFollowup.done || !firstFollowup.question
+              ? null
+              : {
+                  text: firstFollowup.question,
+                  type: firstFollowup.type,
+                  choices: firstFollowup.choices,
+                },
         },
         replace: true,
       })

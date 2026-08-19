@@ -1,16 +1,25 @@
 import { useEffect, useState } from 'react'
 import { ArrowRight, Sparkles } from 'lucide-react'
 import OnboardingProgress from '@/components/onboardingProgress'
+import OnboardingChoiceCard from '@/components/onboardingChoiceCard'
 import { postApiOnboardingFollowupQuestion } from '@/api/generated/client'
 import type { FollowupQuestionRequestBusinessProfile } from '@/api/generated/client'
 
 export type FollowupQa = { question: string; answer: string }
 
+export type FollowupQuestion = {
+  text: string
+  type: 'text' | 'choice'
+  choices: string[] | null
+}
+
 export const MAX_FOLLOWUP_QUESTIONS = 5
+
+const OTHER_CHOICE_ID = '__other__'
 
 type OnboardingAiFollowupProps = {
   businessProfile: FollowupQuestionRequestBusinessProfile
-  initialQuestion: string | null
+  initialQuestion: FollowupQuestion | null
   onComplete: (qas: FollowupQa[], consent: boolean) => void
 }
 
@@ -24,6 +33,8 @@ function OnboardingAiFollowup({
   const [qas, setQas] = useState<FollowupQa[]>([])
   const [currentQuestion, setCurrentQuestion] = useState(initialQuestion)
   const [answerText, setAnswerText] = useState('')
+  const [selectedChoice, setSelectedChoice] = useState<string | null>(null)
+  const [otherText, setOtherText] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
@@ -35,7 +46,14 @@ function OnboardingAiFollowup({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  if (initialQuestion === null) return null
+  if (initialQuestion === null || currentQuestion === null) return null
+
+  const isOtherSelected = selectedChoice === OTHER_CHOICE_ID
+  const hasValidAnswer =
+    currentQuestion.type === 'choice'
+      ? selectedChoice !== null &&
+        (!isOtherSelected || otherText.trim().length > 0)
+      : answerText.trim().length > 0
 
   const startFollowups = () => {
     setPhase('question')
@@ -50,12 +68,17 @@ function OnboardingAiFollowup({
   }
 
   const goNext = async () => {
-    const answer = answerText.trim()
-    if (!answer || !currentQuestion) return
+    const answer =
+      currentQuestion.type === 'choice'
+        ? (isOtherSelected ? otherText.trim() : (selectedChoice ?? ''))
+        : answerText.trim()
+    if (!answer) return
 
-    const nextQas = [...qas, { question: currentQuestion, answer }]
+    const nextQas = [...qas, { question: currentQuestion.text, answer }]
     setQas(nextQas)
     setAnswerText('')
+    setSelectedChoice(null)
+    setOtherText('')
 
     if (nextQas.length >= MAX_FOLLOWUP_QUESTIONS) {
       onComplete(nextQas, true)
@@ -69,11 +92,19 @@ function OnboardingAiFollowup({
         previousAnswers: nextQas,
       })
       if (res.status === 200 && !res.data.done && res.data.question) {
-        setCurrentQuestion(res.data.question)
+        setCurrentQuestion({
+          text: res.data.question,
+          type: res.data.type,
+          choices: res.data.choices,
+        })
       } else {
         onComplete(nextQas, true)
       }
-    } catch {
+    } catch (err) {
+      console.error(
+        'Onboarding follow-up question request failed; ending the AI follow-up flow early.',
+        err,
+      )
       onComplete(nextQas, true)
     } finally {
       setIsLoading(false)
@@ -156,20 +187,64 @@ function OnboardingAiFollowup({
               คำตอบนี้จะถูกส่งให้ AI ช่วยปรับแต่งระบบให้คุณ
             </span>
             <h1 className="text-amalfidark text-xl font-bold sm:text-2xl lg:text-3xl">
-              {currentQuestion}
+              {currentQuestion.text}
             </h1>
           </>
         )}
       </div>
 
-      <textarea
-        value={answerText}
-        onChange={(e) => setAnswerText(e.target.value)}
-        placeholder="พิมพ์คำตอบของคุณที่นี่..."
-        rows={3}
-        disabled={isLoading}
-        className="font-thai border-amalfilight-hover focus:border-amalfi w-full resize-none rounded-xl border-[1.5px] p-5 text-base outline-none placeholder:text-[#8e98a8] disabled:opacity-50"
-      />
+      {currentQuestion.type === 'choice' && currentQuestion.choices ? (
+        <div
+          className={`flex w-full flex-col items-center gap-4 ${isLoading ? 'pointer-events-none opacity-50' : ''}`}
+        >
+          <div className="flex w-full flex-wrap justify-center gap-4">
+            {currentQuestion.choices.map((choice) => (
+              <OnboardingChoiceCard
+                key={choice}
+                label={choice}
+                selected={selectedChoice === choice}
+                onClick={() => setSelectedChoice(choice)}
+              />
+            ))}
+            <OnboardingChoiceCard
+              label="อื่นๆ (พิมพ์เอง)"
+              selected={isOtherSelected}
+              onClick={() => setSelectedChoice(OTHER_CHOICE_ID)}
+            />
+          </div>
+          {isOtherSelected && (
+            <input
+              autoFocus
+              type="text"
+              value={otherText}
+              onChange={(e) => setOtherText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  if (otherText.trim() && !isLoading) goNext()
+                }
+              }}
+              placeholder="พิมพ์คำตอบของคุณ..."
+              className="font-thai border-amalfilight-hover focus:border-amalfi h-13 w-full max-w-100 animate-[fade-in_0.2s_ease-out] rounded-xl border-[1.5px] px-5 text-base outline-none placeholder:text-[#8e98a8]"
+            />
+          )}
+        </div>
+      ) : (
+        <textarea
+          value={answerText}
+          onChange={(e) => setAnswerText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              if (answerText.trim() && !isLoading) goNext()
+            }
+          }}
+          placeholder="พิมพ์คำตอบของคุณที่นี่..."
+          rows={3}
+          disabled={isLoading}
+          className="font-thai border-amalfilight-hover focus:border-amalfi w-full resize-none rounded-xl border-[1.5px] p-5 text-base outline-none placeholder:text-[#8e98a8] disabled:opacity-50"
+        />
+      )}
 
       <div className="flex h-14 w-full items-center justify-between gap-4">
         <button
@@ -183,7 +258,7 @@ function OnboardingAiFollowup({
         <button
           type="button"
           onClick={goNext}
-          disabled={!answerText.trim() || isLoading}
+          disabled={!hasValidAnswer || isLoading}
           className="bg-citrus hover:bg-citrushover text-amalfi font-thai flex h-14 w-45 items-center justify-center gap-2 rounded-2xl text-base font-bold transition-all hover:scale-105 hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
         >
           {isLoading ? 'กำลังส่ง...' : 'ถัดไป'}
