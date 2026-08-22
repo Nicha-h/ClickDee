@@ -99,6 +99,7 @@ model User {
   id               String         @id @default(cuid())
   email            String         @unique
   passwordHash     String
+  name             String?
   businessName     String?
   location         String?
   category         String?
@@ -110,6 +111,7 @@ model User {
   platforms        String[]       @default([])
   peakHours        String?
   promoHighlight   String?        @db.Text
+  customerPersona  String?        @db.Text
   conversations    Conversation[]
   aiMemory         AiMemory[]
   campaigns        Campaign[]

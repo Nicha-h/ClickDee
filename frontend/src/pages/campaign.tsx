@@ -9,19 +9,27 @@ import {
   Pause,
   Play,
   Pencil,
+  Trash2,
 } from 'lucide-react'
 import rocket from '@/assets/icons/rocket.svg'
 import cash from '@/assets/icons/cash.svg'
 import starcircle from '@/assets/icons/starcircle.svg'
 import sparklebold from '@/assets/icons/sparklebold.svg'
-import aiMascot from '@/assets/placeholders/ai-mascot.png'
-import { campaigns as mockCampaigns, platformBadgeStyles } from '@/data/campaigns'
+import {
+  campaigns as mockCampaigns,
+  platformBadgeStyles,
+} from '@/data/campaigns'
 import type { CampaignItem, CampaignStatus } from '@/data/campaigns'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import CampaignSkeleton from '@/components/campaignSkeleton'
 import Sparkline from '@/components/sparkline'
-import { getApiCampaigns } from '@/api/generated/client'
-import type { Campaign as ApiCampaign } from '@/api/generated/client'
+import ConfirmDialog from '@/components/confirmDialog'
+import {
+  getApiCampaigns,
+  patchApiCampaignsId,
+  deleteApiCampaignsId,
+} from '@/api/generated/client'
+import { toCampaignItem } from '@/lib/campaignAdapters'
 import { getUserId, withCredentials } from '@/lib/userId'
 
 {
@@ -97,56 +105,6 @@ const statusBadgeStyles: Record<
   },
 }
 
-// The real Campaign model only has name/status/budget/dates — none of the
-// performance fields below exist server-side yet, so they default to
-// empty/zero rather than being a bug specific to this adapter.
-const API_STATUS_MAP: Record<ApiCampaign['status'], CampaignStatus> = {
-  ACTIVE: 'active',
-  PAUSED: 'paused',
-  DRAFT: 'draft',
-  COMPLETED: 'ended',
-}
-
-function toCampaignItem(campaign: ApiCampaign): CampaignItem {
-  const status = API_STATUS_MAP[campaign.status]
-  const endDate = campaign.endDate ? new Date(campaign.endDate) : null
-  const daysRemaining = endDate
-    ? Math.max(0, Math.ceil((endDate.getTime() - Date.now()) / 86_400_000))
-    : Number.POSITIVE_INFINITY
-
-  return {
-    id: campaign.id,
-    thumbnail: aiMascot,
-    title: campaign.name,
-    goal:
-      status === 'draft'
-        ? 'สร้างโดย AI ผู้ช่วย · ยังไม่เผยแพร่'
-        : `งบทั้งหมด ฿${Number(campaign.budget).toLocaleString()}`,
-    status,
-    source: 'api',
-    daysRemaining,
-    platforms: ['facebook'],
-    reach: 0,
-    clicks: 0,
-    orders: 0,
-    cpa: 0,
-    roi: 0,
-    adSpend: 0,
-    budgetSpent: 0,
-    budgetTotal: Number(campaign.budget),
-    dailyAvgSpend: 0,
-    roiBenchmark: 0,
-    insights: [
-      'แคมเปญนี้ยังไม่มีข้อมูลประสิทธิภาพ เนื่องจากยังไม่ได้เผยแพร่',
-      'เมื่อแคมเปญเริ่มทำงาน AI จะวิเคราะห์และแนะนำการปรับปรุงให้ที่นี่',
-      'เปิดใช้งานแคมเปญเพื่อเริ่มเก็บข้อมูลผลลัพธ์',
-    ],
-    dailyTrend: [],
-    channelReach: [],
-    creatives: [],
-  }
-}
-
 const STATUS_SORT_PRIORITY: Record<CampaignStatus, number> = {
   active: 0,
   paused: 1,
@@ -161,7 +119,17 @@ function compareCampaigns(a: CampaignItem, b: CampaignItem): number {
   return a.daysRemaining - b.daysRemaining
 }
 
-function CampaignCard({ campaign }: { campaign: CampaignItem }) {
+function CampaignCard({
+  campaign,
+  onPause,
+  onResume,
+  onDeleteRequest,
+}: {
+  campaign: CampaignItem
+  onPause: (id: string) => void
+  onResume: (id: string) => void
+  onDeleteRequest: (id: string) => void
+}) {
   const statusBadge = statusBadgeStyles[campaign.status]
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border border-[#8E98A8] lg:shrink-0 lg:flex-row">
@@ -273,9 +241,43 @@ function CampaignCard({ campaign }: { campaign: CampaignItem }) {
         </Link>
         <div className="flex flex-row flex-wrap items-center gap-4 lg:flex-col lg:items-end">
           {campaign.source === 'api' ? (
-            <p className="font-thai max-w-40 text-right text-sm text-[#8E98A8]">
-              จัดการแคมเปญนี้จะเปิดใช้งานเร็วๆ นี้
-            </p>
+            <>
+              {campaign.status === 'active' && (
+                <button
+                  type="button"
+                  onClick={() => onPause(campaign.id)}
+                  className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold"
+                >
+                  <Pause className="h-5 w-5" />
+                  หยุดชั่วคราว
+                </button>
+              )}
+              {campaign.status === 'paused' && (
+                <button
+                  type="button"
+                  onClick={() => onResume(campaign.id)}
+                  className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold"
+                >
+                  <Play className="h-5 w-5" />
+                  เริ่มแคมเปญ
+                </button>
+              )}
+              <Link
+                to={`/campaign/${campaign.id}/edit`}
+                className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold"
+              >
+                <Pencil className="h-5 w-5" />
+                แก้ไข
+              </Link>
+              <button
+                type="button"
+                onClick={() => onDeleteRequest(campaign.id)}
+                className="font-thai flex items-center gap-2 text-base text-[#E07070] hover:cursor-pointer hover:font-semibold hover:text-[#c85050]"
+              >
+                <Trash2 className="h-5 w-5" />
+                ลบ
+              </button>
+            </>
           ) : (
             <>
               {campaign.status === 'active' && (
@@ -311,6 +313,8 @@ function Campaign() {
   const [searchQuery, setSearchQuery] = useState('')
   const [userId] = useState(() => getUserId())
   const [apiCampaigns, setApiCampaigns] = useState<CampaignItem[]>([])
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const isLoading = useSimulatedLoading()
   const [filterTabsRef] = useEmblaCarousel({
     axis: 'x',
@@ -326,6 +330,34 @@ function Campaign() {
       }
     })
   }, [userId])
+
+  const setCampaignStatus = async (
+    id: string,
+    status: 'ACTIVE' | 'PAUSED',
+  ) => {
+    const res = await patchApiCampaignsId(id, { status }, withCredentials())
+    if (res.status === 200) {
+      setApiCampaigns((prev) =>
+        prev.map((c) => (c.id === id ? toCampaignItem(res.data) : c)),
+      )
+    }
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTargetId) return
+    setIsDeleting(true)
+    try {
+      const res = await deleteApiCampaignsId(deleteTargetId, withCredentials())
+      if (res.status === 204) {
+        setApiCampaigns((prev) =>
+          prev.filter((c) => c.id !== deleteTargetId),
+        )
+        setDeleteTargetId(null)
+      }
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   if (isLoading) return <CampaignSkeleton />
 
@@ -470,7 +502,13 @@ function Campaign() {
       <div className="mt-8 flex flex-col gap-6">
         {filteredCampaigns.length > 0 ? (
           filteredCampaigns.map((campaign) => (
-            <CampaignCard key={campaign.id} campaign={campaign} />
+            <CampaignCard
+              key={campaign.id}
+              campaign={campaign}
+              onPause={(id) => setCampaignStatus(id, 'PAUSED')}
+              onResume={(id) => setCampaignStatus(id, 'ACTIVE')}
+              onDeleteRequest={setDeleteTargetId}
+            />
           ))
         ) : (
           <p className="font-thai py-10 text-center text-lg text-black">
@@ -509,6 +547,16 @@ function Campaign() {
         </button>
       </div>
       <div className="h-24 w-full shrink-0"></div>
+
+      <ConfirmDialog
+        open={deleteTargetId !== null}
+        title="ยืนยันการลบแคมเปญ"
+        message="คุณแน่ใจหรือไม่ว่าต้องการลบแคมเปญนี้ การดำเนินการนี้ไม่สามารถย้อนกลับได้"
+        confirmLabel="ลบแคมเปญ"
+        confirmDisabled={isDeleting}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteTargetId(null)}
+      />
     </div>
   )
 }

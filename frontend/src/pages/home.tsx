@@ -13,54 +13,77 @@ import milo from '@/assets/placeholders/campaign-milo-promo.jpg'
 import sparklebold from '@/assets/icons/sparklebold.svg'
 import facebook from '@/assets/logos/facebook.svg'
 import TrendChart from '@/components/trendChart'
-import type { TrendPoint } from '@/components/trendChart'
 import Sparkline from '@/components/sparkline'
 import { campaigns } from '@/data/campaigns'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import HomeSkeleton from '@/components/homeSkeleton'
-import { getApiAuthAccountId } from '@/api/generated/client'
+import {
+  getApiAuthAccountId,
+  getApiAiRecommendations,
+} from '@/api/generated/client'
+import type { Recommendation } from '@/api/generated/client'
 import { getUserId, withCredentials } from '@/lib/userId'
+import {
+  buildSalesDataByRange,
+  computeHalfOverHalfChangePct,
+  SALES_COMPARISON_LABEL,
+  type SalesRangeKey,
+} from '@/lib/salesMockData'
+import { Skeleton } from '@/components/skeleton'
 
-const salesRangeOptions = [
+const salesRangeOptions: { value: SalesRangeKey; label: string }[] = [
   { value: '7d', label: '7 วัน' },
   { value: 'monthly', label: 'รายเดือน' },
   { value: 'yearly', label: 'รายปี' },
 ]
 
-const salesDataByRange: Record<string, TrendPoint[]> = {
-  '7d': [
-    { label: '5 พ.ค.', sales: 14200 },
-    { label: '6 พ.ค.', sales: 15100 },
-    { label: '7 พ.ค.', sales: 16300 },
-    { label: '8 พ.ค.', sales: 15800 },
-    { label: '9 พ.ค.', sales: 17400 },
-    { label: '10 พ.ค.', sales: 18600 },
-    { label: '11 พ.ค.', sales: 19900 },
-  ],
-  monthly: [
-    { label: 'มิ.ย.', sales: 142000 },
-    { label: 'ก.ค.', sales: 151000 },
-    { label: 'ส.ค.', sales: 148000 },
-    { label: 'ก.ย.', sales: 159000 },
-    { label: 'ต.ค.', sales: 167000 },
-    { label: 'พ.ย.', sales: 178000 },
-    { label: 'ธ.ค.', sales: 192000 },
-    { label: 'ม.ค.', sales: 185000 },
-    { label: 'ก.พ.', sales: 197000 },
-    { label: 'มี.ค.', sales: 206000 },
-    { label: 'เม.ย.', sales: 214000 },
-    { label: 'พ.ค.', sales: 228000 },
-  ],
-  yearly: [
-    { label: '2022', sales: 1180000 },
-    { label: '2023', sales: 1450000 },
-    { label: '2024', sales: 1720000 },
-    { label: '2025', sales: 2050000 },
-    { label: '2026', sales: 2280000 },
-  ],
-}
+const salesDataByRange = buildSalesDataByRange()
 const rainPromoCampaign = campaigns.find((c) => c.id === 'rain-promo-2026')!
 const miloPromoCampaign = campaigns.find((c) => c.id === 'milo-promo-2026')!
+
+type DemoRecommendation = {
+  title: string
+  description: string
+  actionLabel: string
+  campaignId: string
+}
+
+// Example content shown when the signed-in user has no real campaigns yet
+// for the AI to generate suggestions from — see the "ตัวอย่าง" badge below.
+const DEMO_RECOMMENDATIONS: DemoRecommendation[] = [
+  {
+    title: 'ครีเอทีฟใหม่พร้อมทดสอบ',
+    description:
+      'AI สร้าง 3 ภาพใหม่สำหรับเมนูลาเต้คาราเมล กดดูและเริ่ม A/B Test ได้เลย',
+    actionLabel: 'เริ่มเลย',
+    campaignId: 'latte-caramel-2026',
+  },
+  {
+    title: 'งบใกล้หมดสำหรับโปรไมโล',
+    description:
+      'ใช้ไป 90% แล้ว — AI แนะนำให้เพิ่ม ฿2,000 เพื่อให้รันต่ออีก 3 วัน',
+    actionLabel: 'เพิ่มงบ',
+    campaignId: 'milo-promo-2026',
+  },
+]
+
+type RecommendationsState =
+  | { status: 'loading' }
+  | {
+      status: 'loaded'
+      hasCampaigns: boolean
+      recommendations: Recommendation[]
+    }
+
+function RecommendationCardSkeleton() {
+  return (
+    <div className="rounded-[10px] border border-[#8E98A8] px-5 py-4">
+      <Skeleton className="h-6 w-48" />
+      <Skeleton className="mt-2 h-5 w-full" />
+      <Skeleton className="mt-5 h-8 w-28 rounded-full" />
+    </div>
+  )
+}
 
 function getTimeGreeting(): string {
   const hour = new Date().getHours()
@@ -74,6 +97,8 @@ function Home() {
   const navigate = useNavigate()
   const isLoading = useSimulatedLoading()
   const [businessName, setBusinessName] = useState<string | null>(null)
+  const [recommendationsState, setRecommendationsState] =
+    useState<RecommendationsState>({ status: 'loading' })
   {
     /** Summary data PLACEHOLDER*/
   }
@@ -92,6 +117,10 @@ function Home() {
   const salesData = useMemo(
     () => salesDataByRange[salesRange.value],
     [salesRange.value],
+  )
+  const salesChangePct = useMemo(
+    () => computeHalfOverHalfChangePct(salesData),
+    [salesData],
   )
 
   useEffect(() => {
@@ -114,6 +143,30 @@ function Home() {
       if (res.status === 200) setBusinessName(res.data.businessName)
     })
   }, [])
+
+  useEffect(() => {
+    const userId = getUserId()
+    if (!userId) return
+    getApiAiRecommendations(withCredentials()).then((res) => {
+      if (res.status === 200) {
+        setRecommendationsState({
+          status: 'loaded',
+          hasCampaigns: res.data.hasCampaigns,
+          recommendations: res.data.recommendations,
+        })
+      }
+    })
+  }, [])
+
+  const isRealRecommendations =
+    recommendationsState.status === 'loaded' &&
+    recommendationsState.hasCampaigns
+  const cardsToRender: (Recommendation | DemoRecommendation)[] =
+    recommendationsState.status === 'loaded'
+      ? isRealRecommendations
+        ? recommendationsState.recommendations
+        : DEMO_RECOMMENDATIONS
+      : []
 
   if (isLoading) return <HomeSkeleton />
 
@@ -358,11 +411,15 @@ function Home() {
                   ภาพรวมยอดขาย
                 </h2>
                 <p className="font-thai mt-1 text-lg text-[#8E98A8]">
-                  เทียบกับสัปดาห์ก่อน{' '}
-                  <span className="font-semibold text-[#519b5c]">+18.4%</span>
+                  {SALES_COMPARISON_LABEL[salesRange.value]}{' '}
+                  <span
+                    className={`font-semibold ${salesChangePct >= 0 ? 'text-[#519b5c]' : 'text-[#d64545]'}`}
+                  >
+                    {salesChangePct >= 0 ? '+' : ''}
+                    {salesChangePct.toFixed(1)}%
+                  </span>
                 </p>
               </div>
-              {/* TODO: wire up real date-range selection for the sales chart */}
               <div className="relative" ref={salesRangeRef}>
                 <button
                   onClick={() => setIsSalesRangeOpen((prev) => !prev)}
@@ -430,54 +487,68 @@ function Home() {
         {/** Right column */}
         <div className="flex w-full flex-col gap-5 md:w-[40%] lg:w-150">
           {/** AI recommendations*/}
-          {/** TODO: Load AI recommendations actual*/}
           <div className="w-full rounded-xl border-2 border-[#8E98A8] p-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
             <div className="flex flex-row items-center gap-3">
               <div className="bg-citrus rounded-xl p-3 shadow-md">
                 <img src={sparklebold} alt="Sparkle" className="h-7 w-7" />
               </div>
               <div>
-                <h2 className="font-thai text-amalfidark text-2xl font-semibold">
-                  น้องดีแนะนำให้คุณ
-                </h2>
-                <p className="font-thai text-base text-black">
-                  2 สิ่งที่ทำได้ใน 30 วินาที
-                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="font-thai text-amalfidark text-2xl font-semibold">
+                    น้องดีแนะนำให้คุณ
+                  </h2>
+                  {recommendationsState.status === 'loaded' &&
+                    !isRealRecommendations && (
+                      <span className="font-thai rounded-full bg-[#f0e9ff] px-2 py-0.5 text-xs font-medium text-[#7f66ba]">
+                        ตัวอย่าง
+                      </span>
+                    )}
+                </div>
+                {recommendationsState.status === 'loading' ? (
+                  <Skeleton className="mt-1 h-5 w-40" />
+                ) : (
+                  <p className="font-thai text-base text-black">
+                    {cardsToRender.length} สิ่งที่ทำได้ใน 30 วินาที
+                  </p>
+                )}
               </div>
             </div>
             <div className="mt-4 flex flex-col gap-3">
-              <div className="rounded-[10px] border border-[#8E98A8] px-5 py-4">
-                <p className="font-thai text-xl font-semibold text-black">
-                  ครีเอทีฟใหม่พร้อมทดสอบ
+              {recommendationsState.status === 'loading' ? (
+                <>
+                  <RecommendationCardSkeleton />
+                  <RecommendationCardSkeleton />
+                </>
+              ) : isRealRecommendations && cardsToRender.length === 0 ? (
+                <p className="font-thai text-base text-[#8E98A8]">
+                  ยังไม่มีคำแนะนำตอนนี้ ลองใหม่อีกครั้งภายหลัง
                 </p>
-                <p className="font-thai mt-1 text-base text-black">
-                  AI สร้าง 3 ภาพใหม่สำหรับเมนูลาเต้คาราเมล กดดูและเริ่ม A/B Test
-                  ได้เลย
-                </p>
-                <button
-                  onClick={() => navigate('/campaign/latte-caramel-2026/edit')}
-                  className="bg-sealight-hover border-seadark text-seadark font-thai hover:bg-sealight-active mt-5 flex items-center gap-1 rounded-full border px-7 py-1 text-base transition-colors hover:cursor-pointer"
-                >
-                  เริ่มเลย
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="rounded-[10px] border border-[#8E98A8] px-5 py-4">
-                <p className="font-thai text-xl font-semibold text-black">
-                  งบใกล้หมดสำหรับโปรไมโล
-                </p>
-                <p className="font-thai mt-1 text-base text-black">
-                  ใช้ไป 90% แล้ว — AI แนะนำให้เพิ่ม ฿2,000 เพื่อให้รันต่ออีก 3
-                  วัน
-                </p>
-                <button
-                  onClick={() => navigate('/campaign/milo-promo-2026/edit')}
-                  className="bg-sealight-hover border-seadark text-seadark font-thai hover:bg-sealight-active mt-5 flex items-center gap-1 rounded-full border px-7 py-1 text-base transition-colors hover:cursor-pointer"
-                >
-                  เพิ่มงบ
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </div>
+              ) : (
+                cardsToRender.map((rec, i) => (
+                  <div
+                    key={`${rec.campaignId}-${i}`}
+                    className="rounded-[10px] border border-[#8E98A8] px-5 py-4"
+                  >
+                    <p className="font-thai text-xl font-semibold text-black">
+                      {rec.title}
+                    </p>
+                    <p className="font-thai mt-1 text-base text-black">
+                      {rec.description}
+                    </p>
+                    <button
+                      onClick={() =>
+                        isRealRecommendations
+                          ? navigate('/campaign')
+                          : navigate(`/campaign/${rec.campaignId}/edit`)
+                      }
+                      className="bg-sealight-hover border-seadark text-seadark font-thai hover:bg-sealight-active mt-5 flex items-center gap-1 rounded-full border px-7 py-1 text-base transition-colors hover:cursor-pointer"
+                    >
+                      {rec.actionLabel}
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

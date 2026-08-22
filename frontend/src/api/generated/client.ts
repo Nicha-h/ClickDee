@@ -99,6 +99,8 @@ export interface AuthResponse {
   id: string;
   email: string;
   /** @nullable */
+  name: string | null;
+  /** @nullable */
   businessName: string | null;
   /** @nullable */
   location: string | null;
@@ -119,6 +121,8 @@ export interface AuthResponse {
   peakHours: string | null;
   /** @nullable */
   promoHighlight: string | null;
+  /** @nullable */
+  customerPersona: string | null;
   createdAt: string;
 }
 
@@ -175,6 +179,8 @@ export interface User {
   id: string;
   email: string;
   /** @nullable */
+  name: string | null;
+  /** @nullable */
   businessName: string | null;
   /** @nullable */
   location: string | null;
@@ -195,7 +201,27 @@ export interface User {
   peakHours: string | null;
   /** @nullable */
   promoHighlight: string | null;
+  /** @nullable */
+  customerPersona: string | null;
   createdAt: string;
+}
+
+export interface UpdateAccountInput {
+  /** @minLength 1 */
+  name?: string;
+  email?: string;
+  /** @minLength 1 */
+  businessName?: string;
+  /** @minLength 1 */
+  location?: string;
+  /** @minLength 1 */
+  category?: string;
+  /** @minLength 1 */
+  budget?: string;
+  /** @minLength 1 */
+  signatureProduct?: string;
+  /** @minLength 1 */
+  customerPersona?: string;
 }
 
 export interface DeleteAccountInput {
@@ -277,6 +303,19 @@ export interface AiMessage {
   createdAt: string;
   pendingAction?: PendingAiAction | null;
   redacted?: boolean;
+}
+
+export interface Recommendation {
+  campaignId: string;
+  title: string;
+  description: string;
+  actionLabel: string;
+}
+
+export interface RecommendationsResponse {
+  hasCampaigns: boolean;
+  /** @maxItems 3 */
+  recommendations: Recommendation[];
 }
 
 export interface SendAiMessageResponse {
@@ -880,6 +919,64 @@ export const getApiAuthAccountId = async (id: string, options?: RequestInit): Pr
 
 
 
+export type patchApiAuthAccountIdResponse200 = {
+  data: User
+  status: 200
+}
+
+export type patchApiAuthAccountIdResponse403 = {
+  data: Error
+  status: 403
+}
+
+export type patchApiAuthAccountIdResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type patchApiAuthAccountIdResponse409 = {
+  data: Error
+  status: 409
+}
+
+export type patchApiAuthAccountIdResponseSuccess = (patchApiAuthAccountIdResponse200) & {
+  headers: Headers;
+};
+export type patchApiAuthAccountIdResponseError = (patchApiAuthAccountIdResponse403 | patchApiAuthAccountIdResponse404 | patchApiAuthAccountIdResponse409) & {
+  headers: Headers;
+};
+
+export type patchApiAuthAccountIdResponse = (patchApiAuthAccountIdResponseSuccess | patchApiAuthAccountIdResponseError)
+
+export const getPatchApiAuthAccountIdUrl = (id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/auth/account/${id}`
+}
+
+export const patchApiAuthAccountId = async (id: string,
+    updateAccountInput?: UpdateAccountInput, options?: RequestInit): Promise<patchApiAuthAccountIdResponse> => {
+
+  const res = await fetch(getPatchApiAuthAccountIdUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateAccountInput)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: patchApiAuthAccountIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as patchApiAuthAccountIdResponse
+}
+
+
+
 export type deleteApiAuthAccountIdResponse204 = {
   data: void
   status: 204
@@ -1031,6 +1128,46 @@ export const postApiAiMessages = async (sendAiMessageInput?: SendAiMessageInput,
 
   const data: postApiAiMessagesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as postApiAiMessagesResponse
+}
+
+
+
+export type getApiAiRecommendationsResponse200 = {
+  data: RecommendationsResponse
+  status: 200
+}
+
+export type getApiAiRecommendationsResponseSuccess = (getApiAiRecommendationsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiAiRecommendationsResponse = (getApiAiRecommendationsResponseSuccess)
+
+export const getGetApiAiRecommendationsUrl = () => {
+
+
+
+
+  return `${apiBaseUrl}/api/ai/recommendations`
+}
+
+export const getApiAiRecommendations = async ( options?: RequestInit): Promise<getApiAiRecommendationsResponse> => {
+
+  const res = await fetch(getGetApiAiRecommendationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiAiRecommendationsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiAiRecommendationsResponse
 }
 
 

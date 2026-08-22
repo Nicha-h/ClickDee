@@ -1,19 +1,71 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { ChevronLeft, Sparkles } from 'lucide-react'
 import StepIndicator from '@/components/stepIndicator'
+import { postApiAiMessages } from '@/api/generated/client'
+import { getUserId, withCredentials } from '@/lib/userId'
 
-const PROCESSING_DELAY_MS = 3500
+function errorReplyFor(status: number): string {
+  if (status === 429) return 'ตอนนี้มีคนใช้งานเยอะ กรุณาลองใหม่อีกครั้งค่ะ'
+  if (status === 422)
+    return 'ข้อความนี้ถูกบล็อกโดยระบบตรวจสอบความปลอดภัย กรุณาลองใหม่อีกครั้งค่ะ'
+  if (status === 503) return 'ระบบ AI ยังไม่พร้อมใช้งานในขณะนี้ค่ะ'
+  return 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้งค่ะ'
+}
 
 function CampaignProcessing() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const prompt = (location.state as { prompt?: string } | null)?.prompt ?? ''
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      navigate('/campaign/new/review', { replace: true })
-    }, PROCESSING_DELAY_MS)
-    return () => clearTimeout(timeout)
-  }, [navigate])
+    if (!prompt.trim() || !getUserId()) {
+      navigate('/campaign/new', { replace: true })
+      return
+    }
+
+    let cancelled = false
+    postApiAiMessages({ text: prompt }, withCredentials())
+      .then((res) => {
+        if (cancelled) return
+        if (res.status === 201) {
+          const staged = res.data.assistantMessages.find(
+            (m) =>
+              m.pendingAction?.status === 'PENDING' &&
+              m.pendingAction.type === 'CREATE',
+          )
+          if (staged?.pendingAction) {
+            navigate('/campaign/new/review', {
+              replace: true,
+              state: { pendingAction: staged.pendingAction },
+            })
+            return
+          }
+          const aiReply =
+            res.data.assistantMessages
+              .map((m) => m.text)
+              .filter(Boolean)
+              .join('\n\n') || 'น้องดีต้องการรายละเอียดเพิ่มเติมค่ะ'
+          navigate('/campaign/new', { replace: true, state: { prompt, aiReply } })
+        } else {
+          navigate('/campaign/new', {
+            replace: true,
+            state: { prompt, aiReply: errorReplyFor(res.status) },
+          })
+        }
+      })
+      .catch(() => {
+        if (cancelled) return
+        navigate('/campaign/new', {
+          replace: true,
+          state: { prompt, aiReply: errorReplyFor(0) },
+        })
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [navigate, prompt])
 
   return (
     <div className="min-h-full min-w-full py-10">

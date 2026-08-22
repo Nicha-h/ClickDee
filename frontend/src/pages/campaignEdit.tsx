@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
@@ -12,6 +12,9 @@ import {
   X,
 } from 'lucide-react'
 import { campaigns, platformBadgeStyles } from '@/data/campaigns'
+import { getApiCampaignsId, patchApiCampaignsId } from '@/api/generated/client'
+import type { Campaign as ApiCampaign } from '@/api/generated/client'
+import { withCredentials } from '@/lib/userId'
 
 const draftAgeRange = '22–38 ปี'
 const forecast = {
@@ -23,20 +26,209 @@ const forecast = {
 
 function CampaignEdit() {
   const { campaignId } = useParams()
-  const campaign = campaigns.find((c) => c.id === campaignId)
+  const mockCampaign = campaigns.find((c) => c.id === campaignId)
+  const [apiCampaign, setApiCampaign] = useState<ApiCampaign | null>(null)
+  const [isLoading, setIsLoading] = useState(!mockCampaign)
 
-  if (!campaign) {
+  useEffect(() => {
+    if (mockCampaign || !campaignId) return
+    getApiCampaignsId(campaignId, withCredentials()).then((res) => {
+      if (res.status === 200) {
+        setApiCampaign(res.data)
+      }
+      setIsLoading(false)
+    })
+  }, [campaignId, mockCampaign])
+
+  if (isLoading) {
     return (
-      <div className="flex min-h-full min-w-full flex-col items-center justify-center gap-4 py-10">
-        <p className="font-thai text-xl text-black">ไม่พบแคมเปญนี้</p>
-        <Link to="/campaign" className="font-thai text-amalfi underline">
-          กลับไปหน้าแคมเปญ
-        </Link>
+      <div className="flex min-h-full min-w-full items-center justify-center py-10">
+        <p className="font-thai text-xl text-black">กำลังโหลด...</p>
       </div>
     )
   }
 
-  return <CampaignEditView campaign={campaign} />
+  if (mockCampaign) return <CampaignEditView campaign={mockCampaign} />
+  if (apiCampaign) return <ApiCampaignEditView campaign={apiCampaign} />
+
+  return (
+    <div className="flex min-h-full min-w-full flex-col items-center justify-center gap-4 py-10">
+      <p className="font-thai text-xl text-black">ไม่พบแคมเปญนี้</p>
+      <Link to="/campaign" className="font-thai text-amalfi underline">
+        กลับไปหน้าแคมเปญ
+      </Link>
+    </div>
+  )
+}
+
+const API_STATUS_LABELS: Record<ApiCampaign['status'], string> = {
+  DRAFT: 'ฉบับร่าง',
+  ACTIVE: 'กำลังทำงาน',
+  PAUSED: 'หยุดชั่วคราว',
+  COMPLETED: 'สิ้นสุดแล้ว',
+}
+
+function ApiCampaignEditView({ campaign }: { campaign: ApiCampaign }) {
+  const navigate = useNavigate()
+  const [name, setName] = useState(campaign.name)
+  const [caption, setCaption] = useState(campaign.caption ?? '')
+  const [budget, setBudget] = useState(campaign.budget)
+  const [startDate, setStartDate] = useState(campaign.startDate.slice(0, 10))
+  const [endDate, setEndDate] = useState(
+    campaign.endDate ? campaign.endDate.slice(0, 10) : '',
+  )
+  const [status, setStatus] = useState<ApiCampaign['status']>(campaign.status)
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    setIsSaving(true)
+    setError(null)
+    try {
+      const res = await patchApiCampaignsId(
+        campaign.id,
+        {
+          name,
+          caption: caption.trim() ? caption : null,
+          budget: Number(budget),
+          startDate: new Date(startDate).toISOString(),
+          endDate: endDate ? new Date(endDate).toISOString() : null,
+          status,
+        },
+        withCredentials(),
+      )
+      if (res.status === 200) {
+        navigate(`/campaign/${campaign.id}/report`)
+      } else {
+        setError('บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+      }
+    } catch {
+      setError('บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <div className="min-h-full min-w-full py-10">
+      {/** Header */}
+      <div className="flex items-center gap-4">
+        <button
+          type="button"
+          onClick={() => navigate(`/campaign/${campaign.id}/report`)}
+          className="border-amalfidark flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2"
+        >
+          <ChevronLeft className="text-amalfidark h-7 w-7" />
+        </button>
+        <h1 className="font-thai text-amalfidark text-2xl font-bold sm:text-3xl lg:text-4xl">
+          แก้ไขแคมเปญ
+        </h1>
+      </div>
+
+      <form
+        onSubmit={handleSubmit}
+        className="font-thai mt-6 flex max-w-xl flex-col gap-5"
+      >
+        <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+          <label className="text-lg font-bold text-black">ชื่อแคมเปญ</label>
+          <input
+            type="text"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="mt-2 w-full rounded-lg border border-[#8E98A8] px-3 py-2 text-lg outline-none"
+          />
+
+          <label className="mt-4 block text-lg font-bold text-black">
+            แคปชั่น
+          </label>
+          <textarea
+            value={caption}
+            rows={3}
+            onChange={(e) => setCaption(e.target.value)}
+            className="mt-2 w-full resize-y rounded-lg border border-[#8E98A8] px-3 py-2 text-lg outline-none"
+          />
+
+          <label className="mt-4 block text-lg font-bold text-black">
+            งบประมาณ (บาท)
+          </label>
+          <input
+            type="number"
+            required
+            min={1}
+            step="0.01"
+            value={budget}
+            onChange={(e) => setBudget(e.target.value)}
+            className="mt-2 w-full rounded-lg border border-[#8E98A8] px-3 py-2 text-lg outline-none"
+          />
+
+          <div className="mt-4 flex gap-4">
+            <div className="flex-1">
+              <label className="text-lg font-bold text-black">
+                วันที่เริ่ม
+              </label>
+              <input
+                type="date"
+                required
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="mt-2 w-full rounded-lg border border-[#8E98A8] px-3 py-2 text-lg outline-none"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="text-lg font-bold text-black">
+                วันที่สิ้นสุด
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="mt-2 w-full rounded-lg border border-[#8E98A8] px-3 py-2 text-lg outline-none"
+              />
+            </div>
+          </div>
+
+          <label className="mt-4 block text-lg font-bold text-black">
+            สถานะ
+          </label>
+          <select
+            value={status}
+            onChange={(e) =>
+              setStatus(e.target.value as ApiCampaign['status'])
+            }
+            className="mt-2 w-full rounded-lg border border-[#8E98A8] px-3 py-2 text-lg outline-none"
+          >
+            {Object.entries(API_STATUS_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+
+          {error && <p className="mt-3 text-base text-red-600">{error}</p>}
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="bg-citrus hover:bg-citrushover text-amalfidark flex w-full items-center justify-center gap-2 rounded-xl px-6 py-4 text-2xl font-bold shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] transition-all hover:scale-105 hover:cursor-pointer disabled:opacity-50"
+          >
+            {isSaving ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate(`/campaign/${campaign.id}/report`)}
+            className="bg-sealight-hover border-seadark text-seadark hover:bg-sealight-active hover:text-seadark-active w-full rounded-xl border-[1.5px] py-3 text-lg font-semibold hover:scale-105 hover:cursor-pointer"
+          >
+            ยกเลิกการแก้ไข
+          </button>
+        </div>
+      </form>
+      <div className="h-24 w-full shrink-0"></div>
+    </div>
+  )
 }
 
 function CampaignEditView({

@@ -10,8 +10,11 @@ import {
   CancelPendingActionResponseSchema,
   PendingActionIdParamSchema,
 } from '../schemas/pending-ai-action.schema.js'
+import { RecommendationsResponseSchema } from '../schemas/recommendation.schema.js'
 import * as aiService from '../services/ai.service.js'
 import * as pendingActionService from '../services/pending-ai-action.service.js'
+import * as campaignService from '../services/campaign.service.js'
+import * as recommendationAiService from '../services/recommendation-ai.service.js'
 import {
   AiNotConfiguredError,
   AiRateLimitError,
@@ -73,6 +76,32 @@ aiApp.openapi(listMessagesRoute, async (c) => {
   const userId = c.get('userId')
   const messages = await aiService.getConversationMessages(userId)
   return c.json(messages.map(serializeMessage), 200)
+})
+
+const getRecommendationsRoute = createRoute({
+  method: 'get',
+  path: '/recommendations',
+  tags: ['AI'],
+  middleware: [requireAuth] as const,
+  responses: {
+    200: {
+      content: {
+        'application/json': { schema: RecommendationsResponseSchema },
+      },
+      description:
+        "AI-generated suggestions from the caller's real campaigns, or hasCampaigns:false if they have none yet",
+    },
+  },
+})
+aiApp.openapi(getRecommendationsRoute, async (c) => {
+  const userId = c.get('userId')
+  const campaigns = await campaignService.listCampaigns(userId)
+  if (campaigns.length === 0) {
+    return c.json({ hasCampaigns: false, recommendations: [] }, 200)
+  }
+  const { recommendations } =
+    await recommendationAiService.generateRecommendations(campaigns)
+  return c.json({ hasCampaigns: true, recommendations }, 200)
 })
 
 const sendMessageRoute = createRoute({

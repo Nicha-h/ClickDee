@@ -5,6 +5,7 @@ const { sampleUser } = vi.hoisted(() => ({
     id: 'user-1',
     email: 'business@example.com',
     passwordHash: 'salt:hash',
+    name: 'มะลิ ใจดี',
     businessName: 'ร้านกาแฟบ้านสวน',
     location: 'สีลม',
     category: 'cafe',
@@ -16,6 +17,7 @@ const { sampleUser } = vi.hoisted(() => ({
     platforms: ['facebook'],
     peakHours: 'morning',
     promoHighlight: null,
+    customerPersona: null,
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
   },
@@ -26,6 +28,7 @@ vi.mock('../services/user.service.js', () => ({
   createUser: vi.fn().mockResolvedValue(sampleUser),
   findUserById: vi.fn().mockResolvedValue(null),
   deleteUser: vi.fn().mockResolvedValue(sampleUser),
+  updateUser: vi.fn().mockResolvedValue(sampleUser),
 }))
 
 vi.mock('../lib/password.js', () => ({
@@ -36,6 +39,7 @@ import { app } from '../app.js'
 import * as userService from '../services/user.service.js'
 import * as passwordLib from '../lib/password.js'
 import { signSessionToken } from '../lib/auth.js'
+import { Prisma } from '../generated/prisma/client.js'
 
 const authHeader = async (userId: string) => ({
   Cookie: `session=${await signSessionToken(userId)}`,
@@ -161,6 +165,71 @@ describe('GET /api/auth/account/:id', () => {
       headers: await authHeader('nobody'),
     })
     expect(res.status).toBe(404)
+  })
+})
+
+describe('PATCH /api/auth/account/:id', () => {
+  it('updates the account and returns the serialized user', async () => {
+    const res = await app.request('/api/auth/account/user-1', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...csrfHeader,
+        ...(await authHeader('user-1')),
+      },
+      body: JSON.stringify({ businessName: 'ร้านใหม่' }),
+    })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.id).toBe('user-1')
+    expect(body.passwordHash).toBeUndefined()
+    expect(userService.updateUser).toHaveBeenCalledWith('user-1', {
+      businessName: 'ร้านใหม่',
+    })
+  })
+
+  it('returns 403 when the token belongs to a different account', async () => {
+    const res = await app.request('/api/auth/account/someone-else', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...csrfHeader,
+        ...(await authHeader('user-1')),
+      },
+      body: JSON.stringify({ businessName: 'ร้านใหม่' }),
+    })
+    expect(res.status).toBe(403)
+  })
+
+  it('returns 409 when the new email is already registered', async () => {
+    vi.mocked(userService.updateUser).mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: 'test',
+      }),
+    )
+    const res = await app.request('/api/auth/account/user-1', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...csrfHeader,
+        ...(await authHeader('user-1')),
+      },
+      body: JSON.stringify({ email: 'taken@example.com' }),
+    })
+    expect(res.status).toBe(409)
+  })
+
+  it('returns 403 when the CSRF header is missing, even with a valid cookie', async () => {
+    const res = await app.request('/api/auth/account/user-1', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(await authHeader('user-1')),
+      },
+      body: JSON.stringify({ businessName: 'ร้านใหม่' }),
+    })
+    expect(res.status).toBe(403)
   })
 })
 

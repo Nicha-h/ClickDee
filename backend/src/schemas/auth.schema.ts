@@ -36,6 +36,7 @@ export const UserSchema = z
   .object({
     id: z.string(),
     email: z.string(),
+    name: z.string().nullable(),
     businessName: z.string().nullable(),
     location: z.string().nullable(),
     category: z.string().nullable(),
@@ -47,6 +48,7 @@ export const UserSchema = z
     platforms: z.array(z.string()),
     peakHours: z.string().nullable(),
     promoHighlight: z.string().nullable(),
+    customerPersona: z.string().nullable(),
     createdAt: z.string().datetime(),
   })
   .openapi('User')
@@ -61,4 +63,18 @@ export const DeleteAccountSchema = z
   .object({ password: z.string().min(1) })
   .openapi('DeleteAccountInput')
 
+export const UpdateAccountSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    email: z.string().email().optional(),
+    businessName: z.string().min(1).optional(),
+    location: z.string().min(1).optional(),
+    category: z.string().min(1).optional(),
+    budget: z.string().min(1).optional(),
+    signatureProduct: z.string().min(1).optional(),
+    customerPersona: z.string().min(1).optional(),
+  })
+  .openapi('UpdateAccountInput')
+
 export type SignupInput = z.infer<typeof SignupSchema>
+export type UpdateAccountInput = z.infer<typeof UpdateAccountSchema>

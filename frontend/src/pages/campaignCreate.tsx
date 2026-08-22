@@ -31,6 +31,7 @@ function CampaignCreate() {
   const [prompt, setPrompt] = useState(
     () => (location.state as { prompt?: string } | null)?.prompt ?? '',
   )
+  const aiReply = (location.state as { aiReply?: string } | null)?.aiReply
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -83,6 +84,15 @@ function CampaignCreate() {
               </p>
             </div>
           </div>
+
+          {aiReply && (
+            <div className="border-seadark bg-sealight mt-4 rounded-[10px] border p-4">
+              <p className="font-thai text-seadark-active text-base font-semibold">
+                น้องดี
+              </p>
+              <p className="font-thai mt-1 text-lg text-black">{aiReply}</p>
+            </div>
+          )}
 
           <textarea
             value={prompt}

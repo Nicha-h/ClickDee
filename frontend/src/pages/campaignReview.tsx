@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   ChevronLeft,
   Plus,
@@ -14,33 +14,75 @@ import {
 import facebook from '@/assets/logos/facebook.svg'
 import StepIndicator from '@/components/stepIndicator'
 import { campaigns } from '@/data/campaigns'
+import {
+  postApiAiActionsIdConfirm,
+  postApiAiActionsIdCancel,
+} from '@/api/generated/client'
+import type { PendingAiAction } from '@/api/generated/client'
+import { pendingActionSummary } from '@/lib/pendingAction'
+import { withCredentials } from '@/lib/userId'
 
-const draftBrief =
-  'ใช้โอกาสฝนตกพรุ่งนี้ ทำแคมเปญเครื่องดื่มร้อน + ของหวานในย่านสีลม งบ 300 บาท/วัน'
-const draftCampaignName = 'ดีลฝนพรำ ลาเต้+ครัวซองต์ ลด 25%'
-const draftGoal = 'เพิ่มยอดขายช่วงบ่ายฝนตก'
-const draftAgeRange = '22–38 ปี'
-const forecast = {
+// Illustrative-only content: audience sizing, per-channel budget split, a
+// reach/click/order forecast, and creative previews all require real
+// Meta/Google ad-account data we don't have access to yet. This stays static
+// example content, clearly marked with an "ตัวอย่าง" badge (same pattern as
+// the demo AI-recommendation cards on home.tsx), rather than being fabricated
+// as if it were computed from this specific campaign.
+const exampleAgeRange = '22–38 ปี'
+const exampleInterests = ['ของหวาน', 'Work From Cafe', 'คาเฟ่ฮอปปิ้ง']
+const exampleForecast = {
   accuracy: 92,
   reach: [23520, 31987],
   clicks: [1223, 1855],
   orders: [159, 278],
 }
+const exampleCreatives = campaigns[0].creatives
+
+function ExampleBadge() {
+  return (
+    <span className="font-thai rounded-full bg-[#f0e9ff] px-2 py-0.5 text-xs font-medium text-[#7f66ba]">
+      ตัวอย่าง
+    </span>
+  )
+}
 
 function CampaignReview() {
   const navigate = useNavigate()
-  const draftCampaign = campaigns.find((c) => c.id === 'rain-promo-2026')
-  const creatives = draftCampaign?.creatives ?? []
+  const location = useLocation()
+  const pendingAction = (
+    location.state as {
+      pendingAction?: NonNullable<PendingAiAction>
+    } | null
+  )?.pendingAction
 
+  useEffect(() => {
+    if (!pendingAction) {
+      navigate('/campaign/new', { replace: true })
+    }
+  }, [pendingAction, navigate])
+
+  if (!pendingAction) return null
+
+  return <CampaignReviewView pendingAction={pendingAction} />
+}
+
+function CampaignReviewView({
+  pendingAction,
+}: {
+  pendingAction: NonNullable<PendingAiAction>
+}) {
+  const navigate = useNavigate()
+  const { rows } = pendingActionSummary(pendingAction)
+  const [isResolving, setIsResolving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Illustrative-only budget slider — not tied to the real campaign budget
+  // above, which comes from what the AI already proposed.
   const [days, setDays] = useState(14)
   const [perDay, setPerDay] = useState(350)
-  const totalBudget = days * perDay
+  const exampleTotalBudget = days * perDay
 
-  const [interests, setInterests] = useState([
-    'ของหวาน',
-    'Work From Cafe',
-    'คาเฟ่ฮอปปิ้ง',
-  ])
+  const [interests, setInterests] = useState(exampleInterests)
   const [newInterest, setNewInterest] = useState('')
   const [isAddingInterest, setIsAddingInterest] = useState(false)
 
@@ -55,6 +97,40 @@ function CampaignReview() {
     }
     setNewInterest('')
     setIsAddingInterest(false)
+  }
+
+  const handleLaunch = async (publish: boolean) => {
+    setIsResolving(true)
+    setError(null)
+    try {
+      const res = await postApiAiActionsIdConfirm(
+        pendingAction.id,
+        { publish },
+        withCredentials(),
+      )
+      if (res.status === 200) {
+        navigate(
+          res.data.campaignId
+            ? `/campaign/${res.data.campaignId}/report`
+            : '/campaign',
+        )
+      } else {
+        setError('ไม่สามารถเปิดตัวแคมเปญได้ กรุณาลองใหม่อีกครั้ง')
+      }
+    } catch {
+      setError('ไม่สามารถเปิดตัวแคมเปญได้ กรุณาลองใหม่อีกครั้ง')
+    } finally {
+      setIsResolving(false)
+    }
+  }
+
+  const handleRestart = async () => {
+    setIsResolving(true)
+    try {
+      await postApiAiActionsIdCancel(pendingAction.id, withCredentials())
+    } finally {
+      navigate('/campaign/new')
+    }
   }
 
   return (
@@ -82,47 +158,42 @@ function CampaignReview() {
         <div className="flex w-full min-w-0 flex-1 flex-col gap-5">
           <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
             <h3 className="font-thai text-amalfidark text-2xl font-bold">
-              บรีฟของคุณ
-            </h3>
-            <p className="font-thai mt-2 text-lg text-black">{draftBrief}</p>
-          </div>
-
-          <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
-            <h3 className="font-thai text-amalfidark text-2xl font-bold">
-              ชื่อแคมเปญ & เป้าหมาย
+              รายละเอียดที่ AI เสนอ
             </h3>
             <p className="font-thai mt-1 text-lg text-black">
-              AI ตั้งชื่อจากบรีฟ — คลิก &apos;แก้ไข&apos; เพื่อเขียนเอง หรือ
-              &apos;สร้างใหม่&apos; ให้ AI เสนอชื่ออื่น
+              น้องดีวางแผนแคมเปญนี้จากบรีฟของคุณ — ตรวจสอบก่อนเปิดตัว
             </p>
-            <div className="mt-3 flex items-center gap-3">
+            <div className="mt-3 flex items-start gap-3">
               <div className="bg-citrus flex h-13 w-13 shrink-0 items-center justify-center rounded-lg">
                 <Target className="h-7 w-7 text-black" />
               </div>
-              <div className="font-thai">
-                <p className="text-citrusdark-hover text-2xl font-semibold">
-                  {draftCampaignName}
-                </p>
-                <p className="mt-1 text-lg text-[#8e98a8]">
-                  เป้าหมาย:{' '}
-                  <span className="font-bold text-black">{draftGoal}</span> ·
-                  ระยะเวลา:{' '}
-                  <span className="font-bold text-black">{days} วัน</span>
-                </p>
-              </div>
+              <dl className="font-thai flex-1 space-y-1 text-lg text-black">
+                {rows.map(([k, v]) => (
+                  <div key={k} className="flex gap-2">
+                    <dt className="shrink-0 font-semibold text-[#8e98a8]">
+                      {k}:
+                    </dt>
+                    <dd>{v}</dd>
+                  </div>
+                ))}
+              </dl>
             </div>
           </div>
 
           <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
-            <h3 className="font-thai text-amalfidark text-2xl font-bold">
-              กลุ่มเป้าหมาย & ขนาดตลาด
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-thai text-amalfidark text-2xl font-bold">
+                กลุ่มเป้าหมาย & ขนาดตลาด
+              </h3>
+              <ExampleBadge />
+            </div>
             <p className="font-thai mt-1 text-lg text-black">
-              AI ประเมินจากข้อมูล Facebook + Google
+              ตัวอย่างประกอบ — ต้องเชื่อมต่อ Facebook/Google Ads
+              จริงก่อนจึงจะประเมินจากข้อมูลจริงได้
             </p>
             <div className="font-thai mt-4">
               <p className="text-xl font-bold text-black">อายุ</p>
-              <p className="mt-1 text-lg text-black">{draftAgeRange}</p>
+              <p className="mt-1 text-lg text-black">{exampleAgeRange}</p>
             </div>
             <div className="font-thai mt-4">
               <p className="text-xl font-bold text-black">ความสนใจ</p>
@@ -167,11 +238,14 @@ function CampaignReview() {
           </div>
 
           <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
-            <h3 className="font-thai text-amalfidark text-2xl font-bold">
-              แบ่งงบให้แต่ละช่องทาง
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-thai text-amalfidark text-2xl font-bold">
+                แบ่งงบให้แต่ละช่องทาง
+              </h3>
+              <ExampleBadge />
+            </div>
             <p className="font-thai mt-1 text-lg text-black">
-              AI วิเคราะห์ว่าช่องทางไหนคุ้มที่สุดในกลุ่มเป้าหมายของคุณ
+              ตัวอย่างประกอบ — ปัจจุบันรองรับ Facebook เท่านั้น
             </p>
             <div className="mt-4 flex items-center gap-3">
               <span className="font-thai flex items-center gap-1 rounded-lg bg-[#72adff] px-3 py-1 text-lg font-semibold text-white">
@@ -181,23 +255,29 @@ function CampaignReview() {
               <div className="h-2 flex-1 rounded-full bg-[rgba(142,152,168,0.3)]">
                 <div
                   className="bg-seaactive h-2 rounded-full"
-                  style={{ width: '70%' }}
+                  style={{ width: '100%' }}
                 />
               </div>
-              <span className="text-base font-semibold text-black">฿3,430</span>
+              <span className="text-base font-semibold text-black">
+                {pendingAction.payload.budget !== undefined
+                  ? `฿${pendingAction.payload.budget.toLocaleString('th-TH')}`
+                  : '-'}
+              </span>
             </div>
           </div>
 
           <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
-            <h3 className="font-thai text-amalfidark text-2xl font-bold">
-              ครีเอทีฟที่ AI สร้าง
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-thai text-amalfidark text-2xl font-bold">
+                ครีเอทีฟตัวอย่าง
+              </h3>
+              <ExampleBadge />
+            </div>
             <p className="font-thai mt-1 text-lg text-black">
-              3 ตัวอย่างพร้อมแคปชั่น — กด &apos;แก้ไข&apos; เพื่อแก้คำ หรือกด ✨
-              บนการ์ดเพื่อสุ่มใบใหม่
+              ตัวอย่างหน้าตาครีเอทีฟ — สร้างครีเอทีฟจริงได้หลังเปิดตัวแคมเปญ
             </p>
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {creatives.map((creative) => (
+              {exampleCreatives.map((creative) => (
                 <div
                   key={creative.rank}
                   className="min-w-0 overflow-hidden rounded-xl border border-[#8E98A8]"
@@ -213,7 +293,8 @@ function CampaignReview() {
                     </p>
                     <button
                       type="button"
-                      className="font-thai text-seadark hover:text-seadark-active mt-2 flex items-center gap-1 text-lg hover:scale-105 hover:cursor-pointer"
+                      disabled
+                      className="font-thai text-seadark mt-2 flex cursor-not-allowed items-center gap-1 text-lg opacity-60"
                     >
                       <Shuffle className="h-3 w-3" />
                       สุ่มใหม่
@@ -228,9 +309,15 @@ function CampaignReview() {
         {/** Right column */}
         <div className="flex w-full shrink-0 flex-col gap-5 md:w-72 lg:w-97">
           <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
-            <h3 className="font-thai text-amalfidark text-2xl font-bold">
-              งบประมาณ
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-thai text-amalfidark text-2xl font-bold">
+                งบประมาณ
+              </h3>
+              <ExampleBadge />
+            </div>
+            <p className="font-thai mt-1 text-base text-black">
+              ตัวอย่างประกอบการวางแผน — งบจริงคือค่าที่ AI เสนอด้านซ้าย
+            </p>
 
             <div className="font-thai mt-4">
               <p className="text-xl font-bold text-black">ระยะเวลา</p>
@@ -276,18 +363,21 @@ function CampaignReview() {
                 งบทั้งหมด
               </p>
               <p className="text-citrusdark text-2xl font-bold">
-                ฿{totalBudget.toLocaleString()}
+                ฿{exampleTotalBudget.toLocaleString()}
               </p>
             </div>
           </div>
 
           <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
             <div className="flex items-center justify-between">
-              <h3 className="font-thai text-amalfidark text-2xl font-bold">
-                คาดการณ์
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-thai text-amalfidark text-2xl font-bold">
+                  คาดการณ์
+                </h3>
+                <ExampleBadge />
+              </div>
               <span className="font-thai text-lg text-black">
-                ความแม่นยำ {forecast.accuracy}%
+                ความแม่นยำ {exampleForecast.accuracy}%
               </span>
             </div>
             <div className="font-thai mt-4 flex flex-col gap-3 text-lg text-black">
@@ -296,8 +386,8 @@ function CampaignReview() {
                 <div>
                   <p className="font-bold">เข้าถึง</p>
                   <p>
-                    {forecast.reach[0].toLocaleString()} –{' '}
-                    {forecast.reach[1].toLocaleString()}
+                    {exampleForecast.reach[0].toLocaleString()} –{' '}
+                    {exampleForecast.reach[1].toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -306,8 +396,8 @@ function CampaignReview() {
                 <div>
                   <p className="font-bold">คลิก</p>
                   <p>
-                    {forecast.clicks[0].toLocaleString()} –{' '}
-                    {forecast.clicks[1].toLocaleString()}
+                    {exampleForecast.clicks[0].toLocaleString()} –{' '}
+                    {exampleForecast.clicks[1].toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -316,18 +406,23 @@ function CampaignReview() {
                 <div>
                   <p className="font-bold">ออเดอร์</p>
                   <p>
-                    {forecast.orders[0].toLocaleString()} –{' '}
-                    {forecast.orders[1].toLocaleString()}
+                    {exampleForecast.orders[0].toLocaleString()} –{' '}
+                    {exampleForecast.orders[1].toLocaleString()}
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
+          {error && (
+            <p className="font-thai text-base text-red-600">{error}</p>
+          )}
+
           <button
             type="button"
-            onClick={() => navigate('/campaign/rain-promo-2026/report')}
-            className="bg-citrus hover:bg-citrushover font-thai text-amalfidark flex w-full items-center justify-center gap-2 rounded-xl px-6 py-4 text-2xl font-bold shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] transition-all hover:scale-105 hover:cursor-pointer"
+            onClick={() => handleLaunch(true)}
+            disabled={isResolving}
+            className="bg-citrus hover:bg-citrushover font-thai text-amalfidark flex w-full items-center justify-center gap-2 rounded-xl px-6 py-4 text-2xl font-bold shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] transition-all hover:scale-105 hover:cursor-pointer disabled:opacity-50"
           >
             <svg
               width="23"
@@ -346,15 +441,17 @@ function CampaignReview() {
           </button>
           <button
             type="button"
-            onClick={() => navigate('/campaign')}
-            className="font-thai bg-sealight-hover border-seadark text-seadark hover:bg-sealight-active hover:text-seadark-active w-full rounded-xl border-[1.5px] py-3 text-lg font-semibold hover:scale-105 hover:cursor-pointer"
+            onClick={() => handleLaunch(false)}
+            disabled={isResolving}
+            className="font-thai bg-sealight-hover border-seadark text-seadark hover:bg-sealight-active hover:text-seadark-active w-full rounded-xl border-[1.5px] py-3 text-lg font-semibold hover:scale-105 hover:cursor-pointer disabled:opacity-50"
           >
             บันทึกเป็นฉบับร่าง
           </button>
           <button
             type="button"
-            onClick={() => navigate('/campaign/new')}
-            className="font-thai w-full py-2 text-center text-lg text-[#8e98a8] underline hover:scale-105 hover:cursor-pointer"
+            onClick={handleRestart}
+            disabled={isResolving}
+            className="font-thai w-full py-2 text-center text-lg text-[#8e98a8] underline hover:scale-105 hover:cursor-pointer disabled:opacity-50"
           >
             เริ่มใหม่ด้วยบรีฟอื่น
           </button>

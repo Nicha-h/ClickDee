@@ -15,6 +15,7 @@ import {
 } from '@/components/trendChartUtils'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import OverviewSkeleton from '@/components/overviewSkeleton'
+import { campaigns } from '@/data/campaigns'
 
 {
   /** Summary data PLACEHOLDER*/
@@ -66,13 +67,11 @@ const rangeSubtitles: Record<string, string> = {
 }
 
 {
-  /** AI insights PLACEHOLDER*/
+  /** AI insights: reuse the top campaign's own mock insights so this stays
+   * consistent with what campaignReport.tsx shows for the same campaign. */
 }
-const aiInsights = [
-  'วันศุกร์ ROI พุ่งสูงสุด +34% — แนะนำให้ขยับงบไปเสาร์-อาทิตย์เพิ่ม',
-  'ครีเอทีฟ #3 ของแคมเปญลาเต้คาราเมลคลิกต่ำกว่าค่าเฉลี่ย 26% ลองสลับภาพใหม่',
-  'กลุ่มอายุ 25–34 มี Conversion Rate สูงกว่ากลุ่มอื่น 2.1 เท่า',
-]
+const topInsightsCampaign = campaigns.find((c) => c.id === 'milo-promo-2026')
+const aiInsights = topInsightsCampaign?.insights ?? []
 
 {
   /** Top-performing campaigns PLACEHOLDER*/

@@ -5,6 +5,7 @@ import {
   DeleteAccountSchema,
   LoginSchema,
   SignupSchema,
+  UpdateAccountSchema,
   UserSchema,
 } from '../schemas/auth.schema.js'
 import * as userService from '../services/user.service.js'
@@ -22,6 +23,7 @@ function serializeUser(user: UserModel) {
   return {
     id: user.id,
     email: user.email,
+    name: user.name,
     businessName: user.businessName,
     location: user.location,
     category: user.category,
@@ -33,6 +35,7 @@ function serializeUser(user: UserModel) {
     platforms: user.platforms,
     peakHours: user.peakHours,
     promoHighlight: user.promoHighlight,
+    customerPersona: user.customerPersona,
     createdAt: user.createdAt.toISOString(),
   }
 }
@@ -158,6 +161,62 @@ authApp.openapi(getAccountRoute, async (c) => {
     return c.json({ message: 'User not found' }, 404)
   }
   return c.json(serializeUser(user), 200)
+})
+
+const updateAccountRoute = createRoute({
+  method: 'patch',
+  path: '/account/{id}',
+  tags: ['Auth'],
+  middleware: [requireAuth] as const,
+  request: {
+    params: DeleteAccountParamSchema,
+    body: {
+      content: { 'application/json': { schema: UpdateAccountSchema } },
+    },
+  },
+  responses: {
+    200: {
+      content: { 'application/json': { schema: UserSchema } },
+      description: 'Account updated',
+    },
+    403: {
+      content: { 'application/json': { schema: ErrorSchema } },
+      description: 'Not the account owner',
+    },
+    404: {
+      content: { 'application/json': { schema: ErrorSchema } },
+      description: 'User not found',
+    },
+    409: {
+      content: { 'application/json': { schema: ErrorSchema } },
+      description: 'Email already registered',
+    },
+  },
+})
+authApp.openapi(updateAccountRoute, async (c) => {
+  const { id } = c.req.valid('param')
+  if (c.get('userId') !== id) {
+    return c.json({ message: 'Forbidden' }, 403)
+  }
+  const input = c.req.valid('json')
+  try {
+    const user = await userService.updateUser(id, input)
+    return c.json(serializeUser(user), 200)
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === 'P2002'
+    ) {
+      return c.json({ message: 'Email already registered' }, 409)
+    }
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === 'P2025'
+    ) {
+      return c.json({ message: 'User not found' }, 404)
+    }
+    throw err
+  }
 })
 
 const deleteAccountRoute = createRoute({

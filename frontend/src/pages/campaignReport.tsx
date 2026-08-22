@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import {
@@ -21,9 +21,12 @@ import {
   percentFormatter,
 } from '@/components/trendChartUtils'
 import { campaigns, platformBadgeStyles } from '@/data/campaigns'
-import type { Creative } from '@/data/campaigns'
-import { useSimulatedLoading } from '@/components/useSimulatedLoading'
+import type { Creative, CampaignItem } from '@/data/campaigns'
 import CampaignReportSkeleton from '@/components/campaignReportSkeleton'
+import { getApiCampaignsId, patchApiCampaignsId } from '@/api/generated/client'
+import type { CampaignStatus as ApiCampaignStatus } from '@/api/generated/client'
+import { toCampaignItem } from '@/lib/campaignAdapters'
+import { withCredentials } from '@/lib/userId'
 
 type ReportStatus = 'active' | 'paused' | 'stopped'
 
@@ -106,11 +109,23 @@ function CreativeCard({ creative }: { creative: Creative }) {
 
 function CampaignReport() {
   const { campaignId } = useParams()
-  const campaign = campaigns.find((c) => c.id === campaignId)
-  const isLoading = useSimulatedLoading()
+  const mockCampaign = campaigns.find((c) => c.id === campaignId)
+  const [apiCampaign, setApiCampaign] = useState<CampaignItem | null>(null)
+  const [isLoading, setIsLoading] = useState(!mockCampaign)
+
+  useEffect(() => {
+    if (mockCampaign || !campaignId) return
+    getApiCampaignsId(campaignId, withCredentials()).then((res) => {
+      if (res.status === 200) {
+        setApiCampaign(toCampaignItem(res.data))
+      }
+      setIsLoading(false)
+    })
+  }, [campaignId, mockCampaign])
 
   if (isLoading) return <CampaignReportSkeleton />
 
+  const campaign = mockCampaign ?? apiCampaign
   if (!campaign) {
     return (
       <div className="flex min-h-full min-w-full flex-col items-center justify-center gap-4 py-10">
@@ -122,9 +137,10 @@ function CampaignReport() {
     )
   }
 
-  const budgetPct = Math.round(
-    (campaign.budgetSpent / campaign.budgetTotal) * 100,
-  )
+  const budgetPct =
+    campaign.budgetTotal > 0
+      ? Math.round((campaign.budgetSpent / campaign.budgetTotal) * 100)
+      : 0
 
   return <CampaignReportView campaign={campaign} budgetPct={budgetPct} />
 }
@@ -133,7 +149,7 @@ function CampaignReportView({
   campaign,
   budgetPct,
 }: {
-  campaign: (typeof campaigns)[number]
+  campaign: CampaignItem
   budgetPct: number
 }) {
   const [status, setStatus] = useState<ReportStatus>(
@@ -141,6 +157,27 @@ function CampaignReportView({
       ? 'stopped'
       : campaign.status,
   )
+
+  const REPORT_STATUS_TO_API: Record<ReportStatus, ApiCampaignStatus> = {
+    active: 'ACTIVE',
+    paused: 'PAUSED',
+    stopped: 'COMPLETED',
+  }
+
+  const handleSetStatus = async (next: ReportStatus) => {
+    if (campaign.source !== 'api') {
+      setStatus(next)
+      return
+    }
+    const res = await patchApiCampaignsId(
+      campaign.id,
+      { status: REPORT_STATUS_TO_API[next] },
+      withCredentials(),
+    )
+    if (res.status === 200) {
+      setStatus(next)
+    }
+  }
 
   const location = useLocation()
   const [creatives] = useState<Creative[]>(() => {
@@ -188,7 +225,7 @@ function CampaignReportView({
           </Link>
           {status === 'active' && (
             <button
-              onClick={() => setStatus('paused')}
+              onClick={() => handleSetStatus('paused')}
               className="hover:text-amalfidark flex items-center gap-2 text-[#8E98A8] hover:cursor-pointer hover:font-semibold"
             >
               <Play className="h-6 w-6" />
@@ -198,14 +235,14 @@ function CampaignReportView({
           {status === 'paused' && (
             <>
               <button
-                onClick={() => setStatus('active')}
+                onClick={() => handleSetStatus('active')}
                 className="flex items-center gap-2 text-[#8E98A8] hover:cursor-pointer hover:font-semibold"
               >
                 <Pause className="h-6 w-6" />
                 หยุดชั่วคราว
               </button>
               <button
-                onClick={() => setStatus('stopped')}
+                onClick={() => handleSetStatus('stopped')}
                 className="border-[] flex items-center gap-1 rounded-[15px] border px-3 py-1 text-lg text-[#be2c2c] hover:cursor-pointer hover:font-semibold"
               >
                 <Square className="h-4 w-4" />
@@ -215,7 +252,7 @@ function CampaignReportView({
           )}
           {status === 'stopped' && (
             <button
-              onClick={() => setStatus('active')}
+              onClick={() => handleSetStatus('active')}
               className="text-amalfi hover:text-amalfidark flex items-center gap-2 hover:cursor-pointer hover:font-semibold"
             >
               <Play className="h-6 w-6" />
@@ -323,26 +360,38 @@ function CampaignReportView({
               </p>
             </div>
           </div>
-          <TrendChart
-            data={indexToFirst(campaign.dailyTrend, ['reach', 'spend'])}
-            series={reachVsSpendSeries}
-            valueFormatter={percentFormatter}
-          />
+          {campaign.dailyTrend.length > 0 ? (
+            <TrendChart
+              data={indexToFirst(campaign.dailyTrend, ['reach', 'spend'])}
+              series={reachVsSpendSeries}
+              valueFormatter={percentFormatter}
+            />
+          ) : (
+            <p className="font-thai mt-6 text-center text-base text-[#8E98A8]">
+              ยังไม่มีข้อมูลแนวโน้ม เนื่องจากแคมเปญยังไม่มีผลลัพธ์
+            </p>
+          )}
         </div>
         <div className="w-full rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] md:w-72 lg:w-96">
           <h3 className="font-thai text-amalfidark text-2xl font-bold">
             ช่องทางที่ทำงาน
           </h3>
-          <DonutChart
-            centerLabel="100%"
-            centerSublabel="การเข้าถึง"
-            segments={campaign.channelReach.map((c) => ({
-              key: c.platform,
-              label: platformBadgeStyles[c.platform].label,
-              value: c.reach,
-              color: platformBadgeStyles[c.platform].chartColor,
-            }))}
-          />
+          {campaign.channelReach.length > 0 ? (
+            <DonutChart
+              centerLabel="100%"
+              centerSublabel="การเข้าถึง"
+              segments={campaign.channelReach.map((c) => ({
+                key: c.platform,
+                label: platformBadgeStyles[c.platform].label,
+                value: c.reach,
+                color: platformBadgeStyles[c.platform].chartColor,
+              }))}
+            />
+          ) : (
+            <p className="font-thai mt-6 text-center text-base text-[#8E98A8]">
+              ยังไม่มีข้อมูลช่องทาง
+            </p>
+          )}
         </div>
       </div>
 
@@ -369,7 +418,13 @@ function CampaignReportView({
           {creatives.map((creative) => (
             <CreativeCard key={creative.rank} creative={creative} />
           ))}
-          <div className="h-69 w-full rounded-xl border-2 border-dashed border-[#8E98A8] bg-[rgba(142,152,168,0.1)]" />
+          <Link
+            to={`/campaign/${campaign.id}/creative/new`}
+            className="font-thai flex h-69 w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#8E98A8] bg-[rgba(142,152,168,0.1)] text-base text-[#8E98A8] hover:cursor-pointer hover:border-[#6B7280] hover:text-[#6B7280]"
+          >
+            <Plus className="h-6 w-6" />
+            {creatives.length === 0 ? 'ยังไม่มีครีเอทีฟ · สร้างใหม่' : 'สร้างครีเอทีฟใหม่'}
+          </Link>
         </div>
       </div>
       <div className="h-24 w-full shrink-0"></div>

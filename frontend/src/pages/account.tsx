@@ -1,8 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CircleUserRound, Pencil } from 'lucide-react'
-import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import AccountSkeleton from '@/components/accountSkeleton'
 import AiMemoryCard from '@/components/aiMemoryCard'
+import {
+  getApiAuthAccountId,
+  patchApiAuthAccountId,
+} from '@/api/generated/client'
+import type { UpdateAccountInput } from '@/api/generated/client'
+import { getUserId, withCredentials } from '@/lib/userId'
 
 type EditableFieldProps = {
   fieldKey: string
@@ -11,6 +16,8 @@ type EditableFieldProps = {
   multiline?: boolean
   rows?: number
   editingKey: string | null
+  isSaving?: boolean
+  error?: string | null
   onEdit: (key: string) => void
   onSave: () => void
   onChange: (key: string, value: string) => void
@@ -23,6 +30,8 @@ function EditableField({
   multiline,
   rows = 3,
   editingKey,
+  isSaving,
+  error,
   onEdit,
   onSave,
   onChange,
@@ -39,9 +48,10 @@ function EditableField({
           <button
             type="button"
             onClick={onSave}
-            className="font-thai text-amalfidark hover:text-amalfidarker text-lg font-semibold"
+            disabled={isSaving}
+            className="font-thai text-amalfidark hover:text-amalfidarker text-lg font-semibold disabled:opacity-50"
           >
-            บันทึก
+            {isSaving ? 'กำลังบันทึก...' : 'บันทึก'}
           </button>
         ) : (
           <button
@@ -59,15 +69,17 @@ function EditableField({
           <textarea
             value={value}
             rows={rows}
+            disabled={isSaving}
             onChange={(e) => onChange(fieldKey, e.target.value)}
-            className="font-thai w-full resize-y rounded-lg border border-[#D2C8E6] px-2.5 py-2 text-lg text-[#1F2937] outline-none"
+            className="font-thai w-full resize-y rounded-lg border border-[#D2C8E6] px-2.5 py-2 text-lg text-[#1F2937] outline-none disabled:opacity-50"
           />
         ) : (
           <input
             type="text"
             value={value}
+            disabled={isSaving}
             onChange={(e) => onChange(fieldKey, e.target.value)}
-            className="font-thai w-full rounded-lg border border-[#D2C8E6] px-2.5 py-2 text-lg text-[#1F2937] outline-none"
+            className="font-thai w-full rounded-lg border border-[#D2C8E6] px-2.5 py-2 text-lg text-[#1F2937] outline-none disabled:opacity-50"
           />
         )
       ) : (
@@ -75,26 +87,37 @@ function EditableField({
           {value}
         </div>
       )}
+      {isEditing && error && (
+        <p className="font-thai mt-1.5 text-base text-red-600">{error}</p>
+      )}
     </div>
   )
 }
 
-{
-  /** Profile + business data PLACEHOLDER */
-}
-const initialProfile = {
-  name: 'มะลิ ใจดี',
-  email: 'malee.shop@email.com',
+const emptyProfile = { name: '', email: '' }
+const emptyBusiness = {
+  storeName: '',
+  category: '',
+  budget: '',
+  location: '',
+  products: '',
+  persona: '',
 }
 
-const initialBusiness = {
-  storeName: 'ร้านก๋วยเตี๋ยวป้ามะลิ',
-  category: 'ร้านอาหาร/เครื่องดื่ม',
-  budget: '3,000 - 10,000 บาท/เดือน',
-  location: 'บางแค กรุงเทพฯ',
-  products: 'ก๋วยเตี๋ยวเรือ, ข้าวขาหมู',
-  persona:
-    'กลุ่มเป้าหมายตัวจริงของร้านคุณคือ พนักงานออฟฟิศแถวร้าน ที่มักเลือกซื้อในช่วงมื้อเที่ยง และประทับใจร้านคุณเรื่องรสชาติ/คุณภาพจัดเต็ม',
+type ProfileKey = keyof typeof emptyProfile
+type BusinessKey = keyof typeof emptyBusiness
+
+// Frontend field names differ from the backend User columns they persist to.
+const BUSINESS_FIELD_TO_ACCOUNT_KEY: Record<
+  BusinessKey,
+  keyof UpdateAccountInput
+> = {
+  storeName: 'businessName',
+  category: 'category',
+  budget: 'budget',
+  location: 'location',
+  products: 'signatureProduct',
+  persona: 'customerPersona',
 }
 
 type AccountTab = 'profile' | 'ai-memory'
@@ -105,11 +128,35 @@ const tabs: { key: AccountTab; label: string }[] = [
 ]
 
 function Account() {
-  const [profile, setProfile] = useState(initialProfile)
-  const [business, setBusiness] = useState(initialBusiness)
+  const [userId] = useState(() => getUserId())
+  const [profile, setProfile] = useState(emptyProfile)
+  const [business, setBusiness] = useState(emptyBusiness)
+  const [isLoading, setIsLoading] = useState(() => !!userId)
   const [editingKey, setEditingKey] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<{
+    key: string
+    message: string
+  } | null>(null)
   const [activeTab, setActiveTab] = useState<AccountTab>('profile')
-  const isLoading = useSimulatedLoading()
+
+  useEffect(() => {
+    if (!userId) return
+    getApiAuthAccountId(userId, withCredentials()).then((res) => {
+      if (res.status === 200) {
+        setProfile({ name: res.data.name ?? '', email: res.data.email })
+        setBusiness({
+          storeName: res.data.businessName ?? '',
+          category: res.data.category ?? '',
+          budget: res.data.budget ?? '',
+          location: res.data.location ?? '',
+          products: res.data.signatureProduct ?? '',
+          persona: res.data.customerPersona ?? '',
+        })
+      }
+      setIsLoading(false)
+    })
+  }, [userId])
 
   const updateProfile = (key: string, value: string) => {
     setProfile((prev) => ({ ...prev, [key]: value }))
@@ -117,7 +164,49 @@ function Account() {
   const updateBusiness = (key: string, value: string) => {
     setBusiness((prev) => ({ ...prev, [key]: value }))
   }
-  const saveEditing = () => setEditingKey(null)
+
+  const saveEditing = async () => {
+    if (!userId || !editingKey) return
+    const isProfileField = editingKey in profile
+    const value = isProfileField
+      ? profile[editingKey as ProfileKey]
+      : business[editingKey as BusinessKey]
+    const accountKey = isProfileField
+      ? (editingKey as keyof UpdateAccountInput)
+      : BUSINESS_FIELD_TO_ACCOUNT_KEY[editingKey as BusinessKey]
+
+    setIsSaving(true)
+    setSaveError(null)
+    try {
+      const res = await patchApiAuthAccountId(
+        userId,
+        { [accountKey]: value },
+        withCredentials(),
+      )
+      if (res.status === 200) {
+        setEditingKey(null)
+      } else if (res.status === 409) {
+        setSaveError({ key: editingKey, message: 'อีเมลนี้ถูกใช้งานแล้ว' })
+      } else {
+        setSaveError({
+          key: editingKey,
+          message: 'บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+        })
+      }
+    } catch {
+      setSaveError({
+        key: editingKey,
+        message: 'บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const startEditing = (key: string) => {
+    setSaveError(null)
+    setEditingKey(key)
+  }
 
   if (isLoading) return <AccountSkeleton />
 
@@ -170,7 +259,9 @@ function Account() {
                 label="ชื่อ-นามสกุล"
                 value={profile.name}
                 editingKey={editingKey}
-                onEdit={setEditingKey}
+                isSaving={editingKey === 'name' && isSaving}
+                error={editingKey === 'name' ? saveError?.message : null}
+                onEdit={startEditing}
                 onSave={saveEditing}
                 onChange={updateProfile}
               />
@@ -179,7 +270,9 @@ function Account() {
                 label="อีเมล"
                 value={profile.email}
                 editingKey={editingKey}
-                onEdit={setEditingKey}
+                isSaving={editingKey === 'email' && isSaving}
+                error={editingKey === 'email' ? saveError?.message : null}
+                onEdit={startEditing}
                 onSave={saveEditing}
                 onChange={updateProfile}
               />
@@ -201,7 +294,9 @@ function Account() {
                 label="ชื่อร้าน/ธุรกิจ"
                 value={business.storeName}
                 editingKey={editingKey}
-                onEdit={setEditingKey}
+                isSaving={editingKey === 'storeName' && isSaving}
+                error={editingKey === 'storeName' ? saveError?.message : null}
+                onEdit={startEditing}
                 onSave={saveEditing}
                 onChange={updateBusiness}
               />
@@ -210,7 +305,9 @@ function Account() {
                 label="ประเภทธุรกิจ"
                 value={business.category}
                 editingKey={editingKey}
-                onEdit={setEditingKey}
+                isSaving={editingKey === 'category' && isSaving}
+                error={editingKey === 'category' ? saveError?.message : null}
+                onEdit={startEditing}
                 onSave={saveEditing}
                 onChange={updateBusiness}
               />
@@ -219,7 +316,9 @@ function Account() {
                 label="งบโฆษณาต่อเดือน"
                 value={business.budget}
                 editingKey={editingKey}
-                onEdit={setEditingKey}
+                isSaving={editingKey === 'budget' && isSaving}
+                error={editingKey === 'budget' ? saveError?.message : null}
+                onEdit={startEditing}
                 onSave={saveEditing}
                 onChange={updateBusiness}
               />
@@ -228,7 +327,9 @@ function Account() {
                 label="ทำเลที่ตั้ง"
                 value={business.location}
                 editingKey={editingKey}
-                onEdit={setEditingKey}
+                isSaving={editingKey === 'location' && isSaving}
+                error={editingKey === 'location' ? saveError?.message : null}
+                onEdit={startEditing}
                 onSave={saveEditing}
                 onChange={updateBusiness}
               />
@@ -239,7 +340,9 @@ function Account() {
                 multiline
                 rows={3}
                 editingKey={editingKey}
-                onEdit={setEditingKey}
+                isSaving={editingKey === 'products' && isSaving}
+                error={editingKey === 'products' ? saveError?.message : null}
+                onEdit={startEditing}
                 onSave={saveEditing}
                 onChange={updateBusiness}
               />
@@ -250,7 +353,9 @@ function Account() {
                 multiline
                 rows={4}
                 editingKey={editingKey}
-                onEdit={setEditingKey}
+                isSaving={editingKey === 'persona' && isSaving}
+                error={editingKey === 'persona' ? saveError?.message : null}
+                onEdit={startEditing}
                 onSave={saveEditing}
                 onChange={updateBusiness}
               />

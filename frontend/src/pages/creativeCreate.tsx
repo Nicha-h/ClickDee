@@ -1,9 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, Sparkles } from 'lucide-react'
 import sparklebold from '@/assets/icons/sparklebold.svg'
 import { campaigns } from '@/data/campaigns'
+import type { CampaignItem } from '@/data/campaigns'
+import { getApiCampaignsId } from '@/api/generated/client'
+import { toCampaignItem } from '@/lib/campaignAdapters'
+import { withCredentials } from '@/lib/userId'
 
 type SuggestedIdea = { id: string; prompt: string }
 
@@ -21,8 +25,29 @@ const suggestedIdeas: SuggestedIdea[] = [
 
 function CreativeCreate() {
   const { campaignId } = useParams()
-  const campaign = campaigns.find((c) => c.id === campaignId)
+  const mockCampaign = campaigns.find((c) => c.id === campaignId)
+  const [apiCampaign, setApiCampaign] = useState<CampaignItem | null>(null)
+  const [isLoading, setIsLoading] = useState(!mockCampaign)
 
+  useEffect(() => {
+    if (mockCampaign || !campaignId) return
+    getApiCampaignsId(campaignId, withCredentials()).then((res) => {
+      if (res.status === 200) {
+        setApiCampaign(toCampaignItem(res.data))
+      }
+      setIsLoading(false)
+    })
+  }, [campaignId, mockCampaign])
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-full min-w-full items-center justify-center py-10">
+        <p className="font-thai text-xl text-black">กำลังโหลด...</p>
+      </div>
+    )
+  }
+
+  const campaign = mockCampaign ?? apiCampaign
   if (!campaign) {
     return (
       <div className="flex min-h-full min-w-full flex-col items-center justify-center gap-4 py-10">
@@ -37,17 +62,14 @@ function CreativeCreate() {
   return <CreativeCreateView campaign={campaign} />
 }
 
-function CreativeCreateView({
-  campaign,
-}: {
-  campaign: (typeof campaigns)[number]
-}) {
+function CreativeCreateView({ campaign }: { campaign: CampaignItem }) {
   const navigate = useNavigate()
   const [prompt, setPrompt] = useState('')
 
-  const worstCreative = campaign.creatives.reduce((min, c) =>
-    c.ctr < min.ctr ? c : min,
-  )
+  const worstCreative =
+    campaign.creatives.length > 0
+      ? campaign.creatives.reduce((min, c) => (c.ctr < min.ctr ? c : min))
+      : null
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -154,8 +176,13 @@ function CreativeCreateView({
               ใบที่ CTR ต่ำที่สุดจะถูกแทนที่ด้วยครีเอทีฟใหม่
             </p>
             <div className="font-thai mt-4 flex flex-col gap-3">
+              {campaign.creatives.length === 0 && (
+                <p className="text-base text-[#8e98a8]">
+                  แคมเปญนี้ยังไม่มีครีเอทีฟ — ใบแรกที่สร้างจะเริ่มทดสอบทันที
+                </p>
+              )}
               {campaign.creatives.map((creative) => {
-                const isWorst = creative.rank === worstCreative.rank
+                const isWorst = creative.rank === worstCreative?.rank
                 return (
                   <div
                     key={creative.rank}
