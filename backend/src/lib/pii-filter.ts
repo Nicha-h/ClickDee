@@ -1,7 +1,7 @@
 /**
  * Best-effort regex-based redaction of sensitive personal data from free-text
  * chat input, applied before persistence and before the text is sent to the
- * (third-party, Azure-hosted) AI model. This is NOT NER-grade PII detection —
+ * (third-party) AI model. This is NOT NER-grade PII detection —
  * known weak spots are bare real names not preceded by a phrase like "my name
  * is"/"ชื่อ...คือ", and address formats outside the patterns below. Scope is
  * strictly the user's free-text chat prompt; this is never applied to an

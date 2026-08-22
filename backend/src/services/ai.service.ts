@@ -2,11 +2,10 @@ import { z } from 'zod'
 import OpenAI from 'openai'
 import { prisma } from '../db/client.js'
 import {
-  getOpenAiClient,
+  createChatCompletion,
   AiRateLimitError,
   AiContentFilterError,
 } from '../lib/openai.js'
-import { env } from '../config/env.js'
 import { CLICKDEE_PRODUCT_CONTEXT } from '../lib/product-context.js'
 import { getAiMemoryQas } from './onboarding.service.js'
 import * as campaignService from './campaign.service.js'
@@ -320,7 +319,6 @@ async function generateAssistantReply(
   history: MessageModel[],
   aiMemory: { question: string; answer: string }[],
 ): Promise<AssistantReply> {
-  const client = getOpenAiClient()
   const contextLine = buildContextLine(user)
   const aiMemoryBlock = buildAiMemoryBlock(aiMemory)
   const dateLine = `Today's date is ${new Date().toISOString().slice(0, 10)}.`
@@ -339,8 +337,7 @@ async function generateAssistantReply(
   ]
 
   try {
-    const first = await client.chat.completions.create({
-      model: env.AZURE_OPENAI_DEPLOYMENT!,
+    const first = await createChatCompletion({
       messages: baseMessages,
       tools: ALL_TOOLS,
       tool_choice: 'auto',
@@ -381,8 +378,7 @@ async function generateAssistantReply(
           tool_calls: toolCalls,
         }
 
-      const second = await client.chat.completions.create({
-        model: env.AZURE_OPENAI_DEPLOYMENT!,
+      const second = await createChatCompletion({
         messages: [
           ...baseMessages,
           assistantToolCallMessage,
@@ -401,9 +397,7 @@ async function generateAssistantReply(
     return { bubbles: splitIntoBubbles(finalText), pendingAction }
   } catch (err) {
     if (err instanceof AiContentFilterError) throw err
-    if (err instanceof OpenAI.RateLimitError) {
-      throw new AiRateLimitError(err.message)
-    }
+    if (err instanceof AiRateLimitError) throw err
     if (
       err instanceof OpenAI.BadRequestError &&
       err.code === 'content_filter'

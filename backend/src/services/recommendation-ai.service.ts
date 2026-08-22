@@ -1,6 +1,5 @@
 import { z } from 'zod'
-import { getOpenAiClient } from '../lib/openai.js'
-import { env } from '../config/env.js'
+import { createChatCompletion } from '../lib/openai.js'
 import { CLICKDEE_PRODUCT_CONTEXT } from '../lib/product-context.js'
 import type { CampaignModel } from '../generated/prisma/models.js'
 
@@ -76,13 +75,11 @@ function buildUserContent(campaigns: CampaignModel[]): string {
 }
 
 async function tryGenerate(
-  client: ReturnType<typeof getOpenAiClient>,
   campaigns: CampaignModel[],
   validIds: Set<string>,
   extraNote?: string,
 ): Promise<RecommendationItem[] | null> {
-  const completion = await client.chat.completions.create({
-    model: env.AZURE_OPENAI_DEPLOYMENT!,
+  const completion = await createChatCompletion({
     response_format: { type: 'json_object' },
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -144,12 +141,9 @@ export async function generateRecommendations(
   const validIds = new Set(campaigns.map((c) => c.id))
 
   try {
-    const client = getOpenAiClient()
-
-    let result = await tryGenerate(client, campaigns, validIds)
+    let result = await tryGenerate(campaigns, validIds)
     if (!result) {
       result = await tryGenerate(
-        client,
         campaigns,
         validIds,
         'Your previous reply could not be parsed, or referenced an unknown campaignId. Reply with ONLY valid JSON matching the exact shape described above, using only the campaignId values listed.',

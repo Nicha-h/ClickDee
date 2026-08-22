@@ -7,9 +7,13 @@ const EnvSchema = z.object({
     .default('development'),
   PORT: z.coerce.number().default(3000),
   DATABASE_URL: z.string().min(1),
-  AZURE_OPENAI_ENDPOINT: z.string().url().optional(),
-  AZURE_OPENAI_KEY: z.string().min(1).optional(),
-  AZURE_OPENAI_DEPLOYMENT: z.string().min(1).optional(),
+  GEMINI_API_KEY: z.string().min(1).optional(),
+  GEMINI_BASE_URL: z
+    .string()
+    .url()
+    .default('https://generativelanguage.googleapis.com/v1beta/openai/'),
+  GROQ_API_KEY: z.string().min(1).optional(),
+  GROQ_BASE_URL: z.string().url().default('https://api.groq.com/openai/v1'),
   AUTH_JWT_SECRET: z.string().min(32),
   AI_MEMORY_ENCRYPTION_KEY: z.string().min(32),
   MAX_FOLLOWUP_QUESTIONS: z.coerce.number().int().positive().default(5),

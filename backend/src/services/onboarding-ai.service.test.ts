@@ -1,5 +1,4 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import OpenAI from 'openai'
 
 const { createMock } = vi.hoisted(() => ({
   createMock: vi.fn(),
@@ -10,14 +9,16 @@ vi.mock('../lib/openai.js', async () => {
     await vi.importActual<typeof import('../lib/openai.js')>('../lib/openai.js')
   return {
     ...actual,
-    getOpenAiClient: () => ({
-      chat: { completions: { create: createMock } },
-    }),
+    createChatCompletion: createMock,
   }
 })
 
 import { generateFollowupQuestion } from './onboarding-ai.service.js'
-import { AiNotConfiguredError, AiRateLimitError } from '../lib/openai.js'
+import {
+  AiNotConfiguredError,
+  AiRateLimitError,
+  AllTiersExhaustedError,
+} from '../lib/openai.js'
 import { env } from '../config/env.js'
 
 beforeEach(() => {
@@ -147,14 +148,9 @@ describe('generateFollowupQuestion', () => {
     )
   })
 
-  it('wraps a rate-limit error from the AI client', async () => {
+  it('wraps an all-tiers-exhausted error from the cascade', async () => {
     createMock.mockImplementationOnce(() => {
-      throw new OpenAI.RateLimitError(
-        429,
-        { message: 'rate limited' },
-        'rate limited',
-        new Headers(),
-      )
+      throw new AllTiersExhaustedError('all tiers exhausted')
     })
     await expect(generateFollowupQuestion({}, [])).rejects.toBeInstanceOf(
       AiRateLimitError,

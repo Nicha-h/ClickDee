@@ -1,5 +1,4 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import OpenAI from 'openai'
 import type { CampaignModel } from '../generated/prisma/models.js'
 
 const { createMock } = vi.hoisted(() => ({
@@ -11,14 +10,12 @@ vi.mock('../lib/openai.js', async () => {
     await vi.importActual<typeof import('../lib/openai.js')>('../lib/openai.js')
   return {
     ...actual,
-    getOpenAiClient: () => ({
-      chat: { completions: { create: createMock } },
-    }),
+    createChatCompletion: createMock,
   }
 })
 
 import { generateRecommendations } from './recommendation-ai.service.js'
-import { AiNotConfiguredError } from '../lib/openai.js'
+import { AiNotConfiguredError, AllTiersExhaustedError } from '../lib/openai.js'
 
 beforeEach(() => {
   createMock.mockReset()
@@ -164,15 +161,10 @@ describe('generateRecommendations', () => {
     expect(result).toEqual({ recommendations: [] })
   })
 
-  it('resolves to an empty list instead of throwing on a rate-limit error', async () => {
+  it('resolves to an empty list instead of throwing when all cascade tiers are exhausted', async () => {
     const campaign = makeCampaign()
     createMock.mockImplementationOnce(() => {
-      throw new OpenAI.RateLimitError(
-        429,
-        { message: 'rate limited' },
-        'rate limited',
-        new Headers(),
-      )
+      throw new AllTiersExhaustedError('all tiers exhausted')
     })
     const result = await generateRecommendations([campaign])
     expect(result).toEqual({ recommendations: [] })

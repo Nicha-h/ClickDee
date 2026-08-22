@@ -1,7 +1,6 @@
 import { z } from 'zod'
-import OpenAI from 'openai'
 import {
-  getOpenAiClient,
+  createChatCompletion,
   AiNotConfiguredError,
   AiRateLimitError,
 } from '../lib/openai.js'
@@ -137,13 +136,11 @@ function isLikelyRepeat(
 }
 
 async function tryGenerate(
-  client: ReturnType<typeof getOpenAiClient>,
   businessProfile: BusinessProfile,
   previousAnswers: FollowupQa[],
   extraNote?: string,
 ): Promise<FollowupResult | null> {
-  const completion = await client.chat.completions.create({
-    model: env.AZURE_OPENAI_DEPLOYMENT!,
+  const completion = await createChatCompletion({
     response_format: { type: 'json_object' },
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -191,12 +188,9 @@ export async function generateFollowupQuestion(
   }
 
   try {
-    const client = getOpenAiClient()
-
-    let result = await tryGenerate(client, businessProfile, previousAnswers)
+    let result = await tryGenerate(businessProfile, previousAnswers)
     if (!result) {
       result = await tryGenerate(
-        client,
         businessProfile,
         previousAnswers,
         'Your previous reply could not be parsed. Reply with ONLY valid JSON matching the exact shape described above — no markdown, no extra text.',
@@ -215,7 +209,6 @@ export async function generateFollowupQuestion(
       isLikelyRepeat(result.question, previousAnswers)
     ) {
       const retried = await tryGenerate(
-        client,
         businessProfile,
         previousAnswers,
         `Your candidate question "${result.question}" repeats or closely paraphrases a question that was already asked. Ask a different, more specific question instead.`,
@@ -232,9 +225,7 @@ export async function generateFollowupQuestion(
     return result
   } catch (err) {
     if (err instanceof AiNotConfiguredError) throw err
-    if (err instanceof OpenAI.RateLimitError) {
-      throw new AiRateLimitError(err.message)
-    }
+    if (err instanceof AiRateLimitError) throw err
     // Any other failure (bad JSON, content filter, transient API error) fails
     // safe rather than leaving the onboarding flow stuck.
     console.error(
