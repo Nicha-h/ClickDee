@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Sparkles } from 'lucide-react'
 import OnboardingProgress from '@/components/onboardingProgress'
 import OnboardingChoiceCard from '@/components/onboardingChoiceCard'
 import { postApiOnboardingFollowupQuestion } from '@/api/generated/client'
@@ -31,6 +31,7 @@ function OnboardingAiFollowup({
   const [phase, setPhase] = useState<'consent' | 'question'>('consent')
   const [consentChecked, setConsentChecked] = useState(false)
   const [qas, setQas] = useState<FollowupQa[]>([])
+  const [history, setHistory] = useState<FollowupQuestion[]>([])
   const [currentQuestion, setCurrentQuestion] = useState(initialQuestion)
   const [answerText, setAnswerText] = useState('')
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null)
@@ -67,6 +68,25 @@ function OnboardingAiFollowup({
     onComplete(qas, true)
   }
 
+  const goBack = () => {
+    if (isLoading || history.length === 0) return
+    const prevQuestion = history[history.length - 1]
+    const prevQa = qas[qas.length - 1]
+    setHistory((prev) => prev.slice(0, -1))
+    setQas((prev) => prev.slice(0, -1))
+    setCurrentQuestion(prevQuestion)
+    if (prevQuestion.type === 'choice') {
+      const isOther = !prevQuestion.choices?.includes(prevQa.answer)
+      setSelectedChoice(isOther ? OTHER_CHOICE_ID : prevQa.answer)
+      setOtherText(isOther ? prevQa.answer : '')
+      setAnswerText('')
+    } else {
+      setAnswerText(prevQa.answer)
+      setSelectedChoice(null)
+      setOtherText('')
+    }
+  }
+
   const goNext = async () => {
     const answer =
       currentQuestion.type === 'choice'
@@ -74,6 +94,7 @@ function OnboardingAiFollowup({
         : answerText.trim()
     if (!answer) return
 
+    const answeredQuestion = currentQuestion
     const nextQas = [...qas, { question: currentQuestion.text, answer }]
     setQas(nextQas)
     setAnswerText('')
@@ -92,6 +113,7 @@ function OnboardingAiFollowup({
         previousAnswers: nextQas,
       })
       if (res.status === 200 && !res.data.done && res.data.question) {
+        setHistory((prev) => [...prev, answeredQuestion])
         setCurrentQuestion({
           text: res.data.question,
           type: res.data.type,
@@ -165,10 +187,21 @@ function OnboardingAiFollowup({
 
   return (
     <div className="flex w-full max-w-190 flex-col items-center gap-8">
-      <OnboardingProgress
-        current={qas.length + 1}
-        total={MAX_FOLLOWUP_QUESTIONS}
-      />
+      <div className="relative flex w-full items-center justify-center">
+        <button
+          type="button"
+          onClick={goBack}
+          disabled={history.length === 0 || isLoading}
+          aria-label="ย้อนกลับ"
+          className="absolute left-0 flex h-8 w-8 items-center justify-center rounded-full text-[#8e98a8] transition-colors hover:cursor-pointer hover:bg-[#F0ECF7] hover:text-[#1F2937] disabled:invisible"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <OnboardingProgress
+          current={qas.length + 1}
+          total={MAX_FOLLOWUP_QUESTIONS}
+        />
+      </div>
 
       <div className="font-thai flex w-full flex-col items-center gap-2.5 text-center">
         {isLoading ? (

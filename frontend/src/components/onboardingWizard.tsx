@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowRight, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Sparkles } from 'lucide-react'
 import OnboardingProgress from '@/components/onboardingProgress'
 import OnboardingChoiceCard from '@/components/onboardingChoiceCard'
 import type { OnboardingStepConfig } from '@/data/onboarding'
@@ -99,7 +99,18 @@ function OnboardingWizard({
 
   return (
     <div className="flex w-full max-w-190 flex-col items-center gap-8">
-      <OnboardingProgress current={stepIndex + 1} total={steps.length} />
+      <div className="relative flex w-full items-center justify-center">
+        <button
+          type="button"
+          onClick={goBack}
+          disabled={stepIndex === 0}
+          aria-label="ย้อนกลับ"
+          className="absolute left-0 flex h-8 w-8 items-center justify-center rounded-full text-[#8e98a8] transition-colors hover:cursor-pointer hover:bg-[#F0ECF7] hover:text-[#1F2937] disabled:invisible"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <OnboardingProgress current={stepIndex + 1} total={steps.length} />
+      </div>
 
       <div className="font-thai flex w-full flex-col items-center gap-2.5 text-center">
         {aiLabeled && (
