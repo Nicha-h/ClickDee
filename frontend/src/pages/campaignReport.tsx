@@ -17,6 +17,7 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
 } from 'lucide-react'
 import { CTA_LABELS } from '@/lib/adCreativeLabels'
 import cash from '@/assets/icons/cash.svg'
@@ -61,8 +62,10 @@ import type {
   AdCreative,
   Ad,
 } from '@/api/generated/client'
-import { toCampaignItem } from '@/lib/campaignAdapters'
+import { toCampaignItem, fetchCampaignThumbnail } from '@/lib/campaignAdapters'
+import { useGoBack } from '@/components/useGoBack'
 import { withCredentials } from '@/lib/userId'
+import { resolveAssetUrl } from '@/lib/assetUrl'
 
 type ReportStatus = 'active' | 'paused' | 'stopped'
 
@@ -246,7 +249,7 @@ function CreativeDetail({ creative }: { creative: AdCreative }) {
       </div>
       {details.mediaAssetUrl && (
         <img
-          src={details.mediaAssetUrl}
+          src={resolveAssetUrl(details.mediaAssetUrl)}
           alt=""
           className="h-32 w-32 rounded-lg object-cover"
         />
@@ -260,7 +263,7 @@ function CreativeDetail({ creative }: { creative: AdCreative }) {
             >
               {card.mediaAssetUrl && (
                 <img
-                  src={card.mediaAssetUrl}
+                  src={resolveAssetUrl(card.mediaAssetUrl)}
                   alt=""
                   className="h-20 w-full object-cover"
                 />
@@ -507,7 +510,12 @@ function CampaignReport() {
     if (mockCampaign || !campaignId) return
     getApiCampaignsId(campaignId, withCredentials()).then((res) => {
       if (res.status === 200) {
-        setApiCampaign(toCampaignItem(res.data))
+        const item = toCampaignItem(res.data)
+        setApiCampaign(item)
+        fetchCampaignThumbnail(item.id).then((url) => {
+          if (!url) return
+          setApiCampaign((prev) => (prev ? { ...prev, thumbnail: url } : prev))
+        })
       }
       setIsLoading(false)
     })
@@ -559,6 +567,7 @@ function CampaignReportView({
   const [activateOpen, setActivateOpen] = useState(false)
   const [isActivating, setIsActivating] = useState(false)
   const metaBadge = getMetaStatusBadge(meta)
+  const goBack = useGoBack('/campaign')
   const isReviewIssue =
     meta?.effectiveStatus === 'DISAPPROVED' ||
     meta?.effectiveStatus === 'WITH_ISSUES'
@@ -800,27 +809,36 @@ function CampaignReportView({
     <div className="min-h-full min-w-full py-10">
       {/** Header */}
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="font-thai flex flex-col gap-2 font-semibold">
-          <h1 className="text-amalfidark text-2xl font-bold sm:text-3xl lg:text-4xl">
-            {campaign.title}
-          </h1>
-          <p className="text-base font-semibold text-black">
-            {campaign.goal}
-            {status !== 'stopped' &&
-              ` · ระยะเวลา: เหลืออีก ${campaign.daysRemaining} วัน`}
-          </p>
-          {campaign.source === 'api' && (
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusPill style={metaBadge} />
-              {isReviewIssue && (
-                <span className="flex items-center gap-1 text-base text-[#be2c2c]">
-                  <TriangleAlert className="h-5 w-5 shrink-0" />
-                  {meta?.reviewFeedback ??
-                    'Meta ตรวจสอบแล้วพบปัญหา กรุณาตรวจสอบครีเอทีฟ'}
-                </span>
-              )}
-            </div>
-          )}
+        <div className="flex items-start gap-4">
+          <button
+            type="button"
+            onClick={goBack}
+            className="border-amalfidark flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2"
+          >
+            <ChevronLeft className="text-amalfidark h-7 w-7" />
+          </button>
+          <div className="font-thai flex flex-col gap-2 font-semibold">
+            <h1 className="text-amalfidark text-2xl font-bold sm:text-3xl lg:text-4xl">
+              {campaign.title}
+            </h1>
+            <p className="text-base font-semibold text-black">
+              {campaign.goal}
+              {status !== 'stopped' &&
+                ` · ระยะเวลา: เหลืออีก ${campaign.daysRemaining} วัน`}
+            </p>
+            {campaign.source === 'api' && (
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusPill style={metaBadge} />
+                {isReviewIssue && (
+                  <span className="flex items-center gap-1 text-base text-[#be2c2c]">
+                    <TriangleAlert className="h-5 w-5 shrink-0" />
+                    {meta?.reviewFeedback ??
+                      'Meta ตรวจสอบแล้วพบปัญหา กรุณาตรวจสอบครีเอทีฟ'}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
         <div className="font-thai flex flex-wrap items-center gap-3 text-xl">
           <Link

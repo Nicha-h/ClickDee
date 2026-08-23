@@ -16,22 +16,26 @@ import {
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import OverviewSkeleton from '@/components/overviewSkeleton'
 import { Skeleton } from '@/components/skeleton'
-import { getApiAiInsights } from '@/api/generated/client'
+import type { CampaignItem } from '@/data/campaigns'
+import {
+  getApiAiInsights,
+  getApiAuthAccountId,
+  getApiCampaigns,
+} from '@/api/generated/client'
 import { getUserId, withCredentials } from '@/lib/userId'
+import { toCampaignItem } from '@/lib/campaignAdapters'
+import { isShowcaseAccount } from '@/lib/showcaseAccount'
 
-{
-  /** Summary data PLACEHOLDER*/
-}
-const reach = 12450
-const clickNum = 842
-const usedBudget = 12400
-const ROI = 11.5
+const SHOWCASE_REACH = 12450
+const SHOWCASE_CLICKS = 842
+const SHOWCASE_USED_BUDGET = 12400
+const SHOWCASE_ROI = 11.5
 
-const channelReach = [
+const SHOWCASE_CHANNEL_REACH = [
   { key: 'facebook', label: 'Facebook', value: 5220, color: '#1877F2' },
 ]
 
-const dailyTrendRaw = [
+const SHOWCASE_DAILY_TREND_RAW = [
   { date: '5 พ.ค.', reach: 1420, spend: 1400 },
   { date: '6 พ.ค.', reach: 1550, spend: 1500 },
   { date: '7 พ.ค.', reach: 1680, spend: 1650 },
@@ -40,9 +44,12 @@ const dailyTrendRaw = [
   { date: '10 พ.ค.', reach: 2050, spend: 1950 },
   { date: '11 พ.ค.', reach: 2250, spend: 2350 },
 ]
-const dailyTrendIndexed = indexToFirst(dailyTrendRaw, ['reach', 'spend'])
+const SHOWCASE_DAILY_TREND_INDEXED = indexToFirst(SHOWCASE_DAILY_TREND_RAW, [
+  'reach',
+  'spend',
+])
 
-const audienceSegments = [
+const SHOWCASE_AUDIENCE_SEGMENTS = [
   { key: '18-24', label: '18–24 ปี', value: 2890, color: '#77BAFF' },
   { key: '25-34', label: '25–34 ปี', value: 5340, color: '#1E59BC' },
   { key: '35-44', label: '35–44 ปี', value: 2960, color: '#FED717' },
@@ -68,13 +75,25 @@ const rangeSubtitles: Record<string, string> = {
   '90days': '90 วันที่ผ่านมา',
 }
 
-{
-  /** Top-performing campaigns PLACEHOLDER*/
+type TopCampaignRow = {
+  rank: number
+  badgeClass: string
+  name: string
+  reach: number
+  orders: number
+  roi: number
 }
-const topCampaigns = [
+
+const TOP_CAMPAIGN_BADGE_CLASSES = [
+  'bg-citrus text-black',
+  'bg-[#d9d9d9] text-black',
+  'bg-[#e5c29a] text-black',
+]
+
+const SHOWCASE_TOP_CAMPAIGNS: TopCampaignRow[] = [
   {
     rank: 1,
-    badgeClass: 'bg-citrus text-black',
+    badgeClass: TOP_CAMPAIGN_BADGE_CLASSES[0],
     name: 'โปรไมโล 2026 ลด 60%',
     reach: 6420,
     orders: 842,
@@ -82,7 +101,7 @@ const topCampaigns = [
   },
   {
     rank: 2,
-    badgeClass: 'bg-[#d9d9d9] text-black',
+    badgeClass: TOP_CAMPAIGN_BADGE_CLASSES[1],
     name: 'โปรหน้าฝน 2026 ลด 20%',
     reach: 4120,
     orders: 312,
@@ -90,13 +109,28 @@ const topCampaigns = [
   },
   {
     rank: 3,
-    badgeClass: 'bg-[#e5c29a] text-black',
+    badgeClass: TOP_CAMPAIGN_BADGE_CLASSES[2],
     name: 'วันแม่ ส่งฟรีทั่วประเทศ',
     reach: 1910,
     orders: 198,
     roi: 9.3,
   },
 ]
+
+function toTopCampaignRows(campaigns: CampaignItem[]): TopCampaignRow[] {
+  return campaigns
+    .slice()
+    .sort((a, b) => b.budgetTotal - a.budgetTotal)
+    .slice(0, 3)
+    .map((c, i) => ({
+      rank: i + 1,
+      badgeClass: TOP_CAMPAIGN_BADGE_CLASSES[i],
+      name: c.title,
+      reach: c.reach,
+      orders: c.orders,
+      roi: c.roi,
+    }))
+}
 
 type InsightsState =
   { status: 'loading' } | { status: 'loaded'; insights: string[] }
@@ -107,6 +141,22 @@ function Overview() {
   const [insightsState, setInsightsState] = useState<InsightsState>({
     status: 'loading',
   })
+  const [email, setEmail] = useState<string | null>(null)
+  const isShowcase = isShowcaseAccount(email)
+  const [realCampaigns, setRealCampaigns] = useState<CampaignItem[] | null>(
+    null,
+  )
+
+  const reach = isShowcase ? SHOWCASE_REACH : 0
+  const clickNum = isShowcase ? SHOWCASE_CLICKS : 0
+  const usedBudget = isShowcase ? SHOWCASE_USED_BUDGET : 0
+  const ROI = isShowcase ? SHOWCASE_ROI : 0
+  const channelReach = isShowcase ? SHOWCASE_CHANNEL_REACH : []
+  const dailyTrendIndexed = isShowcase ? SHOWCASE_DAILY_TREND_INDEXED : []
+  const audienceSegments = isShowcase ? SHOWCASE_AUDIENCE_SEGMENTS : []
+  const topCampaigns = isShowcase
+    ? SHOWCASE_TOP_CAMPAIGNS
+    : toTopCampaignRows(realCampaigns ?? [])
 
   useEffect(() => {
     const userId = getUserId()
@@ -115,6 +165,22 @@ function Overview() {
       if (res.status === 200) {
         setInsightsState({ status: 'loaded', insights: res.data.insights })
       }
+    })
+  }, [])
+
+  useEffect(() => {
+    const userId = getUserId()
+    if (!userId) return
+    getApiAuthAccountId(userId, withCredentials()).then((res) => {
+      if (res.status === 200) setEmail(res.data.email)
+    })
+  }, [])
+
+  useEffect(() => {
+    const userId = getUserId()
+    if (!userId) return
+    getApiCampaigns(withCredentials()).then((res) => {
+      if (res.status === 200) setRealCampaigns(res.data.map(toCampaignItem))
     })
   }, [])
 
@@ -161,16 +227,18 @@ function Overview() {
             <p className="text-citrusdark text-2xl font-bold sm:text-3xl">
               {reach.toLocaleString()}
             </p>
-            <div className="ml-4 flex flex-row items-center justify-start gap-2">
-              <img
-                src={increase}
-                alt="Increase"
-                className="inline-block h-6 w-6"
-              />
-              <span className="font-thai text-citrusdark text-lg font-semibold">
-                +8%
-              </span>
-            </div>
+            {isShowcase && (
+              <div className="ml-4 flex flex-row items-center justify-start gap-2">
+                <img
+                  src={increase}
+                  alt="Increase"
+                  className="inline-block h-6 w-6"
+                />
+                <span className="font-thai text-citrusdark text-lg font-semibold">
+                  +8%
+                </span>
+              </div>
+            )}
           </div>
           <div className="px-4">
             <p className="font-thai mt-2 text-lg font-semibold text-black">
@@ -191,16 +259,18 @@ function Overview() {
             <p className="text-citrusdark text-2xl font-bold sm:text-3xl">
               {clickNum.toLocaleString()}
             </p>
-            <div className="ml-4 flex flex-row items-center justify-start gap-2">
-              <img
-                src={increase}
-                alt="Increase"
-                className="inline-block h-6 w-6"
-              />
-              <span className="font-thai text-citrusdark text-lg font-semibold">
-                +12%
-              </span>
-            </div>
+            {isShowcase && (
+              <div className="ml-4 flex flex-row items-center justify-start gap-2">
+                <img
+                  src={increase}
+                  alt="Increase"
+                  className="inline-block h-6 w-6"
+                />
+                <span className="font-thai text-citrusdark text-lg font-semibold">
+                  +12%
+                </span>
+              </div>
+            )}
           </div>
           <div className="px-4">
             <p className="font-thai mt-2 text-lg font-semibold text-black">
@@ -261,21 +331,33 @@ function Overview() {
               </p>
             </div>
           </div>
-          <TrendChart
-            data={dailyTrendIndexed}
-            series={reachVsSpendSeries}
-            valueFormatter={percentFormatter}
-          />
+          {isShowcase ? (
+            <TrendChart
+              data={dailyTrendIndexed}
+              series={reachVsSpendSeries}
+              valueFormatter={percentFormatter}
+            />
+          ) : (
+            <p className="font-thai py-16 text-center text-base text-[#8E98A8]">
+              ยังไม่มีข้อมูลแนวโน้มตอนนี้
+            </p>
+          )}
         </div>
         <div className="w-full rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] md:w-72 lg:w-96">
           <h3 className="font-thai text-amalfidark text-2xl font-bold">
             ช่องทางที่ทำงาน
           </h3>
-          <DonutChart
-            centerLabel="100%"
-            centerSublabel="การเข้าถึง"
-            segments={channelReach}
-          />
+          {isShowcase ? (
+            <DonutChart
+              centerLabel="100%"
+              centerSublabel="การเข้าถึง"
+              segments={channelReach}
+            />
+          ) : (
+            <p className="font-thai py-16 text-center text-base text-[#8E98A8]">
+              ยังไม่มีข้อมูลช่องทางตอนนี้
+            </p>
+          )}
         </div>
       </div>
 
@@ -329,44 +411,50 @@ function Overview() {
             </Link>
           </div>
           {/* TODO: compute real top-campaigns ranking from live performance data */}
-          <div className="overflow-x-auto">
-            <div className="mt-4 flex min-w-100 flex-row justify-between px-2 text-base font-bold text-black">
-              <span className="font-thai text-base">แคมเปญ</span>
-              <div className="flex flex-row gap-10">
-                <span className="font-thai w-20 text-right">การเข้าถึง</span>
-                <span className="font-thai w-14 text-right">ออเดอร์</span>
-                <span className="font-thai w-12 text-right">ROI</span>
+          {topCampaigns.length === 0 ? (
+            <p className="font-thai mt-4 text-base text-[#8E98A8]">
+              ยังไม่มีแคมเปญตอนนี้
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="mt-4 flex min-w-100 flex-row justify-between px-2 text-base font-bold text-black">
+                <span className="font-thai text-base">แคมเปญ</span>
+                <div className="flex flex-row gap-10">
+                  <span className="font-thai w-20 text-right">การเข้าถึง</span>
+                  <span className="font-thai w-14 text-right">ออเดอร์</span>
+                  <span className="font-thai w-12 text-right">ROI</span>
+                </div>
+              </div>
+              <div className="mt-2 flex min-w-100 flex-col gap-3">
+                {topCampaigns.map((c) => (
+                  <div
+                    key={c.rank}
+                    className="border-seadark-hover flex flex-row items-center justify-between rounded-xl border px-3 py-3"
+                  >
+                    <div className="flex flex-row items-center gap-3">
+                      <span
+                        className={`flex h-8 w-8 items-center justify-center rounded-full text-base font-semibold ${c.badgeClass}`}
+                      >
+                        {c.rank}
+                      </span>
+                      <p className="font-thai text-base text-black">{c.name}</p>
+                    </div>
+                    <div className="flex flex-row gap-10 text-base text-black">
+                      <span className="w-16 text-right">
+                        {c.reach.toLocaleString()}
+                      </span>
+                      <span className="w-14 text-right">
+                        {c.orders.toLocaleString()}
+                      </span>
+                      <span className="w-12 text-right font-semibold text-[#519b5c]">
+                        {c.roi}x
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="mt-2 flex min-w-100 flex-col gap-3">
-              {topCampaigns.map((c) => (
-                <div
-                  key={c.rank}
-                  className="border-seadark-hover flex flex-row items-center justify-between rounded-xl border px-3 py-3"
-                >
-                  <div className="flex flex-row items-center gap-3">
-                    <span
-                      className={`flex h-8 w-8 items-center justify-center rounded-full text-base font-semibold ${c.badgeClass}`}
-                    >
-                      {c.rank}
-                    </span>
-                    <p className="font-thai text-base text-black">{c.name}</p>
-                  </div>
-                  <div className="flex flex-row gap-10 text-base text-black">
-                    <span className="w-16 text-right">
-                      {c.reach.toLocaleString()}
-                    </span>
-                    <span className="w-14 text-right">
-                      {c.orders.toLocaleString()}
-                    </span>
-                    <span className="w-12 text-right font-semibold text-[#519b5c]">
-                      {c.roi}x
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
 
         {/* TODO: replace with a real customer-segment breakdown chart computed from audience data */}
@@ -374,11 +462,17 @@ function Overview() {
           <h3 className="font-thai text-amalfidark text-2xl font-bold">
             กลุ่มลูกค้าที่กดดู
           </h3>
-          <DonutChart
-            centerLabel="100%"
-            centerSublabel="กลุ่มอายุ"
-            segments={audienceSegments}
-          />
+          {isShowcase ? (
+            <DonutChart
+              centerLabel="100%"
+              centerSublabel="กลุ่มอายุ"
+              segments={audienceSegments}
+            />
+          ) : (
+            <p className="font-thai py-16 text-center text-base text-[#8E98A8]">
+              ยังไม่มีข้อมูลกลุ่มลูกค้าตอนนี้
+            </p>
+          )}
         </div>
       </div>
       <div className="h-24 w-full shrink-0"></div>

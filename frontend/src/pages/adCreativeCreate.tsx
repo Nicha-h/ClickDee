@@ -27,6 +27,7 @@ import type { CreateAdCreativeInput } from '@/api/generated/client'
 import { withCredentials } from '@/lib/userId'
 import { useGoBack } from '@/components/useGoBack'
 import { CTA_LABELS } from '@/lib/adCreativeLabels'
+import { resolveAssetUrl } from '@/lib/assetUrl'
 
 type Format =
   | typeof CreateImagePostCreativeInputFormat.IMAGE_POST
@@ -174,7 +175,7 @@ function AdCreativeCreate() {
           setMediaAssetId(details.mediaAssetId)
         }
         if (details.mediaAssetUrl !== undefined) {
-          setMediaAssetUrl(details.mediaAssetUrl)
+          setMediaAssetUrl(resolveAssetUrl(details.mediaAssetUrl) ?? null)
         }
         if (details.link !== undefined) setLink(details.link)
         if (details.ctaLink !== undefined) setCtaLink(details.ctaLink)
@@ -188,7 +189,7 @@ function AdCreativeCreate() {
           setCarouselCards(
             details.childAttachments.map((c) => ({
               mediaAssetId: c.mediaAssetId ?? null,
-              mediaAssetUrl: c.mediaAssetUrl ?? null,
+              mediaAssetUrl: resolveAssetUrl(c.mediaAssetUrl) ?? null,
               link: c.link ?? '',
               name: c.name ?? '',
               description: c.description ?? '',

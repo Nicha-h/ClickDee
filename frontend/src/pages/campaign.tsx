@@ -11,19 +11,13 @@ import {
   Square,
   Pencil,
   Trash2,
-  UploadCloud,
   Zap,
   TriangleAlert,
-  Layers,
 } from 'lucide-react'
 import rocket from '@/assets/icons/rocket.svg'
 import cash from '@/assets/icons/cash.svg'
 import starcircle from '@/assets/icons/starcircle.svg'
-import {
-  campaigns as mockCampaigns,
-  platformBadgeStyles,
-  getMetaStatusBadge,
-} from '@/data/campaigns'
+import { platformBadgeStyles, getMetaStatusBadge } from '@/data/campaigns'
 import type { CampaignItem, CampaignStatus } from '@/data/campaigns'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import CampaignSkeleton from '@/components/campaignSkeleton'
@@ -34,23 +28,23 @@ import {
   getApiCampaigns,
   patchApiCampaignsId,
   deleteApiCampaignsId,
-  postApiCampaignsIdPublishToMeta,
   postApiCampaignsIdMetaStatus,
+  getApiAuthAccountId,
 } from '@/api/generated/client'
-import { toCampaignItem } from '@/lib/campaignAdapters'
+import { toCampaignItem, fetchCampaignThumbnail } from '@/lib/campaignAdapters'
 import { getUserId, withCredentials } from '@/lib/userId'
+import { isShowcaseAccount } from '@/lib/showcaseAccount'
 
 {
-  /** Summary data PLACEHOLDER*/
+  /** Summary data — spend/orders/ROI have no backend source, so only the
+   * admin810 showcase account sees these numbers; everyone else sees 0. */
 }
-const activeCampaigns = 3
-const totalCampaigns = 6
-const totalSpend = 19694
-const totalBudget = 32500
-const remainingBudget = 12806
-const totalOrders = 2462
-const ordersDelta = 184
-const roi = 11.5
+const SHOWCASE_TOTAL_SPEND = 19694
+const SHOWCASE_TOTAL_BUDGET = 32500
+const SHOWCASE_REMAINING_BUDGET = 12806
+const SHOWCASE_TOTAL_ORDERS = 2462
+const SHOWCASE_ORDERS_DELTA = 184
+const SHOWCASE_ROI = 11.5
 
 type FilterTab = { key: string; label: string; count: number }
 
@@ -131,9 +125,7 @@ function CampaignCard({
   onStop,
   onDeleteRequest,
   onReviewDraft,
-  onPublishToMeta,
   onActivateRequest,
-  isPublishing,
 }: {
   campaign: CampaignItem
   onPause: (id: string) => void
@@ -141,9 +133,7 @@ function CampaignCard({
   onStop: (id: string) => void
   onDeleteRequest: (id: string) => void
   onReviewDraft: (id: string) => void
-  onPublishToMeta: (id: string) => void
   onActivateRequest: (id: string) => void
-  isPublishing: boolean
 }) {
   const statusBadge = statusBadgeStyles[campaign.status]
   const metaBadge = getMetaStatusBadge(campaign.meta)
@@ -155,7 +145,7 @@ function CampaignCard({
       <img
         src={campaign.thumbnail}
         alt={campaign.title}
-        className="h-48 w-full shrink-0 rounded-t-xl object-cover lg:h-62 lg:w-40 lg:rounded-tl-xl lg:rounded-tr-none lg:rounded-bl-xl"
+        className="h-48 w-full shrink-0 rounded-t-xl object-cover lg:h-auto lg:w-40 lg:self-stretch lg:rounded-tl-xl lg:rounded-tr-none lg:rounded-bl-xl"
       />
       <div className="flex flex-1 flex-col gap-3 p-5">
         <div className="flex flex-row flex-wrap items-start justify-between gap-2">
@@ -310,13 +300,6 @@ function CampaignCard({
                 <Pencil className="h-5 w-5" />
                 แก้ไข
               </Link>
-              <Link
-                to={`/campaign/${campaign.id}/report#ad-sets`}
-                className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold"
-              >
-                <Layers className="h-5 w-5" />
-                Ad Set & โฆษณา
-              </Link>
               <button
                 type="button"
                 onClick={() => onDeleteRequest(campaign.id)}
@@ -325,17 +308,6 @@ function CampaignCard({
                 <Trash2 className="h-5 w-5" />
                 ลบ
               </button>
-              {!campaign.meta?.campaignId && (
-                <button
-                  type="button"
-                  disabled={isPublishing}
-                  onClick={() => onPublishToMeta(campaign.id)}
-                  className="font-thai text-seadark hover:text-seadark-active flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <UploadCloud className="h-5 w-5" />
-                  {isPublishing ? 'กำลังเผยแพร่...' : 'เผยแพร่ไปที่ Meta'}
-                </button>
-              )}
               {campaign.meta?.campaignId &&
                 campaign.meta.status !== 'ACTIVE' && (
                   <button
@@ -382,10 +354,11 @@ function Campaign() {
   const [activeFilter, setActiveFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [userId] = useState(() => getUserId())
+  const [email, setEmail] = useState<string | null>(null)
+  const isShowcase = isShowcaseAccount(email)
   const [apiCampaigns, setApiCampaigns] = useState<CampaignItem[]>([])
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [publishingId, setPublishingId] = useState<string | null>(null)
   const [activateTargetId, setActivateTargetId] = useState<string | null>(null)
   const [isActivating, setIsActivating] = useState(false)
   const isLoading = useSimulatedLoading()
@@ -397,10 +370,25 @@ function Campaign() {
 
   useEffect(() => {
     if (!userId) return
+    getApiAuthAccountId(userId, withCredentials()).then((res) => {
+      if (res.status === 200) setEmail(res.data.email)
+    })
+  }, [userId])
+
+  useEffect(() => {
+    if (!userId) return
     getApiCampaigns(withCredentials()).then((res) => {
-      if (res.status === 200) {
-        setApiCampaigns(res.data.map(toCampaignItem))
-      }
+      if (res.status !== 200) return
+      const items = res.data.map(toCampaignItem)
+      setApiCampaigns(items)
+      items.forEach((item) => {
+        fetchCampaignThumbnail(item.id).then((url) => {
+          if (!url) return
+          setApiCampaigns((prev) =>
+            prev.map((c) => (c.id === item.id ? { ...c, thumbnail: url } : c)),
+          )
+        })
+      })
     })
   }, [userId])
 
@@ -430,32 +418,6 @@ function Campaign() {
     }
   }
 
-  const handlePublishToMeta = async (id: string) => {
-    setPublishingId(id)
-    try {
-      const res = await postApiCampaignsIdPublishToMeta(id, withCredentials())
-      if (res.status === 200) {
-        setApiCampaigns((prev) =>
-          prev.map((c) =>
-            c.id === id && c.meta
-              ? {
-                  ...c,
-                  meta: {
-                    ...c.meta,
-                    campaignId: res.data.metaCampaignId,
-                    status: res.data.metaStatus,
-                    effectiveStatus: res.data.metaEffectiveStatus,
-                  },
-                }
-              : c,
-          ),
-        )
-      }
-    } finally {
-      setPublishingId(null)
-    }
-  }
-
   const handleActivateConfirm = async () => {
     if (!activateTargetId) return
     setIsActivating(true)
@@ -482,10 +444,18 @@ function Campaign() {
 
   if (isLoading) return <CampaignSkeleton />
 
-  const allCampaigns = [...mockCampaigns, ...apiCampaigns].sort(
-    compareCampaigns,
-  )
+  const allCampaigns = apiCampaigns.slice().sort(compareCampaigns)
   const filterTabs = buildFilterTabs(allCampaigns)
+  const activeCampaignsCount = allCampaigns.filter(
+    (c) => c.status === 'active',
+  ).length
+  const totalCampaignsCount = allCampaigns.length
+  const totalSpend = isShowcase ? SHOWCASE_TOTAL_SPEND : 0
+  const totalBudget = isShowcase ? SHOWCASE_TOTAL_BUDGET : 0
+  const remainingBudget = isShowcase ? SHOWCASE_REMAINING_BUDGET : 0
+  const totalOrders = isShowcase ? SHOWCASE_TOTAL_ORDERS : 0
+  const ordersDelta = isShowcase ? SHOWCASE_ORDERS_DELTA : 0
+  const roi = isShowcase ? SHOWCASE_ROI : 0
 
   const filteredCampaigns = allCampaigns.filter((campaign) => {
     const matchesStatus =
@@ -538,10 +508,10 @@ function Campaign() {
             </h2>
           </div>
           <p className="text-citrusdark px-4 text-2xl font-bold sm:text-3xl">
-            {activeCampaigns}
+            {activeCampaignsCount}
           </p>
           <p className="font-thai mt-2 px-4 text-lg font-semibold text-black">
-            จาก {totalCampaigns} แคมเปญทั้งหมด
+            จาก {totalCampaignsCount} แคมเปญทั้งหมด
           </p>
         </div>
         <div className="h-full min-h-45 w-full rounded-xl border-2 border-[#8E98A8] px-4 py-2 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
@@ -631,9 +601,7 @@ function Campaign() {
               onStop={(id) => setCampaignStatus(id, 'COMPLETED')}
               onDeleteRequest={setDeleteTargetId}
               onReviewDraft={(id) => navigate(`/campaign/${id}/review`)}
-              onPublishToMeta={handlePublishToMeta}
               onActivateRequest={setActivateTargetId}
-              isPublishing={publishingId === campaign.id}
             />
           ))
         ) : (

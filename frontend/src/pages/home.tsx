@@ -8,22 +8,27 @@ import star from '@/assets/icons/starcircle.svg'
 import cash from '@/assets/icons/cash.svg'
 import click from '@/assets/icons/click.svg'
 import { ArrowRight, ChevronDown } from 'lucide-react'
-import rain from '@/assets/placeholders/campaign-rain-promo.png'
-import milo from '@/assets/placeholders/campaign-milo-promo.jpg'
 import sparklebold from '@/assets/icons/sparklebold.svg'
 import facebook from '@/assets/logos/facebook.svg'
 import TrendChart from '@/components/trendChart'
 import Sparkline from '@/components/sparkline'
-import { campaigns } from '@/data/campaigns'
+import type { CampaignItem } from '@/data/campaigns'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import HomeSkeleton from '@/components/homeSkeleton'
 import {
   getApiAuthAccountId,
   getApiAiRecommendations,
   getApiAiStatus,
+  getApiCampaigns,
 } from '@/api/generated/client'
 import type { Recommendation } from '@/api/generated/client'
 import { getUserId, withCredentials } from '@/lib/userId'
+import {
+  toCampaignItem,
+  fetchCampaignThumbnail,
+  fetchCampaignPerformance,
+} from '@/lib/campaignAdapters'
+import { isShowcaseAccount } from '@/lib/showcaseAccount'
 import {
   buildSalesDataByRange,
   computeHalfOverHalfChangePct,
@@ -39,8 +44,6 @@ const salesRangeOptions: { value: SalesRangeKey; label: string }[] = [
 ]
 
 const salesDataByRange = buildSalesDataByRange()
-const rainPromoCampaign = campaigns.find((c) => c.id === 'rain-promo-2026')!
-const miloPromoCampaign = campaigns.find((c) => c.id === 'milo-promo-2026')!
 
 type RecommendationsState =
   | { status: 'loading' }
@@ -72,18 +75,28 @@ function Home() {
   const navigate = useNavigate()
   const isLoading = useSimulatedLoading()
   const [businessName, setBusinessName] = useState<string | null>(null)
+  const [email, setEmail] = useState<string | null>(null)
+  const isShowcase = isShowcaseAccount(email)
+  const [runningCampaigns, setRunningCampaigns] = useState<
+    CampaignItem[] | null
+  >(null)
+  const [totalCampaignCount, setTotalCampaignCount] = useState<number | null>(
+    null,
+  )
   const [recommendationsState, setRecommendationsState] =
     useState<RecommendationsState>({ status: 'loading' })
   const [aiStatus, setAiStatus] = useState<'loading' | 'active' | 'inactive'>(
     'loading',
   )
   {
-    /** Summary data PLACEHOLDER*/
+    /** Summary data — real numbers/charts only shown for the admin810 showcase
+     * account; every other user sees honest zeros/empty states below, since
+     * there's no backend source for these metrics yet. */
   }
-  const reach = 12450
-  const clickNum = 842
-  const usedBudget = 12400
-  const ROI = 11.5
+  const reach = isShowcase ? 12450 : 0
+  const clickNum = isShowcase ? 842 : 0
+  const usedBudget = isShowcase ? 12400 : 0
+  const ROI = isShowcase ? 11.5 : 0
   const handleClick = () => {
     navigate('/campaign/new')
   }
@@ -118,7 +131,56 @@ function Home() {
     const userId = getUserId()
     if (!userId) return
     getApiAuthAccountId(userId, withCredentials()).then((res) => {
-      if (res.status === 200) setBusinessName(res.data.businessName)
+      if (res.status === 200) {
+        setBusinessName(res.data.businessName)
+        setEmail(res.data.email)
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    const userId = getUserId()
+    if (!userId) return
+    getApiCampaigns(withCredentials()).then((res) => {
+      if (res.status !== 200) return
+      setTotalCampaignCount(res.data.length)
+      const running = res.data
+        .map(toCampaignItem)
+        .filter((c) => c.status === 'active' || c.status === 'paused')
+        .sort((a, b) =>
+          a.status === b.status ? 0 : a.status === 'active' ? -1 : 1,
+        )
+        .slice(0, 2)
+      setRunningCampaigns(running)
+      running.forEach((item) => {
+        fetchCampaignThumbnail(item.id).then((url) => {
+          if (!url) return
+          setRunningCampaigns((prev) =>
+            prev
+              ? prev.map((c) =>
+                  c.id === item.id ? { ...c, thumbnail: url } : c,
+                )
+              : prev,
+          )
+        })
+        if (!item.meta?.campaignId) return
+        fetchCampaignPerformance(item.id).then(({ dailyTrend, roi }) => {
+          if (dailyTrend.length === 0 && roi === null) return
+          setRunningCampaigns((prev) =>
+            prev
+              ? prev.map((c) =>
+                  c.id === item.id
+                    ? {
+                        ...c,
+                        ...(dailyTrend.length > 0 && { dailyTrend }),
+                        ...(roi !== null && { roi }),
+                      }
+                    : c,
+                )
+              : prev,
+          )
+        })
+      })
     })
   }, [])
 
@@ -203,9 +265,11 @@ function Home() {
                 AI Agent · กำลังทำงาน
               </div>
             )}
-            <h2 className="mt-3 text-xs sm:ml-5 md:text-sm lg:text-base">
-              อัปเดทล่าสุด 2 ชั่วโมงที่แล้ว
-            </h2>
+            {isShowcase && (
+              <h2 className="mt-3 text-xs sm:ml-5 md:text-sm lg:text-base">
+                อัปเดทล่าสุด 2 ชั่วโมงที่แล้ว
+              </h2>
+            )}
           </div>
           {/** filler msg*/}
           <div className="flex flex-col items-start justify-start gap-2">
@@ -238,16 +302,18 @@ function Home() {
             <p className="text-citrusdark text-2xl font-bold sm:text-3xl">
               {reach.toLocaleString()}
             </p>
-            <div className="ml-4 flex flex-row items-center justify-start gap-2">
-              <img
-                src={increase}
-                alt="Increase"
-                className="inline-block h-6 w-6"
-              />
-              <span className="font-thai text-citrusdark text-lg font-semibold">
-                +8%
-              </span>
-            </div>
+            {isShowcase && (
+              <div className="ml-4 flex flex-row items-center justify-start gap-2">
+                <img
+                  src={increase}
+                  alt="Increase"
+                  className="inline-block h-6 w-6"
+                />
+                <span className="font-thai text-citrusdark text-lg font-semibold">
+                  +8%
+                </span>
+              </div>
+            )}
           </div>
           <div className="px-4">
             <p className="font-thai mt-2 text-lg font-semibold text-black">
@@ -268,16 +334,18 @@ function Home() {
             <p className="text-citrusdark text-2xl font-bold sm:text-3xl">
               {clickNum.toLocaleString()}
             </p>
-            <div className="ml-4 flex flex-row items-center justify-start gap-2">
-              <img
-                src={increase}
-                alt="Increase"
-                className="inline-block h-6 w-6"
-              />
-              <span className="font-thai text-citrusdark text-lg font-semibold">
-                +12%
-              </span>
-            </div>
+            {isShowcase && (
+              <div className="ml-4 flex flex-row items-center justify-start gap-2">
+                <img
+                  src={increase}
+                  alt="Increase"
+                  className="inline-block h-6 w-6"
+                />
+                <span className="font-thai text-citrusdark text-lg font-semibold">
+                  +12%
+                </span>
+              </div>
+            )}
           </div>
           <div className="px-4">
             <p className="font-thai mt-2 text-lg font-semibold text-black">
@@ -345,57 +413,58 @@ function Home() {
                 <ArrowRight className="-mt-1 ml-2 inline-block h-6 w-6" />
               </NavLink>
             </div>
-            <div className="items-between flex h-auto w-full flex-row justify-start rounded-xl border-2 border-[#8E98A8] px-4 py-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30 sm:px-6">
-              <img
-                src={rain}
-                alt="Campaign1"
-                className="h-15 w-15 shrink-0 rounded-2xl object-cover"
-              />
-              <div className="flex min-w-0 flex-col px-4">
-                <h2 className="font-thai text-2xl font-semibold text-black">
-                  โปรหน้าฝน 2026 ลด 20%
-                </h2>
-                <h3 className="font-thai text-lg text-black">
-                  ROI: {ROI.toFixed(1)}x
-                </h3>
+            {runningCampaigns === null ? (
+              <div className="flex h-auto w-full flex-row items-center justify-start rounded-xl border-2 border-[#8E98A8] px-4 py-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30 sm:px-6">
+                <Skeleton className="h-15 w-15 shrink-0 rounded-2xl" />
+                <div className="flex min-w-0 flex-col gap-2 px-4">
+                  <Skeleton className="h-6 w-40" />
+                  <Skeleton className="h-5 w-24" />
+                </div>
               </div>
-              <div className="ml-auto hidden flex-row items-center justify-end sm:flex">
-                <Sparkline
-                  data={rainPromoCampaign.dailyTrend.map((d) => ({
-                    label: d.date,
-                    value: d.reach,
-                  }))}
-                  label="ยอดเข้าถึงรายวัน"
-                  className="h-19 w-50"
-                />
+            ) : runningCampaigns.length === 0 ? (
+              <div className="flex h-auto w-full flex-col items-start gap-3 rounded-xl border-2 border-[#8E98A8] px-6 py-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+                <p className="font-thai text-lg text-black">
+                  ยังไม่มีแคมเปญที่กำลังทำงาน
+                </p>
+                <NavLink
+                  to="/campaign/new"
+                  className="bg-citrus hover:bg-citrushover font-thai rounded-full px-5 py-2 text-base font-semibold text-black transition-all hover:cursor-pointer"
+                >
+                  สร้างแคมเปญใหม่
+                </NavLink>
               </div>
-            </div>
-            <div className="items-between mt-5 flex h-auto w-full flex-row justify-start rounded-xl border-2 border-[#8E98A8] px-4 py-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30 sm:px-6">
-              <img
-                src={milo}
-                alt="Campaign2"
-                className="h-15 w-15 shrink-0 rounded-2xl object-cover"
-              />
-              <div className="flex min-w-0 flex-col px-4">
-                <h2 className="font-thai text-2xl font-semibold text-black">
-                  โปรไมโล 2026 ลด 60%
-                </h2>
-                <h3 className="font-thai text-lg text-black">
-                  ROI: {ROI.toFixed(1)}x
-                </h3>
-              </div>
-              <div className="ml-auto hidden flex-row items-center justify-end sm:flex">
-                <Sparkline
-                  data={miloPromoCampaign.dailyTrend.map((d) => ({
-                    label: d.date,
-                    value: d.reach,
-                  }))}
-                  label="ยอดเข้าถึงรายวัน"
-                  className="h-19 w-50"
-                />
-              </div>
-            </div>
-            <div className="flex h-full w-full flex-row items-center justify-start gap-5 overflow-x-auto"></div>
+            ) : (
+              runningCampaigns.map((campaign, i) => (
+                <div
+                  key={campaign.id}
+                  className={`items-between flex h-auto w-full flex-row justify-start rounded-xl border-2 border-[#8E98A8] px-4 py-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30 sm:px-6 ${i > 0 ? 'mt-5' : ''}`}
+                >
+                  <img
+                    src={campaign.thumbnail}
+                    alt={campaign.title}
+                    className="h-15 w-15 shrink-0 rounded-2xl object-cover"
+                  />
+                  <div className="flex min-w-0 flex-col px-4">
+                    <h2 className="font-thai truncate text-2xl font-semibold text-black">
+                      {campaign.title}
+                    </h2>
+                    <h3 className="font-thai text-lg font-semibold text-citrusdark">
+                      ROI {campaign.roi.toFixed(1)}x
+                    </h3>
+                  </div>
+                  <div className="ml-auto hidden flex-row items-center justify-end sm:flex">
+                    <Sparkline
+                      data={campaign.dailyTrend.map((d) => ({
+                        label: d.date,
+                        value: d.reach,
+                      }))}
+                      label="ยอดเข้าถึงรายวัน"
+                      className="h-19 w-50"
+                    />
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           {/** Sales overview */}
@@ -405,15 +474,17 @@ function Home() {
                 <h2 className="font-thai text-amalfidark text-2xl font-semibold">
                   ภาพรวมยอดขาย
                 </h2>
-                <p className="font-thai mt-1 text-lg text-[#8E98A8]">
-                  {SALES_COMPARISON_LABEL[salesRange.value]}{' '}
-                  <span
-                    className={`font-semibold ${salesChangePct >= 0 ? 'text-[#519b5c]' : 'text-[#d64545]'}`}
-                  >
-                    {salesChangePct >= 0 ? '+' : ''}
-                    {salesChangePct.toFixed(1)}%
-                  </span>
-                </p>
+                {isShowcase && (
+                  <p className="font-thai mt-1 text-lg text-[#8E98A8]">
+                    {SALES_COMPARISON_LABEL[salesRange.value]}{' '}
+                    <span
+                      className={`font-semibold ${salesChangePct >= 0 ? 'text-[#519b5c]' : 'text-[#d64545]'}`}
+                    >
+                      {salesChangePct >= 0 ? '+' : ''}
+                      {salesChangePct.toFixed(1)}%
+                    </span>
+                  </p>
+                )}
               </div>
               <div className="relative" ref={salesRangeRef}>
                 <button
@@ -441,12 +512,18 @@ function Home() {
                 )}
               </div>
             </div>
-            <TrendChart
-              key={salesRange.value}
-              data={salesData}
-              series={[{ key: 'sales', label: 'ยอดขาย', color: '#1E59BC' }]}
-              valueFormatter={(v) => `฿${v.toLocaleString()}`}
-            />
+            {isShowcase ? (
+              <TrendChart
+                key={salesRange.value}
+                data={salesData}
+                series={[{ key: 'sales', label: 'ยอดขาย', color: '#1E59BC' }]}
+                valueFormatter={(v) => `฿${v.toLocaleString()}`}
+              />
+            ) : (
+              <p className="font-thai mt-6 py-10 text-center text-base text-[#8E98A8]">
+                ยังไม่มีข้อมูลยอดขายตอนนี้
+              </p>
+            )}
           </div>
 
           {/** Connected channels */}
@@ -468,12 +545,22 @@ function Home() {
                   <p className="font-thai text-lg font-bold text-black">
                     Facebook
                   </p>
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500"></span>
-                  </span>
+                  {isShowcase ? (
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500"></span>
+                    </span>
+                  ) : (
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#8E98A8]"></span>
+                    </span>
+                  )}
                 </div>
-                <p className="font-thai text-base text-[#787878]">12 แคมเปญ</p>
+                <p className="font-thai text-base text-[#787878]">
+                  {isShowcase
+                    ? '12 แคมเปญ'
+                    : `ยังไม่ได้เชื่อมต่อ${totalCampaignCount ? ` · ${totalCampaignCount} แคมเปญ` : ''}`}
+                </p>
               </div>
             </div>
           </div>
@@ -542,22 +629,30 @@ function Home() {
             <p className="font-thai text-xl font-semibold text-black">
               เทรนด์ในย่านของคุณ
             </p>
-            <p className="font-thai text-amalfidark mt-2 text-lg font-bold italic">
-              ลูกค้าในเขตสีลม-สาทร ค้นหาคำว่า "คาเฟ่ใกล้ฉัน" เพิ่มขึ้น +47%
-              สัปดาห์นี้
-            </p>
-            <div className="mt-4 flex justify-end gap-3">
-              <button
-                onClick={() =>
-                  navigate('/campaign/new', {
-                    state: { prompt: localTrendPrompt },
-                  })
-                }
-                className="bg-seadark font-thai hover:bg-seadark-hover mt-3 flex h-12 w-36 items-center gap-1 rounded-full px-7 py-1 text-xl text-white transition-colors hover:cursor-pointer"
-              >
-                คว้าโอกาส
-              </button>
-            </div>
+            {isShowcase ? (
+              <>
+                <p className="font-thai text-amalfidark mt-2 text-lg font-bold italic">
+                  ลูกค้าในเขตสีลม-สาทร ค้นหาคำว่า "คาเฟ่ใกล้ฉัน" เพิ่มขึ้น +47%
+                  สัปดาห์นี้
+                </p>
+                <div className="mt-4 flex justify-end gap-3">
+                  <button
+                    onClick={() =>
+                      navigate('/campaign/new', {
+                        state: { prompt: localTrendPrompt },
+                      })
+                    }
+                    className="bg-seadark font-thai hover:bg-seadark-hover mt-3 flex h-12 w-36 items-center gap-1 rounded-full px-7 py-1 text-xl text-white transition-colors hover:cursor-pointer"
+                  >
+                    คว้าโอกาส
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p className="font-thai mt-2 text-base text-[#8E98A8]">
+                ยังไม่มีข้อมูลเทรนด์ในพื้นที่ตอนนี้
+              </p>
+            )}
           </div>
         </div>
       </div>
