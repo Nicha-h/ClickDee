@@ -25,6 +25,14 @@ export function createCampaign(userId: string, input: CreateCampaignInput) {
       budget: input.budget,
       startDate: new Date(input.startDate),
       endDate: input.endDate ? new Date(input.endDate) : undefined,
+      objective: input.objective,
+      specialAdCategories: input.specialAdCategories,
+      bidStrategy: input.bidStrategy,
+      bidAmount: input.bidAmount,
+      buyingType: input.buyingType,
+      campaignBudgetOptimization: input.campaignBudgetOptimization,
+      dailyBudget: input.dailyBudget,
+      lifetimeBudget: input.lifetimeBudget,
     },
   })
 }
@@ -47,6 +55,24 @@ export function updateCampaign(
         endDate: input.endDate ? new Date(input.endDate) : null,
       }),
       ...(input.status !== undefined && { status: input.status }),
+      ...(input.objective !== undefined && { objective: input.objective }),
+      ...(input.specialAdCategories !== undefined && {
+        specialAdCategories: input.specialAdCategories,
+      }),
+      ...(input.bidStrategy !== undefined && {
+        bidStrategy: input.bidStrategy,
+      }),
+      ...(input.bidAmount !== undefined && { bidAmount: input.bidAmount }),
+      ...(input.buyingType !== undefined && { buyingType: input.buyingType }),
+      ...(input.campaignBudgetOptimization !== undefined && {
+        campaignBudgetOptimization: input.campaignBudgetOptimization,
+      }),
+      ...(input.dailyBudget !== undefined && {
+        dailyBudget: input.dailyBudget,
+      }),
+      ...(input.lifetimeBudget !== undefined && {
+        lifetimeBudget: input.lifetimeBudget,
+      }),
     },
   })
 }

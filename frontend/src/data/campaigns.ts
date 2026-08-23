@@ -1,4 +1,5 @@
 import facebook from '@/assets/logos/facebook.svg'
+import instagram from '@/assets/logos/instagram.svg'
 import campaignRainPromo from '@/assets/placeholders/campaign-rain-promo.png'
 import campaignMiloPromo from '@/assets/placeholders/campaign-milo-promo.jpg'
 import campaignLattePromo from '@/assets/placeholders/campaign-latte-promo.jpg'
@@ -7,7 +8,19 @@ import campaignReportCreative2 from '@/assets/placeholders/campaign-report-creat
 import campaignReportCreative3 from '@/assets/placeholders/campaign-report-creative-3.jpg'
 
 export type CampaignStatus = 'active' | 'paused' | 'ended' | 'draft'
-export type Platform = 'facebook'
+export type Platform = 'facebook' | 'instagram'
+
+// Meta-side publish/review state — distinct from the local draft `status`
+// above. `campaignId` is null until publish-to-meta has run at least once.
+// Undefined entirely for mock/demo campaigns (no backing Meta object).
+export type CampaignMeta = {
+  campaignId: string | null
+  status: string | null
+  effectiveStatus: string | null
+  reviewFeedback: string | null
+  objective: string | null
+  campaignBudgetOptimization: boolean
+}
 
 export type Creative = {
   image: string
@@ -37,6 +50,8 @@ export type CampaignItem = {
   status: CampaignStatus
   /** Real campaigns fetched from the backend, vs. the static demo data below. */
   source?: 'mock' | 'api'
+  /** Only set for source === 'api' campaigns. */
+  meta?: CampaignMeta
   daysRemaining: number
   platforms: Platform[]
   reach: number
@@ -259,4 +274,100 @@ export const platformBadgeStyles: Record<
     textColor: 'text-white',
     chartColor: '#1877F2',
   },
+  instagram: {
+    bg: 'bg-[#c13584]',
+    icon: instagram,
+    label: 'Instagram',
+    textColor: 'text-white',
+    chartColor: '#C13584',
+  },
+}
+
+// Meta's effective_status vocabulary is large and can grow — this only
+// covers the values worth a distinct visual treatment; anything unmapped
+// falls back to a neutral grey pill showing the raw value (see
+// getMetaStatusBadge below) rather than crashing.
+export const metaStatusBadgeStyles: Record<
+  string,
+  { bg: string; textColor: string; dotColor: string; label: string }
+> = {
+  ACTIVE: {
+    bg: 'bg-[#caf3d0]',
+    textColor: 'text-[#519b5c]',
+    dotColor: 'bg-[#519b5c]',
+    label: 'กำลังแสดงบน Meta',
+  },
+  PAUSED: {
+    bg: 'bg-citrus-light-active',
+    textColor: 'text-citrusdark',
+    dotColor: 'bg-citrusdark',
+    label: 'หยุดชั่วคราวบน Meta',
+  },
+  ARCHIVED: {
+    bg: 'bg-[#E5E7EB]',
+    textColor: 'text-[#6B7280]',
+    dotColor: 'bg-[#6B7280]',
+    label: 'เก็บถาวรแล้ว',
+  },
+  IN_REVIEW: {
+    bg: 'bg-sealight',
+    textColor: 'text-seadark-active',
+    dotColor: 'bg-seadark-active',
+    label: 'กำลังตรวจสอบ',
+  },
+  PENDING_REVIEW: {
+    bg: 'bg-sealight',
+    textColor: 'text-seadark-active',
+    dotColor: 'bg-seadark-active',
+    label: 'กำลังตรวจสอบ',
+  },
+  DISAPPROVED: {
+    bg: 'bg-[#fbdcdc]',
+    textColor: 'text-[#be2c2c]',
+    dotColor: 'bg-[#be2c2c]',
+    label: 'ไม่ผ่านการตรวจสอบ',
+  },
+  WITH_ISSUES: {
+    bg: 'bg-[#fbdcdc]',
+    textColor: 'text-[#be2c2c]',
+    dotColor: 'bg-[#be2c2c]',
+    label: 'มีปัญหาต้องแก้ไข',
+  },
+}
+
+const notPublishedBadge = {
+  bg: 'bg-[#E5E7EB]',
+  textColor: 'text-[#6B7280]',
+  dotColor: 'bg-[#6B7280]',
+  label: 'ยังไม่เผยแพร่',
+}
+
+// Lower-level helper: turns a "has this object been pushed to Meta yet" flag
+// plus its status strings into a pill style — handles "not pushed" and
+// unmapped Meta status strings. Shared by Campaign, AdSet, and Ad status
+// pills (all three carry the same metaXId/metaStatus/metaEffectiveStatus
+// shape), so callers never duplicate the fallback logic.
+export function getPushStatusBadge(
+  pushed: boolean,
+  status: string | null,
+  effectiveStatus: string | null,
+) {
+  if (!pushed) return notPublishedBadge
+  const key = effectiveStatus ?? status ?? ''
+  return (
+    metaStatusBadgeStyles[key] ?? {
+      bg: 'bg-[#E5E7EB]',
+      textColor: 'text-[#6B7280]',
+      dotColor: 'bg-[#6B7280]',
+      label: key || 'ไม่ทราบสถานะ',
+    }
+  )
+}
+
+export function getMetaStatusBadge(meta: CampaignMeta | undefined) {
+  return getPushStatusBadge(
+    !!meta?.campaignId,
+    meta?.status ?? null,
+    meta?.effectiveStatus ?? null,
+  )
 }

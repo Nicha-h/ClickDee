@@ -6,7 +6,10 @@ import type { RecommendationItem } from '../services/recommendation-ai.service.j
 // calling the AI cascade entirely. Same convention as lib/compound-cache.ts:
 // fine for a single process, move to a shared store (e.g. Redis) if the app
 // ever scales to multiple instances.
-const cache = new Map<string, { value: RecommendationItem[]; expiresAt: number }>()
+const cache = new Map<
+  string,
+  { value: RecommendationItem[]; expiresAt: number }
+>()
 
 export function getCachedRecommendations(
   key: string,

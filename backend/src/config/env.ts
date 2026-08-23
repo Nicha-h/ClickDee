@@ -50,6 +50,31 @@ const EnvSchema = z.object({
     .int()
     .positive()
     .default(2),
+  // Meta Marketing API version, centralized here (not hardcoded per call) so
+  // bumping it when Meta deprecates a version is a one-line env change. See
+  // config/meta.ts for the base URLs built from this.
+  META_API_VERSION: z.string().min(1).default('v21.0'),
+  // Dev-only stand-in credentials for calling the Meta API before a real
+  // per-user OAuth connection flow exists (that's separate, not-yet-built
+  // work — see backend/docs/meta-marketing-api-findings.md). All optional;
+  // publish-to-meta throws a clear "not configured" error when unset rather
+  // than failing to boot, same pattern as GEMINI_API_KEY/GROQ_API_KEY.
+  META_DEV_ACCESS_TOKEN: z.string().min(1).optional(),
+  META_DEV_AD_ACCOUNT_ID: z.string().min(1).optional(),
+  META_DEV_PAGE_ID: z.string().min(1).optional(),
+  META_DEV_INSTAGRAM_USER_ID: z.string().min(1).optional(),
+  // Demo/offline mode: when true, every function that would normally call
+  // the real Meta API instead skips the network call and synthesizes a
+  // successful result (fake meta*Id, PAUSED/ACTIVE status) after running the
+  // same local validation. Lets the product demo run end-to-end without any
+  // dependency on Meta's app-mode/API being reachable. Off by default — a
+  // deliberate, temporary escape hatch, not the normal dev path. Not
+  // z.coerce.boolean(), which would treat the string "false" as truthy.
+  META_SIMULATE_PUBLISH: z
+    .enum(['true', 'false'])
+    .optional()
+    .default('false')
+    .transform((v) => v === 'true'),
 })
 
 export const env = EnvSchema.parse(process.env)

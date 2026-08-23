@@ -12,12 +12,14 @@ import sparklebold from '@/assets/icons/sparklebold.svg'
 import StepIndicator from '@/components/stepIndicator'
 import { getApiAiCampaignIdeas } from '@/api/generated/client'
 import { getUserId, withCredentials } from '@/lib/userId'
+import { useGoBack } from '@/components/useGoBack'
 
 const trendPrompt =
   'ใช้โอกาสฝนตกพรุ่งนี้ ทำแคมเปญเครื่องดื่มร้อน + ของหวานในย่านสีลม งบ 300 บาท/วัน'
 
 function CampaignCreate() {
   const navigate = useNavigate()
+  const goBack = useGoBack('/campaign')
   const location = useLocation()
   const [prompt, setPrompt] = useState(
     () => (location.state as { prompt?: string } | null)?.prompt ?? '',
@@ -45,7 +47,7 @@ function CampaignCreate() {
       <div className="flex items-start gap-4">
         <button
           type="button"
-          onClick={() => navigate('/campaign')}
+          onClick={goBack}
           className="border-amalfidark flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2"
         >
           <ChevronLeft className="text-amalfidark h-7 w-7" />

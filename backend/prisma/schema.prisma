@@ -19,6 +19,60 @@ enum CampaignStatus {
   COMPLETED
 }
 
+// ODAX outcome-based objectives only — Meta rejects legacy values
+// (CONVERSIONS/LINK_CLICKS/etc.) on campaign creation.
+enum CampaignObjective {
+  OUTCOME_AWARENESS
+  OUTCOME_TRAFFIC
+  OUTCOME_ENGAGEMENT
+  OUTCOME_LEADS
+  OUTCOME_SALES
+  OUTCOME_APP_PROMOTION
+}
+
+enum SpecialAdCategory {
+  HOUSING
+  EMPLOYMENT
+  CREDIT
+  ISSUES_ELECTIONS_POLITICS
+}
+
+enum BidStrategy {
+  LOWEST_COST_WITHOUT_CAP
+  LOWEST_COST_WITH_BID_CAP
+  COST_CAP
+  LOWEST_COST_WITH_MIN_ROAS
+}
+
+enum BuyingType {
+  AUCTION
+}
+
+enum CreativeFormat {
+  IMAGE_POST
+  VIDEO_POST
+  REELS
+  CAROUSEL
+  STORY
+}
+
+enum MediaAssetType {
+  IMAGE
+  VIDEO
+}
+
+enum MediaAssetStatus {
+  PENDING
+  READY
+  FAILED
+}
+
+enum InsightLevel {
+  CAMPAIGN
+  ADSET
+  AD
+}
+
 model Campaign {
   id        String         @id @default(cuid())
   userId    String
@@ -32,8 +86,228 @@ model Campaign {
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
+  // --- Meta Marketing API fields (Task 1) ---
+  // Nullable/defaulted so existing rows and the pre-Meta creation path (plain
+  // in-app campaigns) keep working unchanged.
+  objective                  CampaignObjective?
+  specialAdCategories        SpecialAdCategory[] @default([])
+  bidStrategy                BidStrategy?        @default(LOWEST_COST_WITHOUT_CAP)
+  // Minor currency unit (satang for THB), matching Meta's integer budget/bid
+  // fields — never a Decimal major-unit amount.
+  bidAmount                  Int?
+  buyingType                 BuyingType?         @default(AUCTION)
+  campaignBudgetOptimization Boolean             @default(true)
+  dailyBudget                Int?
+  lifetimeBudget             Int?
+
+  // Mirrors of Meta's own object state once pushed via publish-to-meta /
+  // meta-status — never written to directly by campaign create/update.
+  metaCampaignId      String? @unique
+  metaStatus          String?
+  metaEffectiveStatus String?
+  metaReviewFeedback  String? @db.Text
+
+  adSets   AdSet[]
+  insights AdInsight[]
+
   @@index([userId])
   @@map("campaigns")
+}
+
+model AdSet {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+
+  // Meta's optimization_goal/billing_event/destination_type/dsa_beneficiary
+  // vocabularies are large and evolve independently of our releases — kept as
+  // validated-at-the-Zod-layer strings rather than Prisma enums, same
+  // reasoning as metaStatus/metaEffectiveStatus below.
+  optimizationGoal String
+  billingEvent     String
+  destinationType  String?
+  dsaBeneficiary   String?
+
+  // geo_locations, age_min/max, genders, interests, custom_audiences,
+  // targeting_automation, publisher_platforms/positions — the whole Meta
+  // targeting object, stored as-is.
+  targeting Json
+
+  dailyBudget         Int?
+  lifetimeBudget      Int?
+  bidAmount           Int?
+  startTime           DateTime?
+  endTime             DateTime?
+  promotedObject      Json?
+  advantagePlacements Boolean   @default(true)
+
+  metaAdSetId         String? @unique
+  metaStatus          String?
+  metaEffectiveStatus String?
+  metaReviewFeedback  String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creatives AdCreative[]
+  ads       Ad[]
+  insights  AdInsight[]
+
+  @@index([campaignId])
+  @@index([userId])
+  @@map("ad_sets")
+}
+
+model AdCreative {
+  id      String         @id @default(cuid())
+  adSetId String
+  adSet   AdSet          @relation(fields: [adSetId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name    String
+  format  CreativeFormat
+
+  pageId          String
+  instagramUserId String?
+
+  // The fully constructed object_story_spec we send/sent to Meta, stored for
+  // audit/re-send rather than rebuilding it from scratch each time.
+  objectStorySpec Json
+
+  // Schema placeholder for Meta's AI-content-disclosure requirement — the
+  // exact rules are unverified against Meta's current policy as of writing,
+  // don't wire real disclosure logic against these without re-checking first.
+  aiGenerated       Boolean @default(false)
+  aiDisclosureLabel Boolean @default(false)
+
+  metaCreativeId     String? @unique
+  metaReviewFeedback String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mediaAssets MediaAsset[]
+  ads         Ad[]
+
+  @@index([adSetId])
+  @@index([userId])
+  @@map("ad_creatives")
+}
+
+model MediaAsset {
+  id         String      @id @default(cuid())
+  creativeId String?
+  creative   AdCreative? @relation(fields: [creativeId], references: [id], onDelete: SetNull)
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type   MediaAssetType
+  status MediaAssetStatus @default(PENDING)
+
+  metaImageHash String?
+  metaVideoId   String?
+  sourceUrl     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([creativeId])
+  @@index([userId])
+  @@map("media_assets")
+}
+
+model Ad {
+  id         String     @id @default(cuid())
+  adSetId    String
+  adSet      AdSet      @relation(fields: [adSetId], references: [id], onDelete: Cascade)
+  creativeId String
+  creative   AdCreative @relation(fields: [creativeId], references: [id])
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+
+  metaAdId            String? @unique
+  metaStatus          String?
+  metaEffectiveStatus String?
+  metaReviewFeedback  String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  insights AdInsight[]
+
+  @@index([adSetId])
+  @@index([userId])
+  @@map("ads")
+}
+
+model AdInsight {
+  id     String       @id @default(cuid())
+  level  InsightLevel
+  userId String
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Every insight row traces back to a campaign regardless of level, so this
+  // FK is required — no sentinel needed for it.
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  // True nullable FKs, kept ONLY for cascade-delete/referential integrity —
+  // null when the row's level doesn't reach that deep (e.g. adId is null for
+  // CAMPAIGN/ADSET-level rows). Deliberately NOT used in the unique index
+  // below: Postgres treats NULL as distinct from NULL in a unique index by
+  // default, so two campaign-level rows (both adSetId/adId null) would never
+  // collide and upsert-based dedup would silently insert duplicates.
+  adSetId String?
+  adSet   AdSet?  @relation(fields: [adSetId], references: [id], onDelete: Cascade)
+  adId    String?
+  ad      Ad?     @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  // Dedup/upsert key columns, mirroring adSetId/adId/breakdown dimensions but
+  // non-nullable with '' as the "not applicable at this level/breakdown"
+  // sentinel — kept separate from the real FK columns above so a ''
+  // sentinel here never has to satisfy a foreign key constraint. The
+  // service layer must keep these in sync with adSetId/adId when writing a
+  // row (real id, or '' if not applicable).
+  adSetDedupKey     String @default("")
+  adDedupKey        String @default("")
+  publisherPlatform String @default("")
+  placement         String @default("")
+
+  dateStart DateTime @db.Date
+  dateStop  DateTime @db.Date
+
+  impressions  Int      @default(0)
+  reach        Int      @default(0)
+  frequency    Decimal? @db.Decimal(10, 4)
+  spend        Decimal  @default(0) @db.Decimal(12, 2)
+  clicks       Int      @default(0)
+  uniqueClicks Int      @default(0)
+  ctr          Decimal? @db.Decimal(10, 4)
+  cpc          Decimal? @db.Decimal(10, 4)
+  cpm          Decimal? @db.Decimal(10, 4)
+
+  actions           Json?
+  costPerActionType Json?
+
+  videoP25Watched      Int?
+  videoP50Watched      Int?
+  videoP75Watched      Int?
+  videoP100Watched     Int?
+  videoThruplayWatched Int?
+
+  purchaseRoas Decimal? @db.Decimal(10, 4)
+
+  fetchedAt DateTime @default(now())
+
+  @@unique([level, campaignId, adSetDedupKey, adDedupKey, dateStart, dateStop, publisherPlatform, placement])
+  @@index([userId])
+  @@index([adSetId])
+  @@index([adId])
+  @@map("ad_insights")
 }
 
 enum MessageRole {
@@ -96,30 +370,35 @@ model Notification {
 }
 
 model User {
-  id               String         @id @default(cuid())
-  email            String         @unique
-  passwordHash     String
-  name             String?
-  businessName     String?
-  location         String?
-  category         String?
-  categoryOther    String?
-  adExperience     String?
-  budget           String?
-  goal             String?
-  signatureProduct String?        @db.Text
-  platforms        String[]       @default([])
-  peakHours        String?
-  promoHighlight   String?        @db.Text
-  customerPersona  String?        @db.Text
-  conversations    Conversation[]
-  aiMemory         AiMemory[]
-  campaigns        Campaign[]
-  pendingAiActions PendingAiAction[]
-  notifications    Notification[]
+  id                String            @id @default(cuid())
+  email             String            @unique
+  passwordHash      String
+  name              String?
+  businessName      String?
+  location          String?
+  category          String?
+  categoryOther     String?
+  adExperience      String?
+  budget            String?
+  goal              String?
+  signatureProduct  String?           @db.Text
+  platforms         String[]          @default([])
+  peakHours         String?
+  promoHighlight    String?           @db.Text
+  customerPersona   String?           @db.Text
+  conversations     Conversation[]
+  aiMemory          AiMemory[]
+  campaigns         Campaign[]
+  adSets            AdSet[]
+  adCreatives       AdCreative[]
+  mediaAssets       MediaAsset[]
+  ads               Ad[]
+  adInsights        AdInsight[]
+  pendingAiActions  PendingAiAction[]
+  notifications     Notification[]
   aiMemoryConsentAt DateTime?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   @@map("users")
 }

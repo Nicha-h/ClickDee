@@ -29,6 +29,54 @@ export const CampaignStatus = {
   COMPLETED: 'COMPLETED',
 } as const;
 
+/**
+ * @nullable
+ */
+export type CampaignObjective = typeof CampaignObjective[keyof typeof CampaignObjective] | null;
+
+
+export const CampaignObjective = {
+  OUTCOME_AWARENESS: 'OUTCOME_AWARENESS',
+  OUTCOME_TRAFFIC: 'OUTCOME_TRAFFIC',
+  OUTCOME_ENGAGEMENT: 'OUTCOME_ENGAGEMENT',
+  OUTCOME_LEADS: 'OUTCOME_LEADS',
+  OUTCOME_SALES: 'OUTCOME_SALES',
+  OUTCOME_APP_PROMOTION: 'OUTCOME_APP_PROMOTION',
+} as const;
+
+export type CampaignSpecialAdCategoriesItem = typeof CampaignSpecialAdCategoriesItem[keyof typeof CampaignSpecialAdCategoriesItem];
+
+
+export const CampaignSpecialAdCategoriesItem = {
+  HOUSING: 'HOUSING',
+  EMPLOYMENT: 'EMPLOYMENT',
+  CREDIT: 'CREDIT',
+  ISSUES_ELECTIONS_POLITICS: 'ISSUES_ELECTIONS_POLITICS',
+} as const;
+
+/**
+ * @nullable
+ */
+export type CampaignBidStrategy = typeof CampaignBidStrategy[keyof typeof CampaignBidStrategy] | null;
+
+
+export const CampaignBidStrategy = {
+  LOWEST_COST_WITHOUT_CAP: 'LOWEST_COST_WITHOUT_CAP',
+  LOWEST_COST_WITH_BID_CAP: 'LOWEST_COST_WITH_BID_CAP',
+  COST_CAP: 'COST_CAP',
+  LOWEST_COST_WITH_MIN_ROAS: 'LOWEST_COST_WITH_MIN_ROAS',
+} as const;
+
+/**
+ * @nullable
+ */
+export type CampaignBuyingType = typeof CampaignBuyingType[keyof typeof CampaignBuyingType] | null;
+
+
+export const CampaignBuyingType = {
+  AUCTION: 'AUCTION',
+} as const;
+
 export interface Campaign {
   id: string;
   name: string;
@@ -39,6 +87,28 @@ export interface Campaign {
   startDate: string;
   /** @nullable */
   endDate: string | null;
+  /** @nullable */
+  objective: CampaignObjective;
+  specialAdCategories: CampaignSpecialAdCategoriesItem[];
+  /** @nullable */
+  bidStrategy: CampaignBidStrategy;
+  /** @nullable */
+  bidAmount: number | null;
+  /** @nullable */
+  buyingType: CampaignBuyingType;
+  campaignBudgetOptimization: boolean;
+  /** @nullable */
+  dailyBudget: number | null;
+  /** @nullable */
+  lifetimeBudget: number | null;
+  /** @nullable */
+  metaCampaignId: string | null;
+  /** @nullable */
+  metaStatus: string | null;
+  /** @nullable */
+  metaEffectiveStatus: string | null;
+  /** @nullable */
+  metaReviewFeedback: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -57,6 +127,45 @@ export const CreateCampaignInputStatus = {
   COMPLETED: 'COMPLETED',
 } as const;
 
+export type CreateCampaignInputObjective = typeof CreateCampaignInputObjective[keyof typeof CreateCampaignInputObjective];
+
+
+export const CreateCampaignInputObjective = {
+  OUTCOME_AWARENESS: 'OUTCOME_AWARENESS',
+  OUTCOME_TRAFFIC: 'OUTCOME_TRAFFIC',
+  OUTCOME_ENGAGEMENT: 'OUTCOME_ENGAGEMENT',
+  OUTCOME_LEADS: 'OUTCOME_LEADS',
+  OUTCOME_SALES: 'OUTCOME_SALES',
+  OUTCOME_APP_PROMOTION: 'OUTCOME_APP_PROMOTION',
+} as const;
+
+export type CreateCampaignInputSpecialAdCategoriesItem = typeof CreateCampaignInputSpecialAdCategoriesItem[keyof typeof CreateCampaignInputSpecialAdCategoriesItem];
+
+
+export const CreateCampaignInputSpecialAdCategoriesItem = {
+  HOUSING: 'HOUSING',
+  EMPLOYMENT: 'EMPLOYMENT',
+  CREDIT: 'CREDIT',
+  ISSUES_ELECTIONS_POLITICS: 'ISSUES_ELECTIONS_POLITICS',
+} as const;
+
+export type CreateCampaignInputBidStrategy = typeof CreateCampaignInputBidStrategy[keyof typeof CreateCampaignInputBidStrategy];
+
+
+export const CreateCampaignInputBidStrategy = {
+  LOWEST_COST_WITHOUT_CAP: 'LOWEST_COST_WITHOUT_CAP',
+  LOWEST_COST_WITH_BID_CAP: 'LOWEST_COST_WITH_BID_CAP',
+  COST_CAP: 'COST_CAP',
+  LOWEST_COST_WITH_MIN_ROAS: 'LOWEST_COST_WITH_MIN_ROAS',
+} as const;
+
+export type CreateCampaignInputBuyingType = typeof CreateCampaignInputBuyingType[keyof typeof CreateCampaignInputBuyingType];
+
+
+export const CreateCampaignInputBuyingType = {
+  AUCTION: 'AUCTION',
+} as const;
+
 export interface CreateCampaignInput {
   /** @minLength 1 */
   name: string;
@@ -67,6 +176,17 @@ export interface CreateCampaignInput {
   budget: number;
   startDate: string;
   endDate?: string;
+  objective?: CreateCampaignInputObjective;
+  specialAdCategories?: CreateCampaignInputSpecialAdCategoriesItem[];
+  bidStrategy?: CreateCampaignInputBidStrategy;
+  /** @exclusiveMinimum 0 */
+  bidAmount?: number;
+  buyingType?: CreateCampaignInputBuyingType;
+  campaignBudgetOptimization?: boolean;
+  /** @exclusiveMinimum 0 */
+  dailyBudget?: number;
+  /** @exclusiveMinimum 0 */
+  lifetimeBudget?: number;
 }
 
 export type UpdateCampaignInputStatus = typeof UpdateCampaignInputStatus[keyof typeof UpdateCampaignInputStatus];
@@ -77,6 +197,45 @@ export const UpdateCampaignInputStatus = {
   ACTIVE: 'ACTIVE',
   PAUSED: 'PAUSED',
   COMPLETED: 'COMPLETED',
+} as const;
+
+export type UpdateCampaignInputObjective = typeof UpdateCampaignInputObjective[keyof typeof UpdateCampaignInputObjective];
+
+
+export const UpdateCampaignInputObjective = {
+  OUTCOME_AWARENESS: 'OUTCOME_AWARENESS',
+  OUTCOME_TRAFFIC: 'OUTCOME_TRAFFIC',
+  OUTCOME_ENGAGEMENT: 'OUTCOME_ENGAGEMENT',
+  OUTCOME_LEADS: 'OUTCOME_LEADS',
+  OUTCOME_SALES: 'OUTCOME_SALES',
+  OUTCOME_APP_PROMOTION: 'OUTCOME_APP_PROMOTION',
+} as const;
+
+export type UpdateCampaignInputSpecialAdCategoriesItem = typeof UpdateCampaignInputSpecialAdCategoriesItem[keyof typeof UpdateCampaignInputSpecialAdCategoriesItem];
+
+
+export const UpdateCampaignInputSpecialAdCategoriesItem = {
+  HOUSING: 'HOUSING',
+  EMPLOYMENT: 'EMPLOYMENT',
+  CREDIT: 'CREDIT',
+  ISSUES_ELECTIONS_POLITICS: 'ISSUES_ELECTIONS_POLITICS',
+} as const;
+
+export type UpdateCampaignInputBidStrategy = typeof UpdateCampaignInputBidStrategy[keyof typeof UpdateCampaignInputBidStrategy];
+
+
+export const UpdateCampaignInputBidStrategy = {
+  LOWEST_COST_WITHOUT_CAP: 'LOWEST_COST_WITHOUT_CAP',
+  LOWEST_COST_WITH_BID_CAP: 'LOWEST_COST_WITH_BID_CAP',
+  COST_CAP: 'COST_CAP',
+  LOWEST_COST_WITH_MIN_ROAS: 'LOWEST_COST_WITH_MIN_ROAS',
+} as const;
+
+export type UpdateCampaignInputBuyingType = typeof UpdateCampaignInputBuyingType[keyof typeof UpdateCampaignInputBuyingType];
+
+
+export const UpdateCampaignInputBuyingType = {
+  AUCTION: 'AUCTION',
 } as const;
 
 export interface UpdateCampaignInput {
@@ -93,6 +252,694 @@ export interface UpdateCampaignInput {
   /** @nullable */
   endDate?: string | null;
   status?: UpdateCampaignInputStatus;
+  objective?: UpdateCampaignInputObjective;
+  specialAdCategories?: UpdateCampaignInputSpecialAdCategoriesItem[];
+  bidStrategy?: UpdateCampaignInputBidStrategy;
+  /** @exclusiveMinimum 0 */
+  bidAmount?: number;
+  buyingType?: UpdateCampaignInputBuyingType;
+  campaignBudgetOptimization?: boolean;
+  /** @exclusiveMinimum 0 */
+  dailyBudget?: number;
+  /** @exclusiveMinimum 0 */
+  lifetimeBudget?: number;
+}
+
+export type AdSetTargetingProperty = {[key: string]: unknown | null};
+
+/**
+ * @nullable
+ */
+export type AdSetPromotedObject = {[key: string]: unknown | null} | null;
+
+export interface AdSet {
+  id: string;
+  campaignId: string;
+  name: string;
+  optimizationGoal: string;
+  billingEvent: string;
+  /** @nullable */
+  destinationType: string | null;
+  /** @nullable */
+  dsaBeneficiary: string | null;
+  targeting: AdSetTargetingProperty;
+  /** @nullable */
+  dailyBudget: number | null;
+  /** @nullable */
+  lifetimeBudget: number | null;
+  /** @nullable */
+  bidAmount: number | null;
+  /** @nullable */
+  startTime: string | null;
+  /** @nullable */
+  endTime: string | null;
+  /** @nullable */
+  promotedObject: AdSetPromotedObject;
+  advantagePlacements: boolean;
+  /** @nullable */
+  metaAdSetId: string | null;
+  /** @nullable */
+  metaStatus: string | null;
+  /** @nullable */
+  metaEffectiveStatus: string | null;
+  /** @nullable */
+  metaReviewFeedback: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateAdSetInputOptimizationGoal = typeof CreateAdSetInputOptimizationGoal[keyof typeof CreateAdSetInputOptimizationGoal];
+
+
+export const CreateAdSetInputOptimizationGoal = {
+  LINK_CLICKS: 'LINK_CLICKS',
+  REACH: 'REACH',
+  IMPRESSIONS: 'IMPRESSIONS',
+  CONVERSIONS: 'CONVERSIONS',
+  LANDING_PAGE_VIEWS: 'LANDING_PAGE_VIEWS',
+  OFFSITE_CONVERSIONS: 'OFFSITE_CONVERSIONS',
+  THRUPLAY: 'THRUPLAY',
+  LEAD_GENERATION: 'LEAD_GENERATION',
+  APP_INSTALLS: 'APP_INSTALLS',
+} as const;
+
+export type CreateAdSetInputBillingEvent = typeof CreateAdSetInputBillingEvent[keyof typeof CreateAdSetInputBillingEvent];
+
+
+export const CreateAdSetInputBillingEvent = {
+  IMPRESSIONS: 'IMPRESSIONS',
+  LINK_CLICKS: 'LINK_CLICKS',
+} as const;
+
+export type CreateAdSetInputPromotedObject = {[key: string]: unknown | null};
+
+export type CreateAdSetInputDestinationType = typeof CreateAdSetInputDestinationType[keyof typeof CreateAdSetInputDestinationType];
+
+
+export const CreateAdSetInputDestinationType = {
+  APP_STORE: 'APP_STORE',
+  ON_AD: 'ON_AD',
+  WEBSITE: 'WEBSITE',
+  MESSENGER: 'MESSENGER',
+  WHATSAPP: 'WHATSAPP',
+} as const;
+
+export type AdSetTargetingGeoLocations = {[key: string]: unknown | null};
+
+export type AdSetTargetingInterestsItem = {
+  id: string;
+  name?: string;
+};
+
+export type AdSetTargetingCustomAudiencesItem = {
+  id: string;
+};
+
+export const AdSetTargetingTargetingAutomationAdvantageAudience = {  NUMBER_0: 0,
+  NUMBER_1: 1,
+} as const
+export type AdSetTargetingTargetingAutomation = {
+  advantage_audience: typeof AdSetTargetingTargetingAutomationAdvantageAudience[keyof typeof AdSetTargetingTargetingAutomationAdvantageAudience];
+};
+
+export interface AdSetTargeting {
+  geo_locations?: AdSetTargetingGeoLocations;
+  /**
+     * @minimum 13
+     * @maximum 65
+     */
+  age_min?: number;
+  /**
+     * @minimum 13
+     * @maximum 65
+     */
+  age_max?: number;
+  genders?: number[];
+  interests?: AdSetTargetingInterestsItem[];
+  custom_audiences?: AdSetTargetingCustomAudiencesItem[];
+  targeting_automation?: AdSetTargetingTargetingAutomation;
+  publisher_platforms?: string[];
+  facebook_positions?: string[];
+  instagram_positions?: string[];
+  [key: string]: unknown;
+}
+
+export interface CreateAdSetInput {
+  /** @minLength 1 */
+  name: string;
+  optimizationGoal: CreateAdSetInputOptimizationGoal;
+  billingEvent: CreateAdSetInputBillingEvent;
+  targeting?: AdSetTargeting;
+  /** @exclusiveMinimum 0 */
+  dailyBudget?: number;
+  /** @exclusiveMinimum 0 */
+  lifetimeBudget?: number;
+  /** @exclusiveMinimum 0 */
+  bidAmount?: number;
+  startTime?: string;
+  endTime?: string;
+  promotedObject?: CreateAdSetInputPromotedObject;
+  destinationType?: CreateAdSetInputDestinationType;
+  dsaBeneficiary?: string;
+  advantagePlacements?: boolean;
+}
+
+export type UpdateAdSetInputOptimizationGoal = typeof UpdateAdSetInputOptimizationGoal[keyof typeof UpdateAdSetInputOptimizationGoal];
+
+
+export const UpdateAdSetInputOptimizationGoal = {
+  LINK_CLICKS: 'LINK_CLICKS',
+  REACH: 'REACH',
+  IMPRESSIONS: 'IMPRESSIONS',
+  CONVERSIONS: 'CONVERSIONS',
+  LANDING_PAGE_VIEWS: 'LANDING_PAGE_VIEWS',
+  OFFSITE_CONVERSIONS: 'OFFSITE_CONVERSIONS',
+  THRUPLAY: 'THRUPLAY',
+  LEAD_GENERATION: 'LEAD_GENERATION',
+  APP_INSTALLS: 'APP_INSTALLS',
+} as const;
+
+export type UpdateAdSetInputBillingEvent = typeof UpdateAdSetInputBillingEvent[keyof typeof UpdateAdSetInputBillingEvent];
+
+
+export const UpdateAdSetInputBillingEvent = {
+  IMPRESSIONS: 'IMPRESSIONS',
+  LINK_CLICKS: 'LINK_CLICKS',
+} as const;
+
+export type UpdateAdSetInputPromotedObject = {[key: string]: unknown | null};
+
+export type UpdateAdSetInputDestinationType = typeof UpdateAdSetInputDestinationType[keyof typeof UpdateAdSetInputDestinationType];
+
+
+export const UpdateAdSetInputDestinationType = {
+  APP_STORE: 'APP_STORE',
+  ON_AD: 'ON_AD',
+  WEBSITE: 'WEBSITE',
+  MESSENGER: 'MESSENGER',
+  WHATSAPP: 'WHATSAPP',
+} as const;
+
+export interface UpdateAdSetInput {
+  /** @minLength 1 */
+  name?: string;
+  optimizationGoal?: UpdateAdSetInputOptimizationGoal;
+  billingEvent?: UpdateAdSetInputBillingEvent;
+  targeting?: AdSetTargeting;
+  /** @exclusiveMinimum 0 */
+  dailyBudget?: number;
+  /** @exclusiveMinimum 0 */
+  lifetimeBudget?: number;
+  /** @exclusiveMinimum 0 */
+  bidAmount?: number;
+  startTime?: string;
+  endTime?: string;
+  promotedObject?: UpdateAdSetInputPromotedObject;
+  destinationType?: UpdateAdSetInputDestinationType;
+  dsaBeneficiary?: string;
+  advantagePlacements?: boolean;
+}
+
+export type AdCreativeFormat = typeof AdCreativeFormat[keyof typeof AdCreativeFormat];
+
+
+export const AdCreativeFormat = {
+  IMAGE_POST: 'IMAGE_POST',
+  VIDEO_POST: 'VIDEO_POST',
+  REELS: 'REELS',
+  CAROUSEL: 'CAROUSEL',
+  STORY: 'STORY',
+} as const;
+
+export type AdCreativeObjectStorySpec = {[key: string]: unknown | null};
+
+export type AdCreativeCreativeDetails = {[key: string]: unknown | null};
+
+export interface AdCreative {
+  id: string;
+  adSetId: string;
+  name: string;
+  format: AdCreativeFormat;
+  pageId: string;
+  /** @nullable */
+  instagramUserId: string | null;
+  aiGenerated: boolean;
+  aiDisclosureLabel: boolean;
+  objectStorySpec: AdCreativeObjectStorySpec;
+  creativeDetails: AdCreativeCreativeDetails;
+  /** @nullable */
+  metaCreativeId: string | null;
+  /** @nullable */
+  metaReviewFeedback: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateImagePostCreativeInputFormat = typeof CreateImagePostCreativeInputFormat[keyof typeof CreateImagePostCreativeInputFormat];
+
+
+export const CreateImagePostCreativeInputFormat = {
+  IMAGE_POST: 'IMAGE_POST',
+} as const;
+
+export type CreateImagePostCreativeInputCallToActionType = typeof CreateImagePostCreativeInputCallToActionType[keyof typeof CreateImagePostCreativeInputCallToActionType];
+
+
+export const CreateImagePostCreativeInputCallToActionType = {
+  SHOP_NOW: 'SHOP_NOW',
+  LEARN_MORE: 'LEARN_MORE',
+  SIGN_UP: 'SIGN_UP',
+  BOOK_TRAVEL: 'BOOK_TRAVEL',
+  CONTACT_US: 'CONTACT_US',
+  DOWNLOAD: 'DOWNLOAD',
+  GET_OFFER: 'GET_OFFER',
+  SUBSCRIBE: 'SUBSCRIBE',
+  WATCH_MORE: 'WATCH_MORE',
+  MESSAGE_PAGE: 'MESSAGE_PAGE',
+  CALL_NOW: 'CALL_NOW',
+  GET_QUOTE: 'GET_QUOTE',
+} as const;
+
+export interface CreateImagePostCreativeInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  pageId: string;
+  /** @minLength 1 */
+  instagramUserId?: string;
+  format: CreateImagePostCreativeInputFormat;
+  /** @minLength 1 */
+  mediaAssetId: string;
+  link: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  message: string;
+  callToActionType: CreateImagePostCreativeInputCallToActionType;
+}
+
+export type CreateVideoPostCreativeInputFormat = typeof CreateVideoPostCreativeInputFormat[keyof typeof CreateVideoPostCreativeInputFormat];
+
+
+export const CreateVideoPostCreativeInputFormat = {
+  VIDEO_POST: 'VIDEO_POST',
+} as const;
+
+export type CreateVideoPostCreativeInputCallToActionType = typeof CreateVideoPostCreativeInputCallToActionType[keyof typeof CreateVideoPostCreativeInputCallToActionType];
+
+
+export const CreateVideoPostCreativeInputCallToActionType = {
+  SHOP_NOW: 'SHOP_NOW',
+  LEARN_MORE: 'LEARN_MORE',
+  SIGN_UP: 'SIGN_UP',
+  BOOK_TRAVEL: 'BOOK_TRAVEL',
+  CONTACT_US: 'CONTACT_US',
+  DOWNLOAD: 'DOWNLOAD',
+  GET_OFFER: 'GET_OFFER',
+  SUBSCRIBE: 'SUBSCRIBE',
+  WATCH_MORE: 'WATCH_MORE',
+  MESSAGE_PAGE: 'MESSAGE_PAGE',
+  CALL_NOW: 'CALL_NOW',
+  GET_QUOTE: 'GET_QUOTE',
+} as const;
+
+export interface CreateVideoPostCreativeInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  pageId: string;
+  /** @minLength 1 */
+  instagramUserId?: string;
+  format: CreateVideoPostCreativeInputFormat;
+  /** @minLength 1 */
+  mediaAssetId: string;
+  /** @maxLength 200 */
+  title?: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  message: string;
+  callToActionType: CreateVideoPostCreativeInputCallToActionType;
+  ctaLink: string;
+  thumbnailUrl?: string;
+}
+
+export type CreateReelsCreativeInputFormat = typeof CreateReelsCreativeInputFormat[keyof typeof CreateReelsCreativeInputFormat];
+
+
+export const CreateReelsCreativeInputFormat = {
+  REELS: 'REELS',
+} as const;
+
+export type CreateReelsCreativeInputCallToActionType = typeof CreateReelsCreativeInputCallToActionType[keyof typeof CreateReelsCreativeInputCallToActionType];
+
+
+export const CreateReelsCreativeInputCallToActionType = {
+  SHOP_NOW: 'SHOP_NOW',
+  LEARN_MORE: 'LEARN_MORE',
+  SIGN_UP: 'SIGN_UP',
+  BOOK_TRAVEL: 'BOOK_TRAVEL',
+  CONTACT_US: 'CONTACT_US',
+  DOWNLOAD: 'DOWNLOAD',
+  GET_OFFER: 'GET_OFFER',
+  SUBSCRIBE: 'SUBSCRIBE',
+  WATCH_MORE: 'WATCH_MORE',
+  MESSAGE_PAGE: 'MESSAGE_PAGE',
+  CALL_NOW: 'CALL_NOW',
+  GET_QUOTE: 'GET_QUOTE',
+} as const;
+
+export interface CreateReelsCreativeInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  pageId: string;
+  /** @minLength 1 */
+  instagramUserId?: string;
+  format: CreateReelsCreativeInputFormat;
+  /** @minLength 1 */
+  mediaAssetId: string;
+  /** @maxLength 200 */
+  title?: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  message: string;
+  callToActionType: CreateReelsCreativeInputCallToActionType;
+  ctaLink: string;
+  thumbnailUrl?: string;
+}
+
+export type CreateCarouselCreativeInputFormat = typeof CreateCarouselCreativeInputFormat[keyof typeof CreateCarouselCreativeInputFormat];
+
+
+export const CreateCarouselCreativeInputFormat = {
+  CAROUSEL: 'CAROUSEL',
+} as const;
+
+export type CreateCarouselCreativeInputCallToActionType = typeof CreateCarouselCreativeInputCallToActionType[keyof typeof CreateCarouselCreativeInputCallToActionType];
+
+
+export const CreateCarouselCreativeInputCallToActionType = {
+  SHOP_NOW: 'SHOP_NOW',
+  LEARN_MORE: 'LEARN_MORE',
+  SIGN_UP: 'SIGN_UP',
+  BOOK_TRAVEL: 'BOOK_TRAVEL',
+  CONTACT_US: 'CONTACT_US',
+  DOWNLOAD: 'DOWNLOAD',
+  GET_OFFER: 'GET_OFFER',
+  SUBSCRIBE: 'SUBSCRIBE',
+  WATCH_MORE: 'WATCH_MORE',
+  MESSAGE_PAGE: 'MESSAGE_PAGE',
+  CALL_NOW: 'CALL_NOW',
+  GET_QUOTE: 'GET_QUOTE',
+} as const;
+
+export type CreateCarouselCreativeInputChildAttachmentsItem = {
+  /** @minLength 1 */
+  mediaAssetId: string;
+  link: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  name: string;
+  /** @maxLength 200 */
+  description?: string;
+};
+
+export interface CreateCarouselCreativeInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  pageId: string;
+  /** @minLength 1 */
+  instagramUserId?: string;
+  format: CreateCarouselCreativeInputFormat;
+  /**
+     * @minItems 2
+     * @maxItems 10
+     */
+  childAttachments: CreateCarouselCreativeInputChildAttachmentsItem[];
+  /** @maxLength 2000 */
+  message?: string;
+  callToActionType: CreateCarouselCreativeInputCallToActionType;
+}
+
+export type CreateStoryCreativeInputFormat = typeof CreateStoryCreativeInputFormat[keyof typeof CreateStoryCreativeInputFormat];
+
+
+export const CreateStoryCreativeInputFormat = {
+  STORY: 'STORY',
+} as const;
+
+export type CreateStoryCreativeInputMediaType = typeof CreateStoryCreativeInputMediaType[keyof typeof CreateStoryCreativeInputMediaType];
+
+
+export const CreateStoryCreativeInputMediaType = {
+  IMAGE: 'IMAGE',
+  VIDEO: 'VIDEO',
+} as const;
+
+export type CreateStoryCreativeInputCallToActionType = typeof CreateStoryCreativeInputCallToActionType[keyof typeof CreateStoryCreativeInputCallToActionType];
+
+
+export const CreateStoryCreativeInputCallToActionType = {
+  SHOP_NOW: 'SHOP_NOW',
+  LEARN_MORE: 'LEARN_MORE',
+  SIGN_UP: 'SIGN_UP',
+  BOOK_TRAVEL: 'BOOK_TRAVEL',
+  CONTACT_US: 'CONTACT_US',
+  DOWNLOAD: 'DOWNLOAD',
+  GET_OFFER: 'GET_OFFER',
+  SUBSCRIBE: 'SUBSCRIBE',
+  WATCH_MORE: 'WATCH_MORE',
+  MESSAGE_PAGE: 'MESSAGE_PAGE',
+  CALL_NOW: 'CALL_NOW',
+  GET_QUOTE: 'GET_QUOTE',
+} as const;
+
+export interface CreateStoryCreativeInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  pageId: string;
+  /** @minLength 1 */
+  instagramUserId?: string;
+  format: CreateStoryCreativeInputFormat;
+  mediaType: CreateStoryCreativeInputMediaType;
+  /** @minLength 1 */
+  mediaAssetId: string;
+  link?: string;
+  /** @maxLength 2000 */
+  message?: string;
+  callToActionType?: CreateStoryCreativeInputCallToActionType;
+  ctaLink?: string;
+}
+
+export type CreateAdCreativeInput = CreateImagePostCreativeInput | CreateVideoPostCreativeInput | CreateReelsCreativeInput | CreateCarouselCreativeInput | CreateStoryCreativeInput;
+
+export type UpdateAdCreativeInputCallToActionType = typeof UpdateAdCreativeInputCallToActionType[keyof typeof UpdateAdCreativeInputCallToActionType];
+
+
+export const UpdateAdCreativeInputCallToActionType = {
+  SHOP_NOW: 'SHOP_NOW',
+  LEARN_MORE: 'LEARN_MORE',
+  SIGN_UP: 'SIGN_UP',
+  BOOK_TRAVEL: 'BOOK_TRAVEL',
+  CONTACT_US: 'CONTACT_US',
+  DOWNLOAD: 'DOWNLOAD',
+  GET_OFFER: 'GET_OFFER',
+  SUBSCRIBE: 'SUBSCRIBE',
+  WATCH_MORE: 'WATCH_MORE',
+  MESSAGE_PAGE: 'MESSAGE_PAGE',
+  CALL_NOW: 'CALL_NOW',
+  GET_QUOTE: 'GET_QUOTE',
+} as const;
+
+export type UpdateAdCreativeInputMediaType = typeof UpdateAdCreativeInputMediaType[keyof typeof UpdateAdCreativeInputMediaType];
+
+
+export const UpdateAdCreativeInputMediaType = {
+  IMAGE: 'IMAGE',
+  VIDEO: 'VIDEO',
+} as const;
+
+export type UpdateAdCreativeInputChildAttachmentsItem = {
+  /** @minLength 1 */
+  mediaAssetId: string;
+  link: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  name: string;
+  /** @maxLength 200 */
+  description?: string;
+};
+
+export interface UpdateAdCreativeInput {
+  /** @minLength 1 */
+  name?: string;
+  /** @minLength 1 */
+  pageId?: string;
+  /** @minLength 1 */
+  instagramUserId?: string;
+  /** @minLength 1 */
+  mediaAssetId?: string;
+  link?: string;
+  /** @maxLength 2000 */
+  message?: string;
+  callToActionType?: UpdateAdCreativeInputCallToActionType;
+  /** @maxLength 200 */
+  title?: string;
+  ctaLink?: string;
+  thumbnailUrl?: string;
+  mediaType?: UpdateAdCreativeInputMediaType;
+  /**
+     * @minItems 2
+     * @maxItems 10
+     */
+  childAttachments?: UpdateAdCreativeInputChildAttachmentsItem[];
+}
+
+export interface Ad {
+  id: string;
+  adSetId: string;
+  creativeId: string;
+  name: string;
+  /** @nullable */
+  metaAdId: string | null;
+  /** @nullable */
+  metaStatus: string | null;
+  /** @nullable */
+  metaEffectiveStatus: string | null;
+  /** @nullable */
+  metaReviewFeedback: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateAdInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  creativeId: string;
+}
+
+export interface UpdateAdInput {
+  /** @minLength 1 */
+  name?: string;
+  /** @minLength 1 */
+  creativeId?: string;
+}
+
+export type PublishToMetaResponseAdSetsItem = {
+  id: string;
+  metaAdSetId: string;
+  /** @nullable */
+  metaEffectiveStatus: string | null;
+};
+
+export type PublishToMetaResponseAdsItem = {
+  id: string;
+  metaAdId: string;
+  /** @nullable */
+  metaEffectiveStatus: string | null;
+  /** @nullable */
+  metaReviewFeedback: string | null;
+};
+
+export interface PublishToMetaResponse {
+  campaignId: string;
+  metaCampaignId: string;
+  /** @nullable */
+  metaStatus: string | null;
+  /** @nullable */
+  metaEffectiveStatus: string | null;
+  adSets: PublishToMetaResponseAdSetsItem[];
+  ads: PublishToMetaResponseAdsItem[];
+}
+
+export interface SetMetaStatusResponse {
+  campaignId: string;
+  metaStatus: string;
+}
+
+export type SetMetaStatusInputStatus = typeof SetMetaStatusInputStatus[keyof typeof SetMetaStatusInputStatus];
+
+
+export const SetMetaStatusInputStatus = {
+  ACTIVE: 'ACTIVE',
+  PAUSED: 'PAUSED',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+export interface SetMetaStatusInput {
+  status: SetMetaStatusInputStatus;
+}
+
+export type AdInsightLevel = typeof AdInsightLevel[keyof typeof AdInsightLevel];
+
+
+export const AdInsightLevel = {
+  CAMPAIGN: 'CAMPAIGN',
+  ADSET: 'ADSET',
+  AD: 'AD',
+} as const;
+
+export type AdInsightActionsItem = {
+  action_type: string;
+  value: string;
+};
+
+export type AdInsightCostPerActionTypeItem = {
+  action_type: string;
+  value: string;
+};
+
+export interface AdInsight {
+  id: string;
+  level: AdInsightLevel;
+  dateStart: string;
+  dateStop: string;
+  /** @nullable */
+  publisherPlatform: string | null;
+  /** @nullable */
+  placement: string | null;
+  impressions: number;
+  reach: number;
+  /** @nullable */
+  frequency: number | null;
+  spend: string;
+  clicks: number;
+  uniqueClicks: number;
+  /** @nullable */
+  ctr: number | null;
+  /** @nullable */
+  cpc: number | null;
+  /** @nullable */
+  cpm: number | null;
+  /** @nullable */
+  actions: AdInsightActionsItem[] | null;
+  /** @nullable */
+  costPerActionType: AdInsightCostPerActionTypeItem[] | null;
+  /** @nullable */
+  videoP25Watched: number | null;
+  /** @nullable */
+  videoP50Watched: number | null;
+  /** @nullable */
+  videoP75Watched: number | null;
+  /** @nullable */
+  videoP100Watched: number | null;
+  /** @nullable */
+  videoThruplayWatched: number | null;
+  /** @nullable */
+  purchaseRoas: number | null;
+  fetchedAt: string;
 }
 
 export interface AuthResponse {
@@ -253,6 +1100,57 @@ export const PendingAiActionPayloadProposedStatus = {
   DRAFT: 'DRAFT',
 } as const;
 
+export type PendingAiActionPayloadObjective = typeof PendingAiActionPayloadObjective[keyof typeof PendingAiActionPayloadObjective];
+
+
+export const PendingAiActionPayloadObjective = {
+  OUTCOME_AWARENESS: 'OUTCOME_AWARENESS',
+  OUTCOME_TRAFFIC: 'OUTCOME_TRAFFIC',
+  OUTCOME_ENGAGEMENT: 'OUTCOME_ENGAGEMENT',
+  OUTCOME_LEADS: 'OUTCOME_LEADS',
+  OUTCOME_SALES: 'OUTCOME_SALES',
+  OUTCOME_APP_PROMOTION: 'OUTCOME_APP_PROMOTION',
+} as const;
+
+export type PendingAiActionPayloadSpecialAdCategoriesItem = typeof PendingAiActionPayloadSpecialAdCategoriesItem[keyof typeof PendingAiActionPayloadSpecialAdCategoriesItem];
+
+
+export const PendingAiActionPayloadSpecialAdCategoriesItem = {
+  HOUSING: 'HOUSING',
+  EMPLOYMENT: 'EMPLOYMENT',
+  CREDIT: 'CREDIT',
+  ISSUES_ELECTIONS_POLITICS: 'ISSUES_ELECTIONS_POLITICS',
+} as const;
+
+export type PendingAiActionPayloadCreativeFormat = typeof PendingAiActionPayloadCreativeFormat[keyof typeof PendingAiActionPayloadCreativeFormat];
+
+
+export const PendingAiActionPayloadCreativeFormat = {
+  image_post: 'image_post',
+  video_post: 'video_post',
+  reels: 'reels',
+  carousel: 'carousel',
+  story: 'story',
+} as const;
+
+export type PendingAiActionPayloadCtaType = typeof PendingAiActionPayloadCtaType[keyof typeof PendingAiActionPayloadCtaType];
+
+
+export const PendingAiActionPayloadCtaType = {
+  SHOP_NOW: 'SHOP_NOW',
+  LEARN_MORE: 'LEARN_MORE',
+  SIGN_UP: 'SIGN_UP',
+  BOOK_TRAVEL: 'BOOK_TRAVEL',
+  CONTACT_US: 'CONTACT_US',
+  DOWNLOAD: 'DOWNLOAD',
+  GET_OFFER: 'GET_OFFER',
+  SUBSCRIBE: 'SUBSCRIBE',
+  WATCH_MORE: 'WATCH_MORE',
+  MESSAGE_PAGE: 'MESSAGE_PAGE',
+  CALL_NOW: 'CALL_NOW',
+  GET_QUOTE: 'GET_QUOTE',
+} as const;
+
 export type PendingAiActionStatus = typeof PendingAiActionStatus[keyof typeof PendingAiActionStatus];
 
 
@@ -277,6 +1175,11 @@ export type PendingAiActionPayload = {
   /** @maxLength 2000 */
   caption?: string;
   proposedStatus?: PendingAiActionPayloadProposedStatus;
+  objective?: PendingAiActionPayloadObjective;
+  specialAdCategories?: PendingAiActionPayloadSpecialAdCategoriesItem[];
+  campaignBudgetOptimization?: boolean;
+  creativeFormat?: PendingAiActionPayloadCreativeFormat;
+  ctaType?: PendingAiActionPayloadCtaType;
 };
 
 /**
@@ -290,6 +1193,7 @@ export type PendingAiAction = {
   payload: PendingAiActionPayload;
   status: PendingAiActionStatus;
   createdAt: string;
+  contentWarnings: string[];
 } | null;
 
 export interface AiMessage {
@@ -490,6 +1394,15 @@ export interface Notification {
   read: boolean;
   createdAt: string;
 }
+
+export type GetApiCampaignsIdInsightsParams = {
+since?: string;
+until?: string;
+datePreset?: string;
+breakdowns?: string;
+refresh?: string;
+daily?: string;
+};
 
 export type GetApiAiStatus200Status = typeof GetApiAiStatus200Status[keyof typeof GetApiAiStatus200Status];
 
@@ -769,6 +1682,739 @@ export const deleteApiCampaignsId = async (id: string, options?: RequestInit): P
 
   const data: deleteApiCampaignsIdResponse['data'] = body ? JSON.parse(body) : undefined
   return { data, status: res.status, headers: res.headers } as deleteApiCampaignsIdResponse
+}
+
+
+
+export type getApiCampaignsCampaignIdAdSetsResponse200 = {
+  data: AdSet[]
+  status: 200
+}
+
+export type getApiCampaignsCampaignIdAdSetsResponseSuccess = (getApiCampaignsCampaignIdAdSetsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiCampaignsCampaignIdAdSetsResponse = (getApiCampaignsCampaignIdAdSetsResponseSuccess)
+
+export const getGetApiCampaignsCampaignIdAdSetsUrl = (campaignId: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/campaigns/${campaignId}/ad-sets`
+}
+
+export const getApiCampaignsCampaignIdAdSets = async (campaignId: string, options?: RequestInit): Promise<getApiCampaignsCampaignIdAdSetsResponse> => {
+
+  const res = await fetch(getGetApiCampaignsCampaignIdAdSetsUrl(campaignId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiCampaignsCampaignIdAdSetsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiCampaignsCampaignIdAdSetsResponse
+}
+
+
+
+export type postApiCampaignsCampaignIdAdSetsResponse201 = {
+  data: AdSet
+  status: 201
+}
+
+export type postApiCampaignsCampaignIdAdSetsResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type postApiCampaignsCampaignIdAdSetsResponseSuccess = (postApiCampaignsCampaignIdAdSetsResponse201) & {
+  headers: Headers;
+};
+export type postApiCampaignsCampaignIdAdSetsResponseError = (postApiCampaignsCampaignIdAdSetsResponse404) & {
+  headers: Headers;
+};
+
+export type postApiCampaignsCampaignIdAdSetsResponse = (postApiCampaignsCampaignIdAdSetsResponseSuccess | postApiCampaignsCampaignIdAdSetsResponseError)
+
+export const getPostApiCampaignsCampaignIdAdSetsUrl = (campaignId: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/campaigns/${campaignId}/ad-sets`
+}
+
+export const postApiCampaignsCampaignIdAdSets = async (campaignId: string,
+    createAdSetInput?: CreateAdSetInput, options?: RequestInit): Promise<postApiCampaignsCampaignIdAdSetsResponse> => {
+
+  const res = await fetch(getPostApiCampaignsCampaignIdAdSetsUrl(campaignId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createAdSetInput)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiCampaignsCampaignIdAdSetsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiCampaignsCampaignIdAdSetsResponse
+}
+
+
+
+export type getApiCampaignsCampaignIdAdSetsIdResponse200 = {
+  data: AdSet
+  status: 200
+}
+
+export type getApiCampaignsCampaignIdAdSetsIdResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type getApiCampaignsCampaignIdAdSetsIdResponseSuccess = (getApiCampaignsCampaignIdAdSetsIdResponse200) & {
+  headers: Headers;
+};
+export type getApiCampaignsCampaignIdAdSetsIdResponseError = (getApiCampaignsCampaignIdAdSetsIdResponse404) & {
+  headers: Headers;
+};
+
+export type getApiCampaignsCampaignIdAdSetsIdResponse = (getApiCampaignsCampaignIdAdSetsIdResponseSuccess | getApiCampaignsCampaignIdAdSetsIdResponseError)
+
+export const getGetApiCampaignsCampaignIdAdSetsIdUrl = (campaignId: string,
+    id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/campaigns/${campaignId}/ad-sets/${id}`
+}
+
+export const getApiCampaignsCampaignIdAdSetsId = async (campaignId: string,
+    id: string, options?: RequestInit): Promise<getApiCampaignsCampaignIdAdSetsIdResponse> => {
+
+  const res = await fetch(getGetApiCampaignsCampaignIdAdSetsIdUrl(campaignId,id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiCampaignsCampaignIdAdSetsIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiCampaignsCampaignIdAdSetsIdResponse
+}
+
+
+
+export type patchApiCampaignsCampaignIdAdSetsIdResponse200 = {
+  data: AdSet
+  status: 200
+}
+
+export type patchApiCampaignsCampaignIdAdSetsIdResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type patchApiCampaignsCampaignIdAdSetsIdResponseSuccess = (patchApiCampaignsCampaignIdAdSetsIdResponse200) & {
+  headers: Headers;
+};
+export type patchApiCampaignsCampaignIdAdSetsIdResponseError = (patchApiCampaignsCampaignIdAdSetsIdResponse404) & {
+  headers: Headers;
+};
+
+export type patchApiCampaignsCampaignIdAdSetsIdResponse = (patchApiCampaignsCampaignIdAdSetsIdResponseSuccess | patchApiCampaignsCampaignIdAdSetsIdResponseError)
+
+export const getPatchApiCampaignsCampaignIdAdSetsIdUrl = (campaignId: string,
+    id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/campaigns/${campaignId}/ad-sets/${id}`
+}
+
+export const patchApiCampaignsCampaignIdAdSetsId = async (campaignId: string,
+    id: string,
+    updateAdSetInput?: UpdateAdSetInput, options?: RequestInit): Promise<patchApiCampaignsCampaignIdAdSetsIdResponse> => {
+
+  const res = await fetch(getPatchApiCampaignsCampaignIdAdSetsIdUrl(campaignId,id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateAdSetInput)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: patchApiCampaignsCampaignIdAdSetsIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as patchApiCampaignsCampaignIdAdSetsIdResponse
+}
+
+
+
+export type getApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponse200 = {
+  data: AdCreative[]
+  status: 200
+}
+
+export type getApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponseSuccess = (getApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponse = (getApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponseSuccess)
+
+export const getGetApiCampaignsCampaignIdAdSetsAdSetIdCreativesUrl = (campaignId: string,
+    adSetId: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/campaigns/${campaignId}/ad-sets/${adSetId}/creatives`
+}
+
+export const getApiCampaignsCampaignIdAdSetsAdSetIdCreatives = async (campaignId: string,
+    adSetId: string, options?: RequestInit): Promise<getApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponse> => {
+
+  const res = await fetch(getGetApiCampaignsCampaignIdAdSetsAdSetIdCreativesUrl(campaignId,adSetId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponse
+}
+
+
+
+export type postApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponse201 = {
+  data: AdCreative
+  status: 201
+}
+
+export type postApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type postApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponseSuccess = (postApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponse201) & {
+  headers: Headers;
+};
+export type postApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponseError = (postApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponse404) & {
+  headers: Headers;
+};
+
+export type postApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponse = (postApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponseSuccess | postApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponseError)
+
+export const getPostApiCampaignsCampaignIdAdSetsAdSetIdCreativesUrl = (campaignId: string,
+    adSetId: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/campaigns/${campaignId}/ad-sets/${adSetId}/creatives`
+}
+
+export const postApiCampaignsCampaignIdAdSetsAdSetIdCreatives = async (campaignId: string,
+    adSetId: string,
+    createAdCreativeInput?: CreateAdCreativeInput, options?: RequestInit): Promise<postApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponse> => {
+
+  const res = await fetch(getPostApiCampaignsCampaignIdAdSetsAdSetIdCreativesUrl(campaignId,adSetId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createAdCreativeInput)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponse
+}
+
+
+
+export type getApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse200 = {
+  data: AdCreative
+  status: 200
+}
+
+export type getApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type getApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponseSuccess = (getApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse200) & {
+  headers: Headers;
+};
+export type getApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponseError = (getApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse404) & {
+  headers: Headers;
+};
+
+export type getApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse = (getApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponseSuccess | getApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponseError)
+
+export const getGetApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdUrl = (campaignId: string,
+    adSetId: string,
+    id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/campaigns/${campaignId}/ad-sets/${adSetId}/creatives/${id}`
+}
+
+export const getApiCampaignsCampaignIdAdSetsAdSetIdCreativesId = async (campaignId: string,
+    adSetId: string,
+    id: string, options?: RequestInit): Promise<getApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse> => {
+
+  const res = await fetch(getGetApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdUrl(campaignId,adSetId,id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse
+}
+
+
+
+export type patchApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse200 = {
+  data: AdCreative
+  status: 200
+}
+
+export type patchApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type patchApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponseSuccess = (patchApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse200) & {
+  headers: Headers;
+};
+export type patchApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponseError = (patchApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse404) & {
+  headers: Headers;
+};
+
+export type patchApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse = (patchApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponseSuccess | patchApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponseError)
+
+export const getPatchApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdUrl = (campaignId: string,
+    adSetId: string,
+    id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/campaigns/${campaignId}/ad-sets/${adSetId}/creatives/${id}`
+}
+
+export const patchApiCampaignsCampaignIdAdSetsAdSetIdCreativesId = async (campaignId: string,
+    adSetId: string,
+    id: string,
+    updateAdCreativeInput?: UpdateAdCreativeInput, options?: RequestInit): Promise<patchApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse> => {
+
+  const res = await fetch(getPatchApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdUrl(campaignId,adSetId,id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateAdCreativeInput)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: patchApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as patchApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse
+}
+
+
+
+export type getApiCampaignsCampaignIdAdSetsAdSetIdAdsResponse200 = {
+  data: Ad[]
+  status: 200
+}
+
+export type getApiCampaignsCampaignIdAdSetsAdSetIdAdsResponseSuccess = (getApiCampaignsCampaignIdAdSetsAdSetIdAdsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiCampaignsCampaignIdAdSetsAdSetIdAdsResponse = (getApiCampaignsCampaignIdAdSetsAdSetIdAdsResponseSuccess)
+
+export const getGetApiCampaignsCampaignIdAdSetsAdSetIdAdsUrl = (campaignId: string,
+    adSetId: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/campaigns/${campaignId}/ad-sets/${adSetId}/ads`
+}
+
+export const getApiCampaignsCampaignIdAdSetsAdSetIdAds = async (campaignId: string,
+    adSetId: string, options?: RequestInit): Promise<getApiCampaignsCampaignIdAdSetsAdSetIdAdsResponse> => {
+
+  const res = await fetch(getGetApiCampaignsCampaignIdAdSetsAdSetIdAdsUrl(campaignId,adSetId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiCampaignsCampaignIdAdSetsAdSetIdAdsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiCampaignsCampaignIdAdSetsAdSetIdAdsResponse
+}
+
+
+
+export type postApiCampaignsCampaignIdAdSetsAdSetIdAdsResponse201 = {
+  data: Ad
+  status: 201
+}
+
+export type postApiCampaignsCampaignIdAdSetsAdSetIdAdsResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type postApiCampaignsCampaignIdAdSetsAdSetIdAdsResponseSuccess = (postApiCampaignsCampaignIdAdSetsAdSetIdAdsResponse201) & {
+  headers: Headers;
+};
+export type postApiCampaignsCampaignIdAdSetsAdSetIdAdsResponseError = (postApiCampaignsCampaignIdAdSetsAdSetIdAdsResponse404) & {
+  headers: Headers;
+};
+
+export type postApiCampaignsCampaignIdAdSetsAdSetIdAdsResponse = (postApiCampaignsCampaignIdAdSetsAdSetIdAdsResponseSuccess | postApiCampaignsCampaignIdAdSetsAdSetIdAdsResponseError)
+
+export const getPostApiCampaignsCampaignIdAdSetsAdSetIdAdsUrl = (campaignId: string,
+    adSetId: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/campaigns/${campaignId}/ad-sets/${adSetId}/ads`
+}
+
+export const postApiCampaignsCampaignIdAdSetsAdSetIdAds = async (campaignId: string,
+    adSetId: string,
+    createAdInput?: CreateAdInput, options?: RequestInit): Promise<postApiCampaignsCampaignIdAdSetsAdSetIdAdsResponse> => {
+
+  const res = await fetch(getPostApiCampaignsCampaignIdAdSetsAdSetIdAdsUrl(campaignId,adSetId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createAdInput)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiCampaignsCampaignIdAdSetsAdSetIdAdsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiCampaignsCampaignIdAdSetsAdSetIdAdsResponse
+}
+
+
+
+export type getApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponse200 = {
+  data: Ad
+  status: 200
+}
+
+export type getApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type getApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponseSuccess = (getApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponse200) & {
+  headers: Headers;
+};
+export type getApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponseError = (getApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponse404) & {
+  headers: Headers;
+};
+
+export type getApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponse = (getApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponseSuccess | getApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponseError)
+
+export const getGetApiCampaignsCampaignIdAdSetsAdSetIdAdsIdUrl = (campaignId: string,
+    adSetId: string,
+    id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/campaigns/${campaignId}/ad-sets/${adSetId}/ads/${id}`
+}
+
+export const getApiCampaignsCampaignIdAdSetsAdSetIdAdsId = async (campaignId: string,
+    adSetId: string,
+    id: string, options?: RequestInit): Promise<getApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponse> => {
+
+  const res = await fetch(getGetApiCampaignsCampaignIdAdSetsAdSetIdAdsIdUrl(campaignId,adSetId,id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponse
+}
+
+
+
+export type patchApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponse200 = {
+  data: Ad
+  status: 200
+}
+
+export type patchApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type patchApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponseSuccess = (patchApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponse200) & {
+  headers: Headers;
+};
+export type patchApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponseError = (patchApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponse404) & {
+  headers: Headers;
+};
+
+export type patchApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponse = (patchApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponseSuccess | patchApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponseError)
+
+export const getPatchApiCampaignsCampaignIdAdSetsAdSetIdAdsIdUrl = (campaignId: string,
+    adSetId: string,
+    id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/campaigns/${campaignId}/ad-sets/${adSetId}/ads/${id}`
+}
+
+export const patchApiCampaignsCampaignIdAdSetsAdSetIdAdsId = async (campaignId: string,
+    adSetId: string,
+    id: string,
+    updateAdInput?: UpdateAdInput, options?: RequestInit): Promise<patchApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponse> => {
+
+  const res = await fetch(getPatchApiCampaignsCampaignIdAdSetsAdSetIdAdsIdUrl(campaignId,adSetId,id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateAdInput)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: patchApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as patchApiCampaignsCampaignIdAdSetsAdSetIdAdsIdResponse
+}
+
+
+
+export type postApiCampaignsIdPublishToMetaResponse200 = {
+  data: PublishToMetaResponse
+  status: 200
+}
+
+export type postApiCampaignsIdPublishToMetaResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type postApiCampaignsIdPublishToMetaResponseSuccess = (postApiCampaignsIdPublishToMetaResponse200) & {
+  headers: Headers;
+};
+export type postApiCampaignsIdPublishToMetaResponseError = (postApiCampaignsIdPublishToMetaResponse404) & {
+  headers: Headers;
+};
+
+export type postApiCampaignsIdPublishToMetaResponse = (postApiCampaignsIdPublishToMetaResponseSuccess | postApiCampaignsIdPublishToMetaResponseError)
+
+export const getPostApiCampaignsIdPublishToMetaUrl = (id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/campaigns/${id}/publish-to-meta`
+}
+
+export const postApiCampaignsIdPublishToMeta = async (id: string, options?: RequestInit): Promise<postApiCampaignsIdPublishToMetaResponse> => {
+
+  const res = await fetch(getPostApiCampaignsIdPublishToMetaUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiCampaignsIdPublishToMetaResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiCampaignsIdPublishToMetaResponse
+}
+
+
+
+export type postApiCampaignsIdMetaStatusResponse200 = {
+  data: SetMetaStatusResponse
+  status: 200
+}
+
+export type postApiCampaignsIdMetaStatusResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type postApiCampaignsIdMetaStatusResponseSuccess = (postApiCampaignsIdMetaStatusResponse200) & {
+  headers: Headers;
+};
+export type postApiCampaignsIdMetaStatusResponseError = (postApiCampaignsIdMetaStatusResponse404) & {
+  headers: Headers;
+};
+
+export type postApiCampaignsIdMetaStatusResponse = (postApiCampaignsIdMetaStatusResponseSuccess | postApiCampaignsIdMetaStatusResponseError)
+
+export const getPostApiCampaignsIdMetaStatusUrl = (id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/campaigns/${id}/meta-status`
+}
+
+export const postApiCampaignsIdMetaStatus = async (id: string,
+    setMetaStatusInput?: SetMetaStatusInput, options?: RequestInit): Promise<postApiCampaignsIdMetaStatusResponse> => {
+
+  const res = await fetch(getPostApiCampaignsIdMetaStatusUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(setMetaStatusInput)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiCampaignsIdMetaStatusResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiCampaignsIdMetaStatusResponse
+}
+
+
+
+export type getApiCampaignsIdInsightsResponse200 = {
+  data: AdInsight[]
+  status: 200
+}
+
+export type getApiCampaignsIdInsightsResponse400 = {
+  data: Error
+  status: 400
+}
+
+export type getApiCampaignsIdInsightsResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type getApiCampaignsIdInsightsResponseSuccess = (getApiCampaignsIdInsightsResponse200) & {
+  headers: Headers;
+};
+export type getApiCampaignsIdInsightsResponseError = (getApiCampaignsIdInsightsResponse400 | getApiCampaignsIdInsightsResponse404) & {
+  headers: Headers;
+};
+
+export type getApiCampaignsIdInsightsResponse = (getApiCampaignsIdInsightsResponseSuccess | getApiCampaignsIdInsightsResponseError)
+
+export const getGetApiCampaignsIdInsightsUrl = (id: string,
+    params?: GetApiCampaignsIdInsightsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `${apiBaseUrl}/api/campaigns/${id}/insights?${stringifiedParams}` : `${apiBaseUrl}/api/campaigns/${id}/insights`
+}
+
+export const getApiCampaignsIdInsights = async (id: string,
+    params?: GetApiCampaignsIdInsightsParams, options?: RequestInit): Promise<getApiCampaignsIdInsightsResponse> => {
+
+  const res = await fetch(getGetApiCampaignsIdInsightsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiCampaignsIdInsightsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiCampaignsIdInsightsResponse
 }
 
 

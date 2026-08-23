@@ -11,6 +11,10 @@ import {
   Square,
   Pencil,
   Trash2,
+  UploadCloud,
+  Zap,
+  TriangleAlert,
+  Layers,
 } from 'lucide-react'
 import rocket from '@/assets/icons/rocket.svg'
 import cash from '@/assets/icons/cash.svg'
@@ -18,16 +22,20 @@ import starcircle from '@/assets/icons/starcircle.svg'
 import {
   campaigns as mockCampaigns,
   platformBadgeStyles,
+  getMetaStatusBadge,
 } from '@/data/campaigns'
 import type { CampaignItem, CampaignStatus } from '@/data/campaigns'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import CampaignSkeleton from '@/components/campaignSkeleton'
 import Sparkline from '@/components/sparkline'
 import ConfirmDialog from '@/components/confirmDialog'
+import StatusPill from '@/components/statusPill'
 import {
   getApiCampaigns,
   patchApiCampaignsId,
   deleteApiCampaignsId,
+  postApiCampaignsIdPublishToMeta,
+  postApiCampaignsIdMetaStatus,
 } from '@/api/generated/client'
 import { toCampaignItem } from '@/lib/campaignAdapters'
 import { getUserId, withCredentials } from '@/lib/userId'
@@ -123,6 +131,9 @@ function CampaignCard({
   onStop,
   onDeleteRequest,
   onReviewDraft,
+  onPublishToMeta,
+  onActivateRequest,
+  isPublishing,
 }: {
   campaign: CampaignItem
   onPause: (id: string) => void
@@ -130,8 +141,15 @@ function CampaignCard({
   onStop: (id: string) => void
   onDeleteRequest: (id: string) => void
   onReviewDraft: (id: string) => void
+  onPublishToMeta: (id: string) => void
+  onActivateRequest: (id: string) => void
+  isPublishing: boolean
 }) {
   const statusBadge = statusBadgeStyles[campaign.status]
+  const metaBadge = getMetaStatusBadge(campaign.meta)
+  const isReviewIssue =
+    campaign.meta?.effectiveStatus === 'DISAPPROVED' ||
+    campaign.meta?.effectiveStatus === 'WITH_ISSUES'
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border border-[#8E98A8] lg:shrink-0 lg:flex-row">
       <img
@@ -145,14 +163,8 @@ function CampaignCard({
             {campaign.title}
           </h3>
           <div className="flex flex-row flex-wrap items-center gap-2">
-            <span
-              className={`font-thai flex items-center gap-1 rounded-full px-3 py-1 text-base font-medium ${statusBadge.bg} ${statusBadge.textColor}`}
-            >
-              <span
-                className={`h-2 w-2 rounded-full ${statusBadge.dotColor}`}
-              />
-              {statusBadge.label}
-            </span>
+            <StatusPill style={statusBadge} />
+            {campaign.source === 'api' && <StatusPill style={metaBadge} />}
             {campaign.status !== 'ended' &&
               Number.isFinite(campaign.daysRemaining) && (
                 <span className="font-thai text-citrusdark flex items-center gap-1 text-lg font-medium">
@@ -181,6 +193,13 @@ function CampaignCard({
             })}
           </div>
         </div>
+        {isReviewIssue && (
+          <p className="font-thai flex items-center gap-2 text-base text-[#be2c2c]">
+            <TriangleAlert className="h-5 w-5 shrink-0" />
+            {campaign.meta?.reviewFeedback ??
+              'Meta ตรวจสอบแล้วพบปัญหา กรุณาตรวจสอบครีเอทีฟ'}
+          </p>
+        )}
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
           <div className="grid flex-1 grid-cols-2 gap-y-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             <div>
@@ -291,6 +310,13 @@ function CampaignCard({
                 <Pencil className="h-5 w-5" />
                 แก้ไข
               </Link>
+              <Link
+                to={`/campaign/${campaign.id}/report#ad-sets`}
+                className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold"
+              >
+                <Layers className="h-5 w-5" />
+                Ad Set & โฆษณา
+              </Link>
               <button
                 type="button"
                 onClick={() => onDeleteRequest(campaign.id)}
@@ -299,6 +325,28 @@ function CampaignCard({
                 <Trash2 className="h-5 w-5" />
                 ลบ
               </button>
+              {!campaign.meta?.campaignId && (
+                <button
+                  type="button"
+                  disabled={isPublishing}
+                  onClick={() => onPublishToMeta(campaign.id)}
+                  className="font-thai text-seadark hover:text-seadark-active flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <UploadCloud className="h-5 w-5" />
+                  {isPublishing ? 'กำลังเผยแพร่...' : 'เผยแพร่ไปที่ Meta'}
+                </button>
+              )}
+              {campaign.meta?.campaignId &&
+                campaign.meta.status !== 'ACTIVE' && (
+                  <button
+                    type="button"
+                    onClick={() => onActivateRequest(campaign.id)}
+                    className="font-thai flex items-center gap-2 text-base text-[#519b5c] hover:cursor-pointer hover:font-semibold hover:text-[#3f7c48]"
+                  >
+                    <Zap className="h-5 w-5" />
+                    เปิดใช้งานบน Meta
+                  </button>
+                )}
             </>
           ) : (
             <>
@@ -337,6 +385,9 @@ function Campaign() {
   const [apiCampaigns, setApiCampaigns] = useState<CampaignItem[]>([])
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [publishingId, setPublishingId] = useState<string | null>(null)
+  const [activateTargetId, setActivateTargetId] = useState<string | null>(null)
+  const [isActivating, setIsActivating] = useState(false)
   const isLoading = useSimulatedLoading()
   const [filterTabsRef] = useEmblaCarousel({
     axis: 'x',
@@ -376,6 +427,56 @@ function Campaign() {
       }
     } finally {
       setIsDeleting(false)
+    }
+  }
+
+  const handlePublishToMeta = async (id: string) => {
+    setPublishingId(id)
+    try {
+      const res = await postApiCampaignsIdPublishToMeta(id, withCredentials())
+      if (res.status === 200) {
+        setApiCampaigns((prev) =>
+          prev.map((c) =>
+            c.id === id && c.meta
+              ? {
+                  ...c,
+                  meta: {
+                    ...c.meta,
+                    campaignId: res.data.metaCampaignId,
+                    status: res.data.metaStatus,
+                    effectiveStatus: res.data.metaEffectiveStatus,
+                  },
+                }
+              : c,
+          ),
+        )
+      }
+    } finally {
+      setPublishingId(null)
+    }
+  }
+
+  const handleActivateConfirm = async () => {
+    if (!activateTargetId) return
+    setIsActivating(true)
+    try {
+      const res = await postApiCampaignsIdMetaStatus(
+        activateTargetId,
+        { status: 'ACTIVE' },
+        withCredentials(),
+      )
+      if (res.status === 200) {
+        setApiCampaigns((prev) =>
+          prev.map((c) =>
+            c.id === activateTargetId && c.meta
+              ? { ...c, meta: { ...c.meta, status: res.data.metaStatus } }
+              : c,
+          ),
+        )
+        setActivateTargetId(null)
+      }
+    } finally {
+      setIsActivating(false)
     }
   }
 
@@ -530,6 +631,9 @@ function Campaign() {
               onStop={(id) => setCampaignStatus(id, 'COMPLETED')}
               onDeleteRequest={setDeleteTargetId}
               onReviewDraft={(id) => navigate(`/campaign/${id}/review`)}
+              onPublishToMeta={handlePublishToMeta}
+              onActivateRequest={setActivateTargetId}
+              isPublishing={publishingId === campaign.id}
             />
           ))
         ) : (
@@ -549,6 +653,16 @@ function Campaign() {
         confirmDisabled={isDeleting}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteTargetId(null)}
+      />
+
+      <ConfirmDialog
+        open={activateTargetId !== null}
+        title="ยืนยันการเปิดใช้งานบน Meta"
+        message="แคมเปญนี้จะเริ่มแสดงผลจริงและใช้จ่ายงบประมาณตามที่ตั้งไว้ทันที ต้องการดำเนินการต่อหรือไม่?"
+        confirmLabel="เปิดใช้งาน"
+        confirmDisabled={isActivating}
+        onConfirm={handleActivateConfirm}
+        onCancel={() => setActivateTargetId(null)}
       />
     </div>
   )

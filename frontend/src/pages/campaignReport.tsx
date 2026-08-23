@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import {
@@ -11,7 +11,14 @@ import {
   Plus,
   Square,
   Pencil,
+  UploadCloud,
+  Zap,
+  TriangleAlert,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
+import { CTA_LABELS } from '@/lib/adCreativeLabels'
 import cash from '@/assets/icons/cash.svg'
 import DonutChart from '@/components/donutChart'
 import TrendChart from '@/components/trendChart'
@@ -20,16 +27,40 @@ import {
   reachVsSpendSeries,
   percentFormatter,
 } from '@/components/trendChartUtils'
-import { campaigns, platformBadgeStyles } from '@/data/campaigns'
-import type { Creative, CampaignItem } from '@/data/campaigns'
+import {
+  campaigns,
+  platformBadgeStyles,
+  getMetaStatusBadge,
+  getPushStatusBadge,
+} from '@/data/campaigns'
+import type {
+  Creative,
+  CampaignItem,
+  DailyTrendPoint,
+  ChannelReach,
+  Platform,
+} from '@/data/campaigns'
 import CampaignReportSkeleton from '@/components/campaignReportSkeleton'
 import { Skeleton } from '@/components/skeleton'
+import StatusPill from '@/components/statusPill'
+import ConfirmDialog from '@/components/confirmDialog'
 import {
   getApiCampaignsId,
   patchApiCampaignsId,
   getApiAiCampaignsIdInsights,
+  postApiCampaignsIdPublishToMeta,
+  postApiCampaignsIdMetaStatus,
+  getApiCampaignsIdInsights,
+  getApiCampaignsCampaignIdAdSets,
+  getApiCampaignsCampaignIdAdSetsAdSetIdCreatives,
+  getApiCampaignsCampaignIdAdSetsAdSetIdAds,
 } from '@/api/generated/client'
-import type { CampaignStatus as ApiCampaignStatus } from '@/api/generated/client'
+import type {
+  CampaignStatus as ApiCampaignStatus,
+  AdSet,
+  AdCreative,
+  Ad,
+} from '@/api/generated/client'
 import { toCampaignItem } from '@/lib/campaignAdapters'
 import { withCredentials } from '@/lib/userId'
 
@@ -112,6 +143,360 @@ function CreativeCard({ creative }: { creative: Creative }) {
   )
 }
 
+type AdSetWithChildren = {
+  adSet: AdSet
+  creatives: AdCreative[]
+  ads: Ad[]
+}
+
+// Only rendered for source === 'api' campaigns — mock/demo campaigns have no
+// backing AdSet/AdCreative/Ad rows, so they keep the old static creatives
+// grid instead (see CampaignReportView below).
+function formatBudget(adSet: AdSet): string {
+  if (adSet.dailyBudget !== null) {
+    return `฿${(adSet.dailyBudget / 100).toLocaleString()} / วัน`
+  }
+  if (adSet.lifetimeBudget !== null) {
+    return `฿${(adSet.lifetimeBudget / 100).toLocaleString()} ตลอดแคมเปญ`
+  }
+  return 'จัดการงบที่ระดับแคมเปญ'
+}
+
+function formatSchedule(adSet: AdSet): string | null {
+  if (!adSet.startTime && !adSet.endTime) return null
+  const start = adSet.startTime
+    ? new Date(adSet.startTime).toLocaleDateString('th-TH')
+    : '-'
+  const end = adSet.endTime
+    ? new Date(adSet.endTime).toLocaleDateString('th-TH')
+    : 'ไม่มีกำหนดสิ้นสุด'
+  return `${start} – ${end}`
+}
+
+function formatTargeting(targeting: AdSet['targeting']): string {
+  const automation = targeting?.targeting_automation as
+    | { advantage_audience?: number }
+    | undefined
+  if (automation?.advantage_audience) {
+    return 'กลุ่มเป้าหมายอัตโนมัติ (Advantage+)'
+  }
+  const ageMin = targeting?.age_min as number | undefined
+  const ageMax = targeting?.age_max as number | undefined
+  const genders = targeting?.genders as number[] | undefined
+  const genderLabel =
+    !genders || genders.length === 0
+      ? 'ทุกเพศ'
+      : genders.includes(1) && genders.includes(2)
+        ? 'ทุกเพศ'
+        : genders.includes(1)
+          ? 'ชาย'
+          : 'หญิง'
+  const ageLabel = ageMin && ageMax ? `อายุ ${ageMin}-${ageMax} ปี` : ''
+  return [ageLabel, genderLabel].filter(Boolean).join(' · ') || 'ไม่ระบุ'
+}
+
+function AdSetDetail({ adSet }: { adSet: AdSet }) {
+  const schedule = formatSchedule(adSet)
+  return (
+    <div className="font-thai mt-2 flex flex-col gap-1 rounded-lg bg-[rgba(142,152,168,0.08)] p-3 text-base text-black">
+      <p>กลุ่มเป้าหมาย: {formatTargeting(adSet.targeting)}</p>
+      <p>งบประมาณ: {formatBudget(adSet)}</p>
+      {schedule && <p>ระยะเวลา: {schedule}</p>}
+    </div>
+  )
+}
+
+type CreativeDetails = {
+  mediaAssetUrl?: string
+  message?: string
+  link?: string
+  title?: string
+  callToActionType?: string
+  childAttachments?: {
+    mediaAssetUrl?: string
+    name?: string
+    link?: string
+    description?: string
+  }[]
+}
+
+function CreativeDetail({ creative }: { creative: AdCreative }) {
+  const details = creative.creativeDetails as unknown as CreativeDetails
+
+  return (
+    <div className="font-thai mt-2 flex flex-col gap-2 rounded-lg bg-[rgba(142,152,168,0.08)] p-3 text-base text-black">
+      {details.title && <p className="font-bold">{details.title}</p>}
+      {details.message && <p>{details.message}</p>}
+      <div className="flex flex-wrap items-center gap-3 text-sm text-[#8E98A8]">
+        {details.link && (
+          <a
+            href={details.link}
+            target="_blank"
+            rel="noreferrer"
+            className="text-seadark hover:text-seadark-active underline"
+          >
+            {details.link}
+          </a>
+        )}
+        {details.callToActionType && (
+          <span className="bg-sealight-active text-seadark-active rounded-full px-2 py-0.5">
+            {CTA_LABELS[details.callToActionType] ?? details.callToActionType}
+          </span>
+        )}
+      </div>
+      {details.mediaAssetUrl && (
+        <img
+          src={details.mediaAssetUrl}
+          alt=""
+          className="h-32 w-32 rounded-lg object-cover"
+        />
+      )}
+      {details.childAttachments && details.childAttachments.length > 0 && (
+        <div className="mt-1 flex flex-wrap gap-3">
+          {details.childAttachments.map((card, i) => (
+            <div
+              key={i}
+              className="w-32 overflow-hidden rounded-lg border border-[#8E98A8]"
+            >
+              {card.mediaAssetUrl && (
+                <img
+                  src={card.mediaAssetUrl}
+                  alt=""
+                  className="h-20 w-full object-cover"
+                />
+              )}
+              <div className="p-1.5">
+                <p className="truncate text-sm font-semibold">{card.name}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AdSetsSection({ campaignId }: { campaignId: string }) {
+  const [items, setItems] = useState<AdSetWithChildren[] | null>(null)
+  const [expandedAdSets, setExpandedAdSets] = useState<Record<string, boolean>>(
+    {},
+  )
+  const [expandedCreatives, setExpandedCreatives] = useState<
+    Record<string, boolean>
+  >({})
+  const [expandedAds, setExpandedAds] = useState<Record<string, boolean>>({})
+  const location = useLocation()
+
+  useEffect(() => {
+    getApiCampaignsCampaignIdAdSets(campaignId, withCredentials()).then(
+      (res) => {
+        if (res.status !== 200) return
+        Promise.all(
+          res.data.map((adSet) =>
+            Promise.all([
+              getApiCampaignsCampaignIdAdSetsAdSetIdCreatives(
+                campaignId,
+                adSet.id,
+                withCredentials(),
+              ),
+              getApiCampaignsCampaignIdAdSetsAdSetIdAds(
+                campaignId,
+                adSet.id,
+                withCredentials(),
+              ),
+            ]).then(([creativesRes, adsRes]) => ({
+              adSet,
+              creatives: creativesRes.status === 200 ? creativesRes.data : [],
+              ads: adsRes.status === 200 ? adsRes.data : [],
+            })),
+          ),
+        ).then(setItems)
+      },
+    )
+  }, [campaignId])
+
+  useEffect(() => {
+    if (items === null || location.hash !== '#ad-sets') return
+    document
+      .getElementById('ad-sets')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [items, location.hash])
+
+  return (
+    <div
+      id="ad-sets"
+      className="mt-6 rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]"
+    >
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+        <div>
+          <h3 className="font-thai text-amalfidark text-2xl font-bold">
+            Ad Sets
+          </h3>
+          <p className="font-thai text-base text-black">
+            จัดการกลุ่มโฆษณาและครีเอทีฟของแคมเปญนี้
+          </p>
+        </div>
+        <Link
+          to={`/campaign/${campaignId}/adset/new`}
+          className="bg-seaactive font-thai hover:bg-seadark flex items-center gap-1 rounded-[15px] px-4 py-2 text-base text-white transition-all hover:scale-105 hover:cursor-pointer"
+        >
+          <Plus className="h-5 w-5" />
+          เพิ่ม Ad Set
+        </Link>
+      </div>
+
+      {items === null ? (
+        <p className="font-thai mt-4 text-base text-[#8E98A8]">กำลังโหลด...</p>
+      ) : items.length === 0 ? (
+        <p className="font-thai mt-4 text-base text-[#8E98A8]">
+          ยังไม่มี Ad Set — เริ่มสร้าง Ad Set แรกของคุณ
+        </p>
+      ) : (
+        <div className="mt-5 flex flex-col gap-4">
+          {items.map(({ adSet, creatives, ads }) => (
+            <div
+              key={adSet.id}
+              className="rounded-lg border border-[#8E98A8] p-4"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedAdSets((prev) => ({
+                      ...prev,
+                      [adSet.id]: !prev[adSet.id],
+                    }))
+                  }
+                  className="flex flex-1 items-center gap-2 text-left hover:cursor-pointer"
+                >
+                  {expandedAdSets[adSet.id] ? (
+                    <ChevronUp className="h-4 w-4 shrink-0 text-[#8E98A8]" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 shrink-0 text-[#8E98A8]" />
+                  )}
+                  <div>
+                    <p className="font-thai text-lg font-bold text-black">
+                      {adSet.name}
+                    </p>
+                    <p className="font-thai text-base text-[#8E98A8]">
+                      {adSet.optimizationGoal}
+                    </p>
+                  </div>
+                </button>
+                <Link
+                  to={`/campaign/${campaignId}/adset/${adSet.id}/edit`}
+                  className="font-thai text-seadark hover:text-seadark-active flex items-center gap-1 text-base hover:cursor-pointer"
+                >
+                  <Pencil className="h-4 w-4" />
+                  แก้ไข
+                </Link>
+                <StatusPill
+                  style={getPushStatusBadge(
+                    !!adSet.metaAdSetId,
+                    adSet.metaStatus,
+                    adSet.metaEffectiveStatus,
+                  )}
+                />
+              </div>
+              {expandedAdSets[adSet.id] && <AdSetDetail adSet={adSet} />}
+              {(creatives.length > 0 || ads.length > 0) && (
+                <div className="mt-3 flex flex-col gap-2">
+                  {creatives.map((c) => (
+                    <div key={c.id}>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedCreatives((prev) => ({
+                              ...prev,
+                              [c.id]: !prev[c.id],
+                            }))
+                          }
+                          className="font-thai flex items-center gap-1 rounded-lg bg-[rgba(142,152,168,0.15)] px-3 py-1 text-base text-black hover:cursor-pointer"
+                        >
+                          {expandedCreatives[c.id] ? (
+                            <ChevronUp className="h-3.5 w-3.5" />
+                          ) : (
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          )}
+                          {c.name} · {c.format}
+                        </button>
+                        <Link
+                          to={`/campaign/${campaignId}/adset/${adSet.id}/creative/${c.id}/edit`}
+                          className="font-thai text-seadark hover:text-seadark-active flex items-center gap-1 text-sm hover:cursor-pointer"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          แก้ไข
+                        </Link>
+                      </div>
+                      {expandedCreatives[c.id] && (
+                        <CreativeDetail creative={c} />
+                      )}
+                    </div>
+                  ))}
+                  {ads.map((a) => (
+                    <div key={a.id}>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedAds((prev) => ({
+                              ...prev,
+                              [a.id]: !prev[a.id],
+                            }))
+                          }
+                          className="font-thai bg-sealight-active text-seadark-active flex items-center gap-1 rounded-lg px-3 py-1 text-base hover:cursor-pointer"
+                        >
+                          {expandedAds[a.id] ? (
+                            <ChevronUp className="h-3.5 w-3.5" />
+                          ) : (
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          )}
+                          {a.name}
+                          <StatusPill
+                            style={getPushStatusBadge(
+                              !!a.metaAdId,
+                              a.metaStatus,
+                              a.metaEffectiveStatus,
+                            )}
+                          />
+                        </button>
+                        <Link
+                          to={`/campaign/${campaignId}/adset/${adSet.id}/ad/${a.id}/edit`}
+                          className="font-thai text-seadark hover:text-seadark-active flex items-center gap-1 text-sm hover:cursor-pointer"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          แก้ไข
+                        </Link>
+                      </div>
+                      {expandedAds[a.id] &&
+                        (() => {
+                          const adCreative = creatives.find(
+                            (c) => c.id === a.creativeId,
+                          )
+                          return adCreative ? (
+                            <CreativeDetail creative={adCreative} />
+                          ) : null
+                        })()}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <Link
+                to={`/campaign/${campaignId}/adset/${adSet.id}/creative/new`}
+                className="font-thai text-seadark hover:text-seadark-active mt-3 flex items-center gap-1 text-base hover:cursor-pointer"
+              >
+                <Plus className="h-4 w-4" />
+                เพิ่มครีเอทีฟ
+              </Link>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function CampaignReport() {
   const { campaignId } = useParams()
   const mockCampaign = campaigns.find((c) => c.id === campaignId)
@@ -166,6 +551,61 @@ function CampaignReportView({
       : campaign.status,
   )
 
+  // Shadows campaign.meta the same way `status` shadows campaign.status —
+  // publish-to-meta/meta-status update this local copy in place rather than
+  // refetching the whole campaign.
+  const [meta, setMeta] = useState(campaign.meta)
+  const [isPublishing, setIsPublishing] = useState(false)
+  const [activateOpen, setActivateOpen] = useState(false)
+  const [isActivating, setIsActivating] = useState(false)
+  const metaBadge = getMetaStatusBadge(meta)
+  const isReviewIssue =
+    meta?.effectiveStatus === 'DISAPPROVED' ||
+    meta?.effectiveStatus === 'WITH_ISSUES'
+
+  const handlePublishToMeta = async () => {
+    setIsPublishing(true)
+    try {
+      const res = await postApiCampaignsIdPublishToMeta(
+        campaign.id,
+        withCredentials(),
+      )
+      if (res.status === 200) {
+        setMeta((prev) =>
+          prev
+            ? {
+                ...prev,
+                campaignId: res.data.metaCampaignId,
+                status: res.data.metaStatus,
+                effectiveStatus: res.data.metaEffectiveStatus,
+              }
+            : prev,
+        )
+      }
+    } finally {
+      setIsPublishing(false)
+    }
+  }
+
+  const handleActivateConfirm = async () => {
+    setIsActivating(true)
+    try {
+      const res = await postApiCampaignsIdMetaStatus(
+        campaign.id,
+        { status: 'ACTIVE' },
+        withCredentials(),
+      )
+      if (res.status === 200) {
+        setMeta((prev) =>
+          prev ? { ...prev, status: res.data.metaStatus } : prev,
+        )
+        setActivateOpen(false)
+      }
+    } finally {
+      setIsActivating(false)
+    }
+  }
+
   // Mock/demo campaigns (data/campaigns.ts) have no backing Campaign row to
   // ground a real AI call on, so they keep their static insights tuple; only
   // real (API) campaigns fetch AI-generated ones.
@@ -183,6 +623,135 @@ function CampaignReportView({
       }
     })
   }, [campaign.id, campaign.source])
+
+  // Real Meta Insights (distinct from the AI-written prose above). Reads
+  // stored/cached rows by default (refresh=false) — respects Meta's rate
+  // limits per Task 6's guidance; the "รีเฟรชข้อมูล" button below is the
+  // only thing that passes refresh=true, so a live Meta pull only happens
+  // when the user explicitly asks for one.
+  const [apiSummary, setApiSummary] = useState<{
+    reach: number
+    clicks: number
+    spend: number
+    ctr: number
+  } | null>(null)
+  const [apiDailyTrend, setApiDailyTrend] = useState<DailyTrendPoint[]>([])
+  const [apiChannelReach, setApiChannelReach] = useState<ChannelReach[]>([])
+  const [isRefreshingInsights, setIsRefreshingInsights] = useState(false)
+
+  // Pure fetch-and-compute, no setState of its own — the two call sites
+  // below (the mount effect and the manual refresh handler) each apply the
+  // result inline, matching the codebase's established
+  // fetch-on-mount-via-.then() convention (see Topbar.tsx's notification
+  // poll) rather than calling a setState-triggering function directly from
+  // inside a useEffect body.
+  const fetchInsightsData = useCallback(
+    async (refresh: boolean) => {
+      if (campaign.source !== 'api' || !meta?.campaignId) return null
+      const [dailyRes, breakdownRes] = await Promise.all([
+        getApiCampaignsIdInsights(
+          campaign.id,
+          { daily: 'true', ...(refresh && { refresh: 'true' }) },
+          withCredentials(),
+        ),
+        getApiCampaignsIdInsights(
+          campaign.id,
+          {
+            breakdowns: 'publisher_platform',
+            ...(refresh && { refresh: 'true' }),
+          },
+          withCredentials(),
+        ),
+      ])
+
+      let summary: typeof apiSummary = null
+      let dailyTrend: DailyTrendPoint[] = []
+      let channelReach: ChannelReach[] = []
+
+      if (dailyRes.status === 200) {
+        const rows = [...dailyRes.data].sort((a, b) =>
+          a.dateStart.localeCompare(b.dateStart),
+        )
+        dailyTrend = rows.map((r) => ({
+          date: r.dateStart.slice(5),
+          reach: r.reach,
+          spend: Number(r.spend),
+        }))
+        const totals = rows.reduce(
+          (acc, r) => ({
+            reach: acc.reach + r.reach,
+            clicks: acc.clicks + r.clicks,
+            impressions: acc.impressions + r.impressions,
+            spend: acc.spend + Number(r.spend),
+          }),
+          { reach: 0, clicks: 0, impressions: 0, spend: 0 },
+        )
+        summary = {
+          reach: totals.reach,
+          clicks: totals.clicks,
+          spend: totals.spend,
+          ctr:
+            totals.impressions > 0
+              ? Math.round((totals.clicks / totals.impressions) * 10000) / 100
+              : 0,
+        }
+      }
+
+      if (breakdownRes.status === 200) {
+        const byPlatform = new Map<string, number>()
+        for (const row of breakdownRes.data) {
+          if (
+            row.publisherPlatform !== 'facebook' &&
+            row.publisherPlatform !== 'instagram'
+          ) {
+            continue
+          }
+          byPlatform.set(
+            row.publisherPlatform,
+            (byPlatform.get(row.publisherPlatform) ?? 0) + row.reach,
+          )
+        }
+        channelReach = [...byPlatform.entries()].map(([platform, reach]) => ({
+          platform: platform as Platform,
+          reach,
+        }))
+      }
+
+      return { summary, dailyTrend, channelReach }
+    },
+    [campaign.id, campaign.source, meta?.campaignId],
+  )
+
+  useEffect(() => {
+    fetchInsightsData(false).then((result) => {
+      if (!result) return
+      setApiSummary(result.summary)
+      setApiDailyTrend(result.dailyTrend)
+      setApiChannelReach(result.channelReach)
+    })
+  }, [fetchInsightsData])
+
+  const handleRefreshInsights = async () => {
+    setIsRefreshingInsights(true)
+    try {
+      const result = await fetchInsightsData(true)
+      if (result) {
+        setApiSummary(result.summary)
+        setApiDailyTrend(result.dailyTrend)
+        setApiChannelReach(result.channelReach)
+      }
+    } finally {
+      setIsRefreshingInsights(false)
+    }
+  }
+
+  const displayReach = apiSummary?.reach ?? campaign.reach
+  const displayClicks = apiSummary?.clicks ?? campaign.clicks
+  const displaySpend = apiSummary?.spend ?? campaign.adSpend
+  const displayDailyTrend =
+    campaign.source === 'api' ? apiDailyTrend : campaign.dailyTrend
+  const displayChannelReach =
+    campaign.source === 'api' ? apiChannelReach : campaign.channelReach
 
   const REPORT_STATUS_TO_API: Record<ReportStatus, ApiCampaignStatus> = {
     active: 'ACTIVE',
@@ -240,6 +809,18 @@ function CampaignReportView({
             {status !== 'stopped' &&
               ` · ระยะเวลา: เหลืออีก ${campaign.daysRemaining} วัน`}
           </p>
+          {campaign.source === 'api' && (
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusPill style={metaBadge} />
+              {isReviewIssue && (
+                <span className="flex items-center gap-1 text-base text-[#be2c2c]">
+                  <TriangleAlert className="h-5 w-5 shrink-0" />
+                  {meta?.reviewFeedback ??
+                    'Meta ตรวจสอบแล้วพบปัญหา กรุณาตรวจสอบครีเอทีฟ'}
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <div className="font-thai flex flex-wrap items-center gap-3 text-xl">
           <Link
@@ -294,6 +875,29 @@ function CampaignReportView({
               เริ่มแคมเปญใหม่
             </button>
           )}
+          {campaign.source === 'api' && !meta?.campaignId && (
+            <button
+              type="button"
+              disabled={isPublishing}
+              onClick={handlePublishToMeta}
+              className="text-seadark hover:text-seadark-active flex items-center gap-2 hover:cursor-pointer hover:font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <UploadCloud className="h-6 w-6" />
+              {isPublishing ? 'กำลังเผยแพร่...' : 'เผยแพร่ไปที่ Meta'}
+            </button>
+          )}
+          {campaign.source === 'api' &&
+            meta?.campaignId &&
+            meta.status !== 'ACTIVE' && (
+              <button
+                type="button"
+                onClick={() => setActivateOpen(true)}
+                className="flex items-center gap-2 text-[#519b5c] hover:cursor-pointer hover:font-semibold hover:text-[#3f7c48]"
+              >
+                <Zap className="h-6 w-6" />
+                เปิดใช้งานบน Meta
+              </button>
+            )}
         </div>
       </div>
 
@@ -302,15 +906,15 @@ function CampaignReportView({
         <MetricCard
           icon={<Users className="text-amalfi h-8 w-8" />}
           label="ยอดเข้าถึง"
-          value={campaign.reach.toLocaleString()}
-          trend="+8%"
+          value={displayReach.toLocaleString()}
+          trend={campaign.source === 'api' ? undefined : '+8%'}
           caption="คนเห็นโฆษณาของคุณ"
         />
         <MetricCard
           icon={<MousePointerClick className="text-amalfi h-8 w-8" />}
           label="คลิก"
-          value={campaign.clicks.toLocaleString()}
-          trend="+2%"
+          value={displayClicks.toLocaleString()}
+          trend={campaign.source === 'api' ? undefined : '+2%'}
           caption="คนที่สนใจและกดดูร้าน"
         />
         <MetricCard
@@ -322,7 +926,7 @@ function CampaignReportView({
         <MetricCard
           icon={<img src={cash} alt="" className="h-8 w-8" />}
           label="ยอดใช้จ่ายโฆษณา"
-          value={`฿${campaign.adSpend.toLocaleString()}`}
+          value={`฿${displaySpend.toLocaleString()}`}
           caption="ของงบรายเดือน"
         />
       </div>
@@ -405,10 +1009,23 @@ function CampaignReportView({
                 การเข้าถึง vs. งบที่ใช้
               </p>
             </div>
+            {campaign.source === 'api' && meta?.campaignId && (
+              <button
+                type="button"
+                disabled={isRefreshingInsights}
+                onClick={handleRefreshInsights}
+                className="font-thai text-seadark hover:text-seadark-active flex items-center gap-1 text-base hover:cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${isRefreshingInsights ? 'animate-spin' : ''}`}
+                />
+                รีเฟรชข้อมูล
+              </button>
+            )}
           </div>
-          {campaign.dailyTrend.length > 0 ? (
+          {displayDailyTrend.length > 0 ? (
             <TrendChart
-              data={indexToFirst(campaign.dailyTrend, ['reach', 'spend'])}
+              data={indexToFirst(displayDailyTrend, ['reach', 'spend'])}
               series={reachVsSpendSeries}
               valueFormatter={percentFormatter}
             />
@@ -422,11 +1039,11 @@ function CampaignReportView({
           <h3 className="font-thai text-amalfidark text-2xl font-bold">
             ช่องทางที่ทำงาน
           </h3>
-          {campaign.channelReach.length > 0 ? (
+          {displayChannelReach.length > 0 ? (
             <DonutChart
               centerLabel="100%"
               centerSublabel="การเข้าถึง"
-              segments={campaign.channelReach.map((c) => ({
+              segments={displayChannelReach.map((c) => ({
                 key: c.platform,
                 label: platformBadgeStyles[c.platform].label,
                 value: c.reach,
@@ -441,41 +1058,39 @@ function CampaignReportView({
         </div>
       </div>
 
-      {/** Creatives */}
-      <div className="mt-6 rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
-        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-          <div>
-            <h3 className="font-thai text-amalfidark text-2xl font-bold">
-              ครีเอทีฟที่กำลังทำงาน
-            </h3>
-            <p className="font-thai text-base text-black">
-              AI ทดสอบ A/B/C อัตโนมัติ เพื่อหาว่าใบไหนได้ผลที่สุด
-            </p>
+      {/** Ad Sets (api campaigns) / Creatives (mock/demo campaigns) */}
+      {campaign.source === 'api' ? (
+        <AdSetsSection campaignId={campaign.id} />
+      ) : (
+        <div className="mt-6 rounded-xl border border-[#8E98A8] bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+            <div>
+              <h3 className="font-thai text-amalfidark text-2xl font-bold">
+                ครีเอทีฟที่กำลังทำงาน
+              </h3>
+              <p className="font-thai text-base text-black">
+                AI ทดสอบ A/B/C อัตโนมัติ เพื่อหาว่าใบไหนได้ผลที่สุด
+              </p>
+            </div>
           </div>
-          <Link
-            to={`/campaign/${campaign.id}/creative/new`}
-            className="bg-seaactive font-thai hover:bg-seadark flex items-center gap-1 rounded-[15px] px-4 py-2 text-base text-white transition-all hover:scale-105 hover:cursor-pointer"
-          >
-            <Plus className="h-5 w-5" />
-            สร้างครีเอทีฟใหม่
-          </Link>
+          <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {creatives.map((creative) => (
+              <CreativeCard key={creative.rank} creative={creative} />
+            ))}
+          </div>
         </div>
-        <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {creatives.map((creative) => (
-            <CreativeCard key={creative.rank} creative={creative} />
-          ))}
-          <Link
-            to={`/campaign/${campaign.id}/creative/new`}
-            className="font-thai flex h-69 w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#8E98A8] bg-[rgba(142,152,168,0.1)] text-base text-[#8E98A8] hover:cursor-pointer hover:border-[#6B7280] hover:text-[#6B7280]"
-          >
-            <Plus className="h-6 w-6" />
-            {creatives.length === 0
-              ? 'ยังไม่มีครีเอทีฟ · สร้างใหม่'
-              : 'สร้างครีเอทีฟใหม่'}
-          </Link>
-        </div>
-      </div>
+      )}
       <div className="h-24 w-full shrink-0"></div>
+
+      <ConfirmDialog
+        open={activateOpen}
+        title="ยืนยันการเปิดใช้งานบน Meta"
+        message="แคมเปญนี้จะเริ่มแสดงผลจริงและใช้จ่ายงบประมาณตามที่ตั้งไว้ทันที ต้องการดำเนินการต่อหรือไม่?"
+        confirmLabel="เปิดใช้งาน"
+        confirmDisabled={isActivating}
+        onConfirm={handleActivateConfirm}
+        onCancel={() => setActivateOpen(false)}
+      />
     </div>
   )
 }

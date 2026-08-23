@@ -14,8 +14,9 @@ import CampaignCreate from '@/pages/campaignCreate'
 import CampaignProcessing from '@/pages/campaignProcessing'
 import CampaignReview from '@/pages/campaignReview'
 import CampaignEdit from '@/pages/campaignEdit'
-import CreativeCreate from '@/pages/creativeCreate'
-import CreativeProcessing from '@/pages/creativeProcessing'
+import AdSetCreate from '@/pages/adSetCreate'
+import AdCreativeCreate from '@/pages/adCreativeCreate'
+import AdCreate from '@/pages/adCreate'
 import Ai from '@/pages/ai'
 import Overview from '@/pages/overview'
 import Integration from '@/pages/integration'
@@ -106,12 +107,28 @@ const App = () => {
         />
         <Route path="/campaign/:campaignId/edit" element={<CampaignEdit />} />
         <Route
-          path="/campaign/:campaignId/creative/new"
-          element={<CreativeCreate />}
+          path="/campaign/:campaignId/adset/new"
+          element={<AdSetCreate />}
         />
         <Route
-          path="/campaign/:campaignId/creative/new/processing"
-          element={<CreativeProcessing />}
+          path="/campaign/:campaignId/adset/:adSetId/edit"
+          element={<AdSetCreate />}
+        />
+        <Route
+          path="/campaign/:campaignId/adset/:adSetId/creative/new"
+          element={<AdCreativeCreate />}
+        />
+        <Route
+          path="/campaign/:campaignId/adset/:adSetId/creative/:creativeId/edit"
+          element={<AdCreativeCreate />}
+        />
+        <Route
+          path="/campaign/:campaignId/adset/:adSetId/ad/new"
+          element={<AdCreate />}
+        />
+        <Route
+          path="/campaign/:campaignId/adset/:adSetId/ad/:adId/edit"
+          element={<AdCreate />}
         />
         <Route path="/ai" element={<Ai />} />
         <Route path="/overview" element={<Overview />} />

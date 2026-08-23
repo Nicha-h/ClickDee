@@ -38,6 +38,8 @@ You can propose creating, updating, or deleting a campaign using the stage_creat
 - For delete: which campaign, by name.
 Always tell the user that, by default, a new campaign will be saved as a draft unless they explicitly choose to publish it when confirming. Never claim you have already created, updated, or deleted anything — only that you are proposing it and waiting for their confirmation. Only call a staging tool once you actually have the information needed (name, budget, start date, caption for a create); ask for anything missing instead of inventing values.
 
+When creating a campaign, stage_create_campaign also accepts optional Meta-specific fields (objective, specialAdCategories, campaignBudgetOptimization, creativeFormat, ctaType) — include them only when the conversation actually makes them clear (e.g. the user says they want more website visits, or specifically asks for a Reels or carousel ad); otherwise omit them and a sensible default is used (broad "traffic" objective, Meta's automatic audience-finding, campaign-level budget). Never ask a long checklist of Meta-jargon questions up front — infer what you can from the business goal the user already described, and only ask a clarifying question when it would meaningfully change the outcome. If a creative format is discussed, mention in your reply that actual images/video for the ad are added in a separate step after confirming, since those can't be attached through chat.
+
 # Format
 Most replies should be a single message. If you genuinely have more than one distinct point to make (e.g. a short acknowledgment, then a data table, then a follow-up question) and splitting them into separate chat bubbles would be clearer, put a line containing exactly [[NEXT]] and nothing else between each part. Don't overuse this.
 If a staging tool's result includes research findings and you revise the caption based on them, wrap the exact final caption in [[CAPTION]]...[[/CAPTION]] somewhere in your reply, with nothing else inside the markers — these markers are stripped before the user sees your reply.`
@@ -50,7 +52,7 @@ const STAGE_CREATE_CAMPAIGN_TOOL: OpenAI.Chat.Completions.ChatCompletionFunction
     function: {
       name: 'stage_create_campaign',
       description:
-        'Proposes creating a new advertising campaign. Does NOT create it — only stages it for the user to review and explicitly confirm in the chat UI. Call this once you have a name, budget (THB), start date, and a caption you plan to use.',
+        'Proposes creating a new advertising campaign. Does NOT create it — only stages it for the user to review and explicitly confirm in the chat UI. Call this once you have a name, budget (THB), start date, and a caption you plan to use. objective/specialAdCategories/campaignBudgetOptimization/creativeFormat/ctaType are optional Meta-specific fields — include them when the conversation makes them clear, but never guess or invent them; ask only if the user seems to want a specific ad format, otherwise sensible defaults are applied automatically.',
       parameters: {
         type: 'object',
         properties: {
@@ -70,6 +72,63 @@ const STAGE_CREATE_CAMPAIGN_TOOL: OpenAI.Chat.Completions.ChatCompletionFunction
           caption: {
             type: 'string',
             description: 'The ad caption/copy you plan to use.',
+          },
+          objective: {
+            type: 'string',
+            enum: [
+              'OUTCOME_AWARENESS',
+              'OUTCOME_TRAFFIC',
+              'OUTCOME_ENGAGEMENT',
+              'OUTCOME_LEADS',
+              'OUTCOME_SALES',
+              'OUTCOME_APP_PROMOTION',
+            ],
+            description:
+              'The Meta campaign objective that best matches what the user wants (e.g. more website visits -> OUTCOME_TRAFFIC, more sales -> OUTCOME_SALES). Omit if unclear — a reasonable default is used.',
+          },
+          specialAdCategories: {
+            type: 'array',
+            items: {
+              type: 'string',
+              enum: [
+                'HOUSING',
+                'EMPLOYMENT',
+                'CREDIT',
+                'ISSUES_ELECTIONS_POLITICS',
+              ],
+            },
+            description:
+              "Only include if the user's business is housing, employment, credit, or political/social-issue ads — Meta legally requires this declaration for those categories. Omit entirely otherwise.",
+          },
+          campaignBudgetOptimization: {
+            type: 'boolean',
+            description:
+              'Whether Meta should manage the budget at the campaign level (true, the default and recommended for most SMEs) vs per ad set (false).',
+          },
+          creativeFormat: {
+            type: 'string',
+            enum: ['image_post', 'video_post', 'reels', 'carousel', 'story'],
+            description:
+              "The ad format the user wants, if they mentioned one (e.g. 'Reels' -> reels, 'carousel of products' -> carousel). Omit if not discussed — actual creative upload happens in a separate step since images/video can't be attached through chat.",
+          },
+          ctaType: {
+            type: 'string',
+            enum: [
+              'SHOP_NOW',
+              'LEARN_MORE',
+              'SIGN_UP',
+              'BOOK_TRAVEL',
+              'CONTACT_US',
+              'DOWNLOAD',
+              'GET_OFFER',
+              'SUBSCRIBE',
+              'WATCH_MORE',
+              'MESSAGE_PAGE',
+              'CALL_NOW',
+              'GET_QUOTE',
+            ],
+            description:
+              'The call-to-action button the user wants on the ad, if mentioned.',
           },
         },
         required: ['name', 'budget', 'startDate', 'caption'],
@@ -140,6 +199,41 @@ const StageCreateCampaignArgsSchema = z.object({
     .refine((s) => !Number.isNaN(Date.parse(s)), 'endDate is not a valid date')
     .optional(),
   caption: z.string().min(1).max(2000),
+  objective: z
+    .enum([
+      'OUTCOME_AWARENESS',
+      'OUTCOME_TRAFFIC',
+      'OUTCOME_ENGAGEMENT',
+      'OUTCOME_LEADS',
+      'OUTCOME_SALES',
+      'OUTCOME_APP_PROMOTION',
+    ])
+    .optional(),
+  specialAdCategories: z
+    .array(
+      z.enum(['HOUSING', 'EMPLOYMENT', 'CREDIT', 'ISSUES_ELECTIONS_POLITICS']),
+    )
+    .optional(),
+  campaignBudgetOptimization: z.boolean().optional(),
+  creativeFormat: z
+    .enum(['image_post', 'video_post', 'reels', 'carousel', 'story'])
+    .optional(),
+  ctaType: z
+    .enum([
+      'SHOP_NOW',
+      'LEARN_MORE',
+      'SIGN_UP',
+      'BOOK_TRAVEL',
+      'CONTACT_US',
+      'DOWNLOAD',
+      'GET_OFFER',
+      'SUBSCRIBE',
+      'WATCH_MORE',
+      'MESSAGE_PAGE',
+      'CALL_NOW',
+      'GET_QUOTE',
+    ])
+    .optional(),
 })
 
 const StageUpdateCampaignArgsSchema = z.object({

@@ -1,0 +1,17 @@
+components/
+  - navbar.tsx:174 — "come fix this later" (vague, no detail) [OPEN — AI_TOKEN/AI_TOKEN_MAX in navbar.tsx are still hardcoded (100/200), not wired to real usage]
+
+  pages/
+  - home.tsx:133 — AI Agent Status: make it reflect real status (active/inactive/error) with colors [OMITTED — real-time status would need Meta Business API permissions we don't have; staying a placeholder for MVP]
+  - home.tsx:162 — replace placeholder metrics with real-time data (variable-driven, not hardcoded text) [OMITTED — reach/clicks/ad spend/ROI are Meta Ads Insights metrics, no Meta Business API permission to pull real values]
+  - home.tsx:345 — wire up real date-range selection for the sales chart [DONE (scoped down) — no Sale/Order model exists in the backend, so this stays mocked; salesMockData.ts now generates dates/labels relative to today and computes the vs-previous-period % from the data instead of a hardcoded string. Real sales tracking is a separate future task.]
+  - home.tsx:413 — load actual AI recommendations [DONE (hybrid) — GET /api/ai/recommendations generates real Thai suggestions from the user's actual campaigns (schedule/budget/status/caption only, never fabricated performance numbers) when they have any; users with 0 real campaigns still see the original 2 demo cards, now labeled with a "ตัวอย่าง" badge]
+  - overview.tsx:126 — wire up real date-range filtering [OMITTED — filters the same Meta-sourced stat cards/trend chart as home.tsx:162, blocked for the same reason]
+  - overview.tsx:273 — replace with real AI-generated insights [OPEN — AI generation itself isn't blocked (backend cascades across Gemini/Groq, see backend/CLAUDE.md's AI provider cascade section), but insights will stay shallow until real underlying (partly Meta) data exists]
+  - overview.tsx:311 — compute real top-campaigns ranking [OMITTED — needs reach + ROI (Meta-blocked); only the orders column could come from our own sales data]
+  - overview.tsx:352 — real customer-segment breakdown chart [OMITTED — age-group breakdown is Meta Audience Insights data, no permission]
+
+
+Adjust the information for the campaign and the ad to actually resemble the one for facebook. 
+Add account information detail function
+Try to connect meta apis

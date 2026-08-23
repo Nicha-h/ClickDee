@@ -14,12 +14,15 @@ import facebook from '@/assets/logos/facebook.svg'
 import defaultCampaignImage from '@/assets/decorative/default campaign.png'
 import StepIndicator from '@/components/stepIndicator'
 import ConfirmDialog from '@/components/confirmDialog'
+import { useGoBack } from '@/components/useGoBack'
 import {
   postApiAiActionsIdConfirm,
   postApiAiActionsIdCancel,
   getApiCampaignsId,
   patchApiCampaignsId,
   deleteApiCampaignsId,
+  postApiCampaignsIdPublishToMeta,
+  postApiCampaignsIdMetaStatus,
 } from '@/api/generated/client'
 import type {
   PendingAiAction,
@@ -49,6 +52,30 @@ function ExampleBadge() {
       ตัวอย่าง
     </span>
   )
+}
+
+// Best-effort: pushes the freshly-launched campaign to Meta (PAUSED, then
+// ACTIVE) so "launch" in the wizard actually reaches Meta, not just the local
+// DB. Swallows failures (e.g. no objective staged, Meta not configured) since
+// the local launch must still succeed either way — campaignReport.tsx's own
+// "Publish to Meta" button (shown whenever !meta?.campaignId) is the retry
+// affordance if this silently didn't work.
+async function launchCampaignToMeta(campaignId: string) {
+  try {
+    const publishRes = await postApiCampaignsIdPublishToMeta(
+      campaignId,
+      withCredentials(),
+    )
+    if (publishRes.status === 200) {
+      await postApiCampaignsIdMetaStatus(
+        campaignId,
+        { status: 'ACTIVE' },
+        withCredentials(),
+      )
+    }
+  } catch (err) {
+    console.error('Failed to publish campaign to Meta', err)
+  }
 }
 
 function CampaignReview() {
@@ -97,6 +124,9 @@ function PendingActionReview({
         withCredentials(),
       )
       if (res.status === 200) {
+        if (publish && res.data.campaignId) {
+          await launchCampaignToMeta(res.data.campaignId)
+        }
         navigate(
           res.data.campaignId
             ? `/campaign/${res.data.campaignId}/report`
@@ -127,6 +157,7 @@ function PendingActionReview({
       budget={pendingAction.payload.budget}
       caption={pendingAction.payload.caption}
       name={pendingAction.payload.name}
+      contentWarnings={pendingAction.contentWarnings}
       isResolving={isResolving}
       error={error}
       onLaunch={() => handleLaunch(true)}
@@ -194,6 +225,7 @@ function DraftCampaignReview({ campaignId }: { campaignId: string }) {
         withCredentials(),
       )
       if (res.status === 200) {
+        await launchCampaignToMeta(campaignId)
         navigate(`/campaign/${campaignId}/report`)
       } else {
         setError('ไม่สามารถเปิดตัวแคมเปญได้ กรุณาลองใหม่อีกครั้ง')
@@ -251,6 +283,7 @@ function CampaignReviewLayout({
   budget,
   caption,
   name,
+  contentWarnings,
   isResolving,
   error,
   onLaunch,
@@ -261,13 +294,14 @@ function CampaignReviewLayout({
   budget?: number
   caption?: string | null
   name?: string
+  contentWarnings?: string[]
   isResolving: boolean
   error: string | null
   onLaunch: () => void
   secondaryAction?: { label: string; onClick: () => void }
   tertiaryAction: { label: string; onClick: () => void }
 }) {
-  const navigate = useNavigate()
+  const goBack = useGoBack('/campaign')
 
   // Illustrative-only budget slider — not tied to the real campaign budget
   // above, which comes from what the AI already proposed.
@@ -298,7 +332,7 @@ function CampaignReviewLayout({
       <div className="flex items-center gap-4">
         <button
           type="button"
-          onClick={() => navigate('/campaign')}
+          onClick={goBack}
           className="border-amalfidark flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2"
         >
           <ChevronLeft className="text-amalfidark h-7 w-7" />
@@ -337,6 +371,16 @@ function CampaignReviewLayout({
                 ))}
               </dl>
             </div>
+            {contentWarnings && contentWarnings.length > 0 && (
+              <ul className="font-thai border-yellow-400/60 bg-yellow-50 mt-4 space-y-1 rounded-lg border p-3 text-base text-yellow-800">
+                {contentWarnings.map((warning) => (
+                  <li key={warning} className="flex gap-1.5">
+                    <span aria-hidden="true">⚠</span>
+                    <span>{warning}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">

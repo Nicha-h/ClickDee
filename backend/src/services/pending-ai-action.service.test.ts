@@ -32,6 +32,13 @@ vi.mock('./campaign.service.js', () => ({
   deleteCampaign: deleteCampaignMock,
 }))
 
+const { createAdSetMock } = vi.hoisted(() => ({
+  createAdSetMock: vi.fn(),
+}))
+vi.mock('./ad-set.service.js', () => ({
+  createAdSet: createAdSetMock,
+}))
+
 const {
   resolveNotificationsForActionMock,
   updateNotificationLinkForActionMock,
@@ -80,6 +87,7 @@ beforeEach(() => {
   createCampaignMock.mockReset()
   updateCampaignMock.mockReset()
   deleteCampaignMock.mockReset()
+  createAdSetMock.mockReset()
   resolveNotificationsForActionMock.mockReset()
   updateNotificationLinkForActionMock.mockReset()
 })
@@ -170,6 +178,11 @@ describe('confirmPendingAction', () => {
       '/campaign/campaign-1',
     )
     expect(resolveNotificationsForActionMock).toHaveBeenCalledWith('action-1')
+    expect(createAdSetMock).toHaveBeenCalledWith(
+      'user-1',
+      'campaign-1',
+      expect.objectContaining({ optimizationGoal: 'LINK_CLICKS' }),
+    )
   })
 
   it('CREATE + publish=true creates an ACTIVE campaign', async () => {

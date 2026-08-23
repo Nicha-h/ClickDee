@@ -289,6 +289,16 @@ function PendingActionCard({
           ))}
         </dl>
       )}
+      {action.contentWarnings.length > 0 && (
+        <ul className="font-thai border-yellow-400/60 bg-yellow-50 mt-3 space-y-1 rounded-lg border p-2 text-sm text-yellow-800">
+          {action.contentWarnings.map((warning) => (
+            <li key={warning} className="flex gap-1.5">
+              <span aria-hidden="true">⚠</span>
+              <span>{warning}</span>
+            </li>
+          ))}
+        </ul>
+      )}
       {action.type !== 'DELETE' && (
         <label className="font-thai mt-3 flex items-center gap-2 text-base text-black">
           <input

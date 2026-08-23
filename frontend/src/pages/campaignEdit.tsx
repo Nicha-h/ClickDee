@@ -16,6 +16,7 @@ import { campaigns, platformBadgeStyles } from '@/data/campaigns'
 import { getApiCampaignsId, patchApiCampaignsId } from '@/api/generated/client'
 import type { Campaign as ApiCampaign } from '@/api/generated/client'
 import { withCredentials } from '@/lib/userId'
+import { useGoBack } from '@/components/useGoBack'
 
 const draftAgeRange = '22–38 ปี'
 const forecast = {
@@ -71,6 +72,7 @@ const API_STATUS_LABELS: Record<ApiCampaign['status'], string> = {
 
 function ApiCampaignEditView({ campaign }: { campaign: ApiCampaign }) {
   const navigate = useNavigate()
+  const goBack = useGoBack(`/campaign/${campaign.id}/report`)
   const [name, setName] = useState(campaign.name)
   const [caption, setCaption] = useState(campaign.caption ?? '')
   const [budget, setBudget] = useState(campaign.budget)
@@ -117,7 +119,7 @@ function ApiCampaignEditView({ campaign }: { campaign: ApiCampaign }) {
       <div className="flex items-center gap-4">
         <button
           type="button"
-          onClick={() => navigate(`/campaign/${campaign.id}/report`)}
+          onClick={goBack}
           className="border-amalfidark flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2"
         >
           <ChevronLeft className="text-amalfidark h-7 w-7" />
@@ -282,6 +284,7 @@ function CampaignEditView({
   campaign: (typeof campaigns)[number]
 }) {
   const navigate = useNavigate()
+  const goBack = useGoBack('/campaign')
   const creatives = campaign.creatives
 
   const [days, setDays] = useState(campaign.daysRemaining)
@@ -313,7 +316,7 @@ function CampaignEditView({
       <div className="flex items-center gap-4">
         <button
           type="button"
-          onClick={() => navigate('/campaign')}
+          onClick={goBack}
           className="border-amalfidark flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2"
         >
           <ChevronLeft className="text-amalfidark h-7 w-7" />

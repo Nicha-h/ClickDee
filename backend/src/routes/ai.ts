@@ -34,6 +34,10 @@ import {
   isAiConfigured,
 } from '../lib/openai.js'
 import { requireAuth, type AuthVariables } from '../middleware/auth.js'
+import {
+  screenCaptionContent,
+  captionWarningMessages,
+} from '../lib/caption-content-screen.js'
 import type {
   MessageModel,
   PendingAiActionModel,
@@ -46,13 +50,17 @@ type MessageWithPendingAction = MessageModel & {
 }
 
 function serializePendingAction(action: PendingAiActionModel) {
+  const payload = action.payload as Record<string, unknown>
+  const caption =
+    typeof payload.caption === 'string' ? payload.caption : undefined
   return {
     id: action.id,
     type: action.type,
     targetCampaignId: action.targetCampaignId,
-    payload: action.payload as Record<string, unknown>,
+    payload,
     status: action.status,
     createdAt: action.createdAt.toISOString(),
+    contentWarnings: captionWarningMessages(screenCaptionContent(caption)),
   }
 }
 

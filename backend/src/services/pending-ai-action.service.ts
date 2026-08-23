@@ -1,8 +1,51 @@
 import { prisma } from '../db/client.js'
 import * as campaignService from './campaign.service.js'
+import * as adSetService from './ad-set.service.js'
 import * as notificationService from './notification.service.js'
 import { PendingActionPayloadSchema } from '../schemas/pending-ai-action.schema.js'
 import type { PendingActionType, Prisma } from '../generated/prisma/client.js'
+import type { PendingActionPayload } from '../schemas/pending-ai-action.schema.js'
+import type { z } from '@hono/zod-openapi'
+import type { OptimizationGoalEnum } from '../schemas/ad-set.schema.js'
+
+type OptimizationGoal = z.infer<typeof OptimizationGoalEnum>
+
+// Maps a chat-staged objective to a reasonable default ad-set optimization
+// goal, since the AI staging flow only proposes a campaign — the cascaded
+// default ad set below never asks the user for this separately.
+const OPTIMIZATION_GOAL_BY_OBJECTIVE: Record<string, OptimizationGoal> = {
+  OUTCOME_AWARENESS: 'REACH',
+  OUTCOME_TRAFFIC: 'LINK_CLICKS',
+  OUTCOME_ENGAGEMENT: 'LINK_CLICKS',
+  OUTCOME_LEADS: 'LEAD_GENERATION',
+  OUTCOME_SALES: 'OFFSITE_CONVERSIONS',
+  OUTCOME_APP_PROMOTION: 'APP_INSTALLS',
+}
+
+// Creates a single default Advantage+ ad set under a freshly AI-staged
+// campaign, so the local draft hierarchy is one step closer to
+// publish-ready without asking the SME a checklist of Meta jargon in chat.
+// Deliberately does NOT create an AdCreative/Ad here — every supported
+// format needs an uploaded image/video, and media can't be attached through
+// a chat tool call; that's a manual follow-up step (see routes/media.ts and
+// routes/ad-creatives.ts), not something this cascade can fake around.
+async function createDefaultAdSet(
+  userId: string,
+  campaignId: string,
+  payload: PendingActionPayload,
+) {
+  const optimizationGoal: OptimizationGoal = payload.objective
+    ? (OPTIMIZATION_GOAL_BY_OBJECTIVE[payload.objective] ?? 'LINK_CLICKS')
+    : 'LINK_CLICKS'
+
+  await adSetService.createAdSet(userId, campaignId, {
+    name: `${payload.name ?? 'Campaign'} - Ad Set`,
+    optimizationGoal,
+    billingEvent: 'IMPRESSIONS',
+    targeting: { targeting_automation: { advantage_audience: 1 } },
+    advantagePlacements: true,
+  })
+}
 
 const MAX_PENDING_PER_USER = 5
 const PENDING_TTL_MS = 24 * 60 * 60 * 1000
@@ -127,6 +170,14 @@ export async function confirmPendingAction(
   let targetGone = false
 
   if (action.type === 'CREATE') {
+    // THB baht -> satang (Meta's minor-unit budget fields). A fixed
+    // start/end schedule reads as a lifetime budget; an open-ended one reads
+    // as a daily budget — the AI staging flow only ever proposes one THB
+    // figure, so this picks the more sensible Meta-side home for it rather
+    // than asking the user to separately specify daily vs lifetime in chat.
+    const budgetMinorUnits = payload.budget
+      ? Math.round(payload.budget * 100)
+      : undefined
     const campaign = await campaignService.createCampaign(userId, {
       name: payload.name!,
       caption: payload.caption,
@@ -134,6 +185,12 @@ export async function confirmPendingAction(
       startDate: payload.startDate!,
       endDate: payload.endDate ?? undefined,
       status: publish ? 'ACTIVE' : 'DRAFT',
+      objective: payload.objective,
+      specialAdCategories: payload.specialAdCategories ?? [],
+      campaignBudgetOptimization: payload.campaignBudgetOptimization ?? true,
+      ...(payload.endDate
+        ? { lifetimeBudget: budgetMinorUnits }
+        : { dailyBudget: budgetMinorUnits }),
     })
     campaignId = campaign.id
     // Persist the created campaign's id onto the action itself (not just the
@@ -143,6 +200,12 @@ export async function confirmPendingAction(
       where: { id },
       data: { targetCampaignId: campaignId },
     })
+    // Local-only cascade — no Meta API call happens here (see
+    // meta-publish.service.ts for the only code paths that do). A default
+    // ad set is always safe to create since it needs no media; an
+    // AdCreative/Ad is deliberately NOT cascaded here even if creativeFormat
+    // was staged, since every format needs an uploaded image/video first.
+    await createDefaultAdSet(userId, campaignId, payload)
   } else if (action.type === 'UPDATE') {
     const result = await campaignService.updateCampaign(
       userId,
