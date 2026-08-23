@@ -23,7 +23,12 @@ import {
 import { campaigns, platformBadgeStyles } from '@/data/campaigns'
 import type { Creative, CampaignItem } from '@/data/campaigns'
 import CampaignReportSkeleton from '@/components/campaignReportSkeleton'
-import { getApiCampaignsId, patchApiCampaignsId } from '@/api/generated/client'
+import { Skeleton } from '@/components/skeleton'
+import {
+  getApiCampaignsId,
+  patchApiCampaignsId,
+  getApiAiCampaignsIdInsights,
+} from '@/api/generated/client'
 import type { CampaignStatus as ApiCampaignStatus } from '@/api/generated/client'
 import { toCampaignItem } from '@/lib/campaignAdapters'
 import { withCredentials } from '@/lib/userId'
@@ -145,6 +150,9 @@ function CampaignReport() {
   return <CampaignReportView campaign={campaign} budgetPct={budgetPct} />
 }
 
+type InsightsState =
+  { status: 'loading' } | { status: 'loaded'; insights: string[] }
+
 function CampaignReportView({
   campaign,
   budgetPct,
@@ -157,6 +165,24 @@ function CampaignReportView({
       ? 'stopped'
       : campaign.status,
   )
+
+  // Mock/demo campaigns (data/campaigns.ts) have no backing Campaign row to
+  // ground a real AI call on, so they keep their static insights tuple; only
+  // real (API) campaigns fetch AI-generated ones.
+  const [insightsState, setInsightsState] = useState<InsightsState>(
+    campaign.source === 'api'
+      ? { status: 'loading' }
+      : { status: 'loaded', insights: campaign.insights },
+  )
+
+  useEffect(() => {
+    if (campaign.source !== 'api') return
+    getApiAiCampaignsIdInsights(campaign.id, withCredentials()).then((res) => {
+      if (res.status === 200) {
+        setInsightsState({ status: 'loaded', insights: res.data.insights })
+      }
+    })
+  }, [campaign.id, campaign.source])
 
   const REPORT_STATUS_TO_API: Record<ReportStatus, ApiCampaignStatus> = {
     active: 'ACTIVE',
@@ -224,13 +250,22 @@ function CampaignReportView({
             แก้ไข
           </Link>
           {status === 'active' && (
-            <button
-              onClick={() => handleSetStatus('paused')}
-              className="hover:text-amalfidark flex items-center gap-2 text-[#8E98A8] hover:cursor-pointer hover:font-semibold"
-            >
-              <Play className="h-6 w-6" />
-              กำลังทำงาน
-            </button>
+            <>
+              <button
+                onClick={() => handleSetStatus('paused')}
+                className="hover:text-amalfidark flex items-center gap-2 text-[#8E98A8] hover:cursor-pointer hover:font-semibold"
+              >
+                <Pause className="h-6 w-6" />
+                หยุดชั่วคราว
+              </button>
+              <button
+                onClick={() => handleSetStatus('stopped')}
+                className="border-[] flex items-center gap-1 rounded-[15px] border px-3 py-1 text-lg text-[#be2c2c] hover:cursor-pointer hover:font-semibold"
+              >
+                <Square className="h-4 w-4" />
+                หยุดแคมเปญ
+              </button>
+            </>
           )}
           {status === 'paused' && (
             <>
@@ -238,8 +273,8 @@ function CampaignReportView({
                 onClick={() => handleSetStatus('active')}
                 className="flex items-center gap-2 text-[#8E98A8] hover:cursor-pointer hover:font-semibold"
               >
-                <Pause className="h-6 w-6" />
-                หยุดชั่วคราว
+                <Play className="h-6 w-6" />
+                เริ่มแคมเปญ
               </button>
               <button
                 onClick={() => handleSetStatus('stopped')}
@@ -333,17 +368,28 @@ function CampaignReportView({
           น้องดี AI สรุปแคมเปญนี้ให้
         </h3>
         <div className="flex flex-col flex-wrap gap-4 sm:flex-row">
-          {campaign.insights.map((insight, i) => (
-            <div
-              key={i}
-              className="border-seadark flex min-w-40 flex-1 gap-2 rounded-xl border bg-white p-3 sm:min-w-55"
-            >
-              <span className="bg-sealight-active text-amalfidark flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-base font-bold">
-                {i + 1}
-              </span>
-              <p className="font-thai text-base text-black">{insight}</p>
-            </div>
-          ))}
+          {insightsState.status === 'loading' ? (
+            <>
+              <Skeleton className="h-16 min-w-40 flex-1 rounded-xl sm:min-w-55" />
+              <Skeleton className="h-16 min-w-40 flex-1 rounded-xl sm:min-w-55" />
+            </>
+          ) : insightsState.insights.length === 0 ? (
+            <p className="font-thai text-base text-[#8E98A8]">
+              ยังไม่มีข้อมูลสรุปตอนนี้
+            </p>
+          ) : (
+            insightsState.insights.map((insight, i) => (
+              <div
+                key={i}
+                className="border-seadark flex min-w-40 flex-1 gap-2 rounded-xl border bg-white p-3 sm:min-w-55"
+              >
+                <span className="bg-sealight-active text-amalfidark flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-base font-bold">
+                  {i + 1}
+                </span>
+                <p className="font-thai text-base text-black">{insight}</p>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -423,7 +469,9 @@ function CampaignReportView({
             className="font-thai flex h-69 w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#8E98A8] bg-[rgba(142,152,168,0.1)] text-base text-[#8E98A8] hover:cursor-pointer hover:border-[#6B7280] hover:text-[#6B7280]"
           >
             <Plus className="h-6 w-6" />
-            {creatives.length === 0 ? 'ยังไม่มีครีเอทีฟ · สร้างใหม่' : 'สร้างครีเอทีฟใหม่'}
+            {creatives.length === 0
+              ? 'ยังไม่มีครีเอทีฟ · สร้างใหม่'
+              : 'สร้างครีเอทีฟใหม่'}
           </Link>
         </div>
       </div>

@@ -90,7 +90,9 @@ function OnboardingAiFollowup({
   const goNext = async () => {
     const answer =
       currentQuestion.type === 'choice'
-        ? (isOtherSelected ? otherText.trim() : (selectedChoice ?? ''))
+        ? isOtherSelected
+          ? otherText.trim()
+          : (selectedChoice ?? '')
         : answerText.trim()
     if (!answer) return
 

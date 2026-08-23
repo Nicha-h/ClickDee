@@ -8,13 +8,13 @@ import {
   ChevronRight,
   Pause,
   Play,
+  Square,
   Pencil,
   Trash2,
 } from 'lucide-react'
 import rocket from '@/assets/icons/rocket.svg'
 import cash from '@/assets/icons/cash.svg'
 import starcircle from '@/assets/icons/starcircle.svg'
-import sparklebold from '@/assets/icons/sparklebold.svg'
 import {
   campaigns as mockCampaigns,
   platformBadgeStyles,
@@ -43,9 +43,6 @@ const remainingBudget = 12806
 const totalOrders = 2462
 const ordersDelta = 184
 const roi = 11.5
-
-const aiSuggestionPrompt =
-  'สร้างแคมเปญ "เครื่องดื่มร้อนช่วงฝนตก" ฝนกำลังจะตกใน 3 วันข้างหน้า งบเริ่มต้น 200 บาท/วัน'
 
 type FilterTab = { key: string; label: string; count: number }
 
@@ -123,12 +120,16 @@ function CampaignCard({
   campaign,
   onPause,
   onResume,
+  onStop,
   onDeleteRequest,
+  onReviewDraft,
 }: {
   campaign: CampaignItem
   onPause: (id: string) => void
   onResume: (id: string) => void
+  onStop: (id: string) => void
   onDeleteRequest: (id: string) => void
+  onReviewDraft: (id: string) => void
 }) {
   const statusBadge = statusBadgeStyles[campaign.status]
   return (
@@ -242,6 +243,16 @@ function CampaignCard({
         <div className="flex flex-row flex-wrap items-center gap-4 lg:flex-col lg:items-end">
           {campaign.source === 'api' ? (
             <>
+              {campaign.status === 'draft' && (
+                <button
+                  type="button"
+                  onClick={() => onReviewDraft(campaign.id)}
+                  className="font-thai text-amalfi hover:text-amalfidark flex items-center gap-2 text-base hover:cursor-pointer hover:font-semibold"
+                >
+                  <Play className="h-5 w-5" />
+                  เริ่มแคมเปญ
+                </button>
+              )}
               {campaign.status === 'active' && (
                 <button
                   type="button"
@@ -260,6 +271,17 @@ function CampaignCard({
                 >
                   <Play className="h-5 w-5" />
                   เริ่มแคมเปญ
+                </button>
+              )}
+              {(campaign.status === 'active' ||
+                campaign.status === 'paused') && (
+                <button
+                  type="button"
+                  onClick={() => onStop(campaign.id)}
+                  className="font-thai flex items-center gap-2 text-base text-[#be2c2c] hover:cursor-pointer hover:font-semibold hover:text-[#a32323]"
+                >
+                  <Square className="h-4 w-4" />
+                  หยุดแคมเปญ
                 </button>
               )}
               <Link
@@ -333,7 +355,7 @@ function Campaign() {
 
   const setCampaignStatus = async (
     id: string,
-    status: 'ACTIVE' | 'PAUSED',
+    status: 'ACTIVE' | 'PAUSED' | 'COMPLETED',
   ) => {
     const res = await patchApiCampaignsId(id, { status }, withCredentials())
     if (res.status === 200) {
@@ -349,9 +371,7 @@ function Campaign() {
     try {
       const res = await deleteApiCampaignsId(deleteTargetId, withCredentials())
       if (res.status === 204) {
-        setApiCampaigns((prev) =>
-          prev.filter((c) => c.id !== deleteTargetId),
-        )
+        setApiCampaigns((prev) => prev.filter((c) => c.id !== deleteTargetId))
         setDeleteTargetId(null)
       }
     } finally {
@@ -507,7 +527,9 @@ function Campaign() {
               campaign={campaign}
               onPause={(id) => setCampaignStatus(id, 'PAUSED')}
               onResume={(id) => setCampaignStatus(id, 'ACTIVE')}
+              onStop={(id) => setCampaignStatus(id, 'COMPLETED')}
               onDeleteRequest={setDeleteTargetId}
+              onReviewDraft={(id) => navigate(`/campaign/${id}/review`)}
             />
           ))
         ) : (
@@ -517,35 +539,6 @@ function Campaign() {
         )}
       </div>
 
-      {/** AI suggestion banner */}
-      <div className="border-seadark bg-sealight mt-8 flex flex-col items-start gap-4 rounded-[10px] border p-6 sm:flex-row">
-        <div className="bg-citrus rounded-xl p-4 shadow-md">
-          <img src={sparklebold} alt="Sparkle" className="h-8 w-8" />
-        </div>
-        <div className="flex flex-1 flex-col gap-2">
-          <p className="font-thai text-amalfidark text-lg font-semibold">
-            น้องดี AI แนะนำ
-          </p>
-          <p className="font-thai text-amalfi text-xl font-bold">
-            ฝนกำลังจะตกใน 3 วันข้างหน้า — สร้างแคมเปญ
-            &quot;เครื่องดื่มร้อนช่วงฝนตก&quot; เพื่อใช้โอกาสนี้
-          </p>
-          <p className="font-thai text-sm text-black">
-            คาดการณ์: เพิ่มออเดอร์ 18–24% · งบเริ่มต้น ฿200/วัน · ใช้เวลาสร้าง
-            30 วินาที
-          </p>
-        </div>
-
-        <button
-          onClick={() =>
-            navigate('/campaign/new', { state: { prompt: aiSuggestionPrompt } })
-          }
-          className="bg-amalfihover font-thai hover:bg-amalfiactive flex shrink-0 items-center gap-1 rounded-[19px] px-6 py-2 text-lg font-semibold text-white transition-all duration-200 ease-in-out hover:scale-105 hover:cursor-pointer hover:shadow-lg"
-        >
-          สร้างเลย
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
       <div className="h-24 w-full shrink-0"></div>
 
       <ConfirmDialog

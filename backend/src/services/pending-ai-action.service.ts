@@ -2,10 +2,7 @@ import { prisma } from '../db/client.js'
 import * as campaignService from './campaign.service.js'
 import * as notificationService from './notification.service.js'
 import { PendingActionPayloadSchema } from '../schemas/pending-ai-action.schema.js'
-import type {
-  PendingActionType,
-  Prisma,
-} from '../generated/prisma/client.js'
+import type { PendingActionType, Prisma } from '../generated/prisma/client.js'
 
 const MAX_PENDING_PER_USER = 5
 const PENDING_TTL_MS = 24 * 60 * 60 * 1000
@@ -63,6 +60,29 @@ export async function stagePendingAction(
 
 export function getPendingAction(userId: string, id: string) {
   return prisma.pendingAiAction.findFirst({ where: { id, userId } })
+}
+
+// Lets the research pipeline (see ai.service.ts's [[CAPTION]] marker
+// handling) revise an already-staged caption once findings come back,
+// without re-running the whole staging flow. Same atomic "only if still
+// PENDING" guard as confirmPendingAction/cancelPendingAction — a no-op if
+// the user already confirmed/canceled before research finished.
+export async function updatePendingActionCaption(
+  id: string,
+  caption: string,
+): Promise<void> {
+  const action = await prisma.pendingAiAction.findUnique({ where: { id } })
+  if (!action || action.status !== 'PENDING') return
+
+  const payload = {
+    ...(action.payload as Record<string, unknown>),
+    caption,
+  } as Prisma.InputJsonValue
+
+  await prisma.pendingAiAction.updateMany({
+    where: { id, status: 'PENDING' },
+    data: { payload },
+  })
 }
 
 type ConfirmResult =

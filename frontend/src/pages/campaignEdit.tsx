@@ -11,6 +11,7 @@ import {
   Shuffle,
   X,
 } from 'lucide-react'
+import defaultCampaignImage from '@/assets/decorative/default campaign.png'
 import { campaigns, platformBadgeStyles } from '@/data/campaigns'
 import { getApiCampaignsId, patchApiCampaignsId } from '@/api/generated/client'
 import type { Campaign as ApiCampaign } from '@/api/generated/client'
@@ -128,99 +129,143 @@ function ApiCampaignEditView({ campaign }: { campaign: ApiCampaign }) {
 
       <form
         onSubmit={handleSubmit}
-        className="font-thai mt-6 flex max-w-xl flex-col gap-5"
+        className="mt-6 flex flex-col items-start gap-5 md:flex-row"
       >
-        <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
-          <label className="text-lg font-bold text-black">ชื่อแคมเปญ</label>
-          <input
-            type="text"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-[#8E98A8] px-3 py-2 text-lg outline-none"
-          />
+        {/** Left column */}
+        <div className="flex w-full min-w-0 flex-1 flex-col gap-5">
+          <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+            <h3 className="font-thai text-amalfidark text-2xl font-bold">
+              ชื่อแคมเปญ & แคปชั่น
+            </h3>
+            <p className="font-thai mt-1 text-lg text-black">
+              แก้ไขรายละเอียดของแคมเปญนี้ได้ตามต้องการ
+            </p>
+            <div className="mt-3 flex items-start gap-3">
+              <div className="bg-citrus flex h-13 w-13 shrink-0 items-center justify-center rounded-lg">
+                <Target className="h-7 w-7 text-black" />
+              </div>
+              <div className="font-thai flex-1">
+                <label className="text-lg font-bold text-black">
+                  ชื่อแคมเปญ
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-[#8E98A8] px-3 py-2 text-lg text-black outline-none"
+                />
 
-          <label className="mt-4 block text-lg font-bold text-black">
-            แคปชั่น
-          </label>
-          <textarea
-            value={caption}
-            rows={3}
-            onChange={(e) => setCaption(e.target.value)}
-            className="mt-2 w-full resize-y rounded-lg border border-[#8E98A8] px-3 py-2 text-lg outline-none"
-          />
+                <label className="mt-4 block text-lg font-bold text-black">
+                  แคปชั่น
+                </label>
+                <textarea
+                  value={caption}
+                  rows={3}
+                  onChange={(e) => setCaption(e.target.value)}
+                  className="mt-1 w-full resize-y rounded-lg border border-[#8E98A8] px-3 py-2 text-lg text-black outline-none"
+                />
 
-          <label className="mt-4 block text-lg font-bold text-black">
-            งบประมาณ (บาท)
-          </label>
-          <input
-            type="number"
-            required
-            min={1}
-            step="0.01"
-            value={budget}
-            onChange={(e) => setBudget(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-[#8E98A8] px-3 py-2 text-lg outline-none"
-          />
-
-          <div className="mt-4 flex gap-4">
-            <div className="flex-1">
-              <label className="text-lg font-bold text-black">
-                วันที่เริ่ม
-              </label>
-              <input
-                type="date"
-                required
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="mt-2 w-full rounded-lg border border-[#8E98A8] px-3 py-2 text-lg outline-none"
-              />
-            </div>
-            <div className="flex-1">
-              <label className="text-lg font-bold text-black">
-                วันที่สิ้นสุด
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="mt-2 w-full rounded-lg border border-[#8E98A8] px-3 py-2 text-lg outline-none"
-              />
+                <div className="mt-4 flex gap-4">
+                  <div className="flex-1">
+                    <label className="text-lg font-bold text-black">
+                      วันที่เริ่ม
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-[#8E98A8] px-3 py-2 text-lg text-black outline-none"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-lg font-bold text-black">
+                      วันที่สิ้นสุด
+                    </label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-[#8E98A8] px-3 py-2 text-lg text-black outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <label className="mt-4 block text-lg font-bold text-black">
-            สถานะ
-          </label>
-          <select
-            value={status}
-            onChange={(e) =>
-              setStatus(e.target.value as ApiCampaign['status'])
-            }
-            className="mt-2 w-full rounded-lg border border-[#8E98A8] px-3 py-2 text-lg outline-none"
-          >
-            {Object.entries(API_STATUS_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-
-          {error && <p className="mt-3 text-base text-red-600">{error}</p>}
+          <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+            <h3 className="font-thai text-amalfidark text-2xl font-bold">
+              ครีเอทีฟที่ AI สร้าง
+            </h3>
+            <p className="font-thai mt-1 text-lg text-black">
+              สร้างครีเอทีฟเพิ่มเติมได้จากหน้ารายงานแคมเปญ
+            </p>
+            <div className="mt-4 max-w-xs min-w-0 overflow-hidden rounded-xl border border-[#8E98A8]">
+              <img
+                src={defaultCampaignImage}
+                alt={caption || name}
+                className="h-37 w-full object-cover"
+              />
+              <div className="p-3">
+                <p className="font-thai text-lg text-black">{caption || '-'}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-col gap-3">
+        {/** Right column */}
+        <div className="flex w-full shrink-0 flex-col gap-5 md:w-72 lg:w-97">
+          <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+            <h3 className="font-thai text-amalfidark text-2xl font-bold">
+              งบประมาณ & สถานะ
+            </h3>
+
+            <label className="font-thai mt-4 block text-lg font-bold text-black">
+              งบประมาณ (บาท)
+            </label>
+            <input
+              type="number"
+              required
+              min={1}
+              step="0.01"
+              value={budget}
+              onChange={(e) => setBudget(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-[#8E98A8] px-3 py-2 text-lg text-black outline-none"
+            />
+
+            <label className="font-thai mt-4 block text-lg font-bold text-black">
+              สถานะ
+            </label>
+            <select
+              value={status}
+              onChange={(e) =>
+                setStatus(e.target.value as ApiCampaign['status'])
+              }
+              className="font-thai mt-1 w-full rounded-lg border border-[#8E98A8] px-3 py-2 text-lg text-black outline-none"
+            >
+              {Object.entries(API_STATUS_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {error && <p className="font-thai text-base text-red-600">{error}</p>}
+
           <button
             type="submit"
             disabled={isSaving}
-            className="bg-citrus hover:bg-citrushover text-amalfidark flex w-full items-center justify-center gap-2 rounded-xl px-6 py-4 text-2xl font-bold shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] transition-all hover:scale-105 hover:cursor-pointer disabled:opacity-50"
+            className="bg-citrus hover:bg-citrushover font-thai text-amalfidark flex w-full items-center justify-center gap-2 rounded-xl px-6 py-4 text-2xl font-bold shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] transition-all hover:scale-105 hover:cursor-pointer disabled:opacity-50"
           >
             {isSaving ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}
           </button>
           <button
             type="button"
             onClick={() => navigate(`/campaign/${campaign.id}/report`)}
-            className="bg-sealight-hover border-seadark text-seadark hover:bg-sealight-active hover:text-seadark-active w-full rounded-xl border-[1.5px] py-3 text-lg font-semibold hover:scale-105 hover:cursor-pointer"
+            className="font-thai bg-sealight-hover border-seadark text-seadark hover:bg-sealight-active hover:text-seadark-active w-full rounded-xl border-[1.5px] py-3 text-lg font-semibold hover:scale-105 hover:cursor-pointer"
           >
             ยกเลิกการแก้ไข
           </button>

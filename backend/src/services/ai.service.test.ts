@@ -48,9 +48,12 @@ vi.mock('./campaign.service.js', () => ({
   getCampaignById: getCampaignByIdMock,
 }))
 
-const { stagePendingActionMock } = vi.hoisted(() => ({
-  stagePendingActionMock: vi.fn(),
-}))
+const { stagePendingActionMock, updatePendingActionCaptionMock } = vi.hoisted(
+  () => ({
+    stagePendingActionMock: vi.fn(),
+    updatePendingActionCaptionMock: vi.fn(),
+  }),
+)
 vi.mock('./pending-ai-action.service.js', async () => {
   const actual = await vi.importActual<
     typeof import('./pending-ai-action.service.js')
@@ -58,8 +61,16 @@ vi.mock('./pending-ai-action.service.js', async () => {
   return {
     ...actual,
     stagePendingAction: stagePendingActionMock,
+    updatePendingActionCaption: updatePendingActionCaptionMock,
   }
 })
+
+const { researchForCaptionMock } = vi.hoisted(() => ({
+  researchForCaptionMock: vi.fn(),
+}))
+vi.mock('../lib/compound.js', () => ({
+  researchForCaption: researchForCaptionMock,
+}))
 
 const { createNotificationMock } = vi.hoisted(() => ({
   createNotificationMock: vi.fn(),
@@ -81,8 +92,9 @@ beforeEach(() => {
     .mockReset()
     .mockResolvedValue({ id: 'conv-1', userId: 'user-1' })
   conversationCreateMock.mockReset()
-  messageCreateMock.mockReset().mockImplementation(
-    ({ data }: { data: Record<string, unknown> }) =>
+  messageCreateMock
+    .mockReset()
+    .mockImplementation(({ data }: { data: Record<string, unknown> }) =>
       Promise.resolve({
         id: `msg-${messageCreateMock.mock.calls.length}`,
         conversationId: data.conversationId,
@@ -95,21 +107,21 @@ beforeEach(() => {
         pendingAction: null,
         createdAt: new Date(),
       }),
-  )
+    )
   messageFindManyMock.mockReset().mockResolvedValue([])
   userFindUniqueMock.mockReset().mockResolvedValue(null)
   getAiMemoryQasMock.mockReset().mockResolvedValue([])
   getCampaignByIdMock.mockReset()
   stagePendingActionMock.mockReset()
+  updatePendingActionCaptionMock.mockReset()
+  researchForCaptionMock.mockReset().mockResolvedValue(null)
   createNotificationMock.mockReset()
 })
 
 describe('sendMessage', () => {
   it('persists a single assistant message for a plain-text reply', async () => {
     createMock.mockResolvedValueOnce({
-      choices: [
-        { message: { content: 'สวัสดีค่ะ' }, finish_reason: 'stop' },
-      ],
+      choices: [{ message: { content: 'สวัสดีค่ะ' }, finish_reason: 'stop' }],
     })
 
     const result = await sendMessage('user-1', 'สวัสดี')
@@ -231,7 +243,9 @@ describe('sendMessage', () => {
         ],
       })
       .mockResolvedValueOnce({
-        choices: [{ message: { content: 'ยืนยันไหมคะ' }, finish_reason: 'stop' }],
+        choices: [
+          { message: { content: 'ยืนยันไหมคะ' }, finish_reason: 'stop' },
+        ],
       })
     getCampaignByIdMock.mockResolvedValueOnce(null)
 
@@ -270,7 +284,10 @@ describe('sendMessage', () => {
       })
       .mockResolvedValueOnce({
         choices: [
-          { message: { content: 'ขอข้อมูลเพิ่มเติมหน่อยค่ะ' }, finish_reason: 'stop' },
+          {
+            message: { content: 'ขอข้อมูลเพิ่มเติมหน่อยค่ะ' },
+            finish_reason: 'stop',
+          },
         ],
       })
 
@@ -299,7 +316,9 @@ describe('sendMessage', () => {
 
   it('throws AiContentFilterError when the completion is content-filtered', async () => {
     createMock.mockResolvedValueOnce({
-      choices: [{ message: { content: null }, finish_reason: 'content_filter' }],
+      choices: [
+        { message: { content: null }, finish_reason: 'content_filter' },
+      ],
     })
 
     await expect(sendMessage('user-1', 'x')).rejects.toBeInstanceOf(
@@ -315,5 +334,211 @@ describe('sendMessage', () => {
     await expect(sendMessage('user-1', 'x')).rejects.toBeInstanceOf(
       AiRateLimitError,
     )
+  })
+
+  it('runs the research pipeline for a stage_create_campaign tool call', async () => {
+    createMock
+      .mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: null,
+              tool_calls: [
+                {
+                  id: 'call_1',
+                  type: 'function',
+                  function: {
+                    name: 'stage_create_campaign',
+                    arguments: JSON.stringify({
+                      name: 'โปรร้อนรับหน้าฝน',
+                      budget: 3000,
+                      startDate: '2026-09-01',
+                      caption: 'ลดร้อนรับหน้าฝน!',
+                    }),
+                  },
+                },
+              ],
+            },
+            finish_reason: 'tool_calls',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        choices: [
+          { message: { content: 'ยืนยันไหมคะ' }, finish_reason: 'stop' },
+        ],
+      })
+    stagePendingActionMock.mockResolvedValueOnce({
+      id: 'action-1',
+      type: 'CREATE',
+      targetCampaignId: null,
+      payload: { name: 'โปรร้อนรับหน้าฝน' },
+      status: 'PENDING',
+      createdAt: new Date(),
+    })
+
+    await sendMessage('user-1', 'ช่วยสร้างแคมเปญให้หน่อย')
+
+    expect(researchForCaptionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'โปรร้อนรับหน้าฝน',
+        budget: 3000,
+        caption: 'ลดร้อนรับหน้าฝน!',
+      }),
+    )
+  })
+
+  it('does not run the research pipeline for stage_delete_campaign or a caption-less update', async () => {
+    createMock
+      .mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: null,
+              tool_calls: [
+                {
+                  id: 'call_1',
+                  type: 'function',
+                  function: {
+                    name: 'stage_update_campaign',
+                    arguments: JSON.stringify({
+                      campaignId: 'campaign-1',
+                      budget: 5000,
+                    }),
+                  },
+                },
+              ],
+            },
+            finish_reason: 'tool_calls',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        choices: [
+          { message: { content: 'ยืนยันไหมคะ' }, finish_reason: 'stop' },
+        ],
+      })
+    getCampaignByIdMock.mockResolvedValueOnce({
+      id: 'campaign-1',
+      name: 'เดิม',
+    })
+    stagePendingActionMock.mockResolvedValueOnce({
+      id: 'action-1',
+      type: 'UPDATE',
+      targetCampaignId: 'campaign-1',
+      payload: { budget: 5000 },
+      status: 'PENDING',
+      createdAt: new Date(),
+    })
+
+    await sendMessage('user-1', 'แก้ไขงบแคมเปญหน่อย')
+
+    expect(researchForCaptionMock).not.toHaveBeenCalled()
+  })
+
+  it('revises the staged caption and strips the [[CAPTION]] marker when the model returns one', async () => {
+    researchForCaptionMock.mockResolvedValueOnce('ผลวิจัย: ช่วงนี้ฝนตกบ่อย')
+    createMock
+      .mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: null,
+              tool_calls: [
+                {
+                  id: 'call_1',
+                  type: 'function',
+                  function: {
+                    name: 'stage_create_campaign',
+                    arguments: JSON.stringify({
+                      name: 'โปรร้อนรับหน้าฝน',
+                      budget: 3000,
+                      startDate: '2026-09-01',
+                      caption: 'ลดร้อนรับหน้าฝน!',
+                    }),
+                  },
+                },
+              ],
+            },
+            finish_reason: 'tool_calls',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content:
+                'ปรับแคปชั่นตามผลวิจัยแล้วค่ะ [[CAPTION]]ลดร้อน รับหน้าฝน พร้อมส่งฟรี![[/CAPTION]] ยืนยันไหมคะ',
+            },
+            finish_reason: 'stop',
+          },
+        ],
+      })
+    stagePendingActionMock.mockResolvedValueOnce({
+      id: 'action-1',
+      type: 'CREATE',
+      targetCampaignId: null,
+      payload: { name: 'โปรร้อนรับหน้าฝน' },
+      status: 'PENDING',
+      createdAt: new Date(),
+    })
+
+    const result = await sendMessage('user-1', 'ช่วยสร้างแคมเปญให้หน่อย')
+
+    expect(updatePendingActionCaptionMock).toHaveBeenCalledWith(
+      'action-1',
+      'ลดร้อน รับหน้าฝน พร้อมส่งฟรี!',
+    )
+    expect(result.assistantMessages[0].content).not.toContain('[[CAPTION]]')
+    expect(result.assistantMessages[0].content).toBe(
+      'ปรับแคปชั่นตามผลวิจัยแล้วค่ะ  ยืนยันไหมคะ',
+    )
+  })
+
+  it('leaves the staged payload untouched when no [[CAPTION]] marker is present', async () => {
+    createMock
+      .mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: null,
+              tool_calls: [
+                {
+                  id: 'call_1',
+                  type: 'function',
+                  function: {
+                    name: 'stage_create_campaign',
+                    arguments: JSON.stringify({
+                      name: 'โปรร้อนรับหน้าฝน',
+                      budget: 3000,
+                      startDate: '2026-09-01',
+                      caption: 'ลดร้อนรับหน้าฝน!',
+                    }),
+                  },
+                },
+              ],
+            },
+            finish_reason: 'tool_calls',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        choices: [
+          { message: { content: 'ยืนยันไหมคะ' }, finish_reason: 'stop' },
+        ],
+      })
+    stagePendingActionMock.mockResolvedValueOnce({
+      id: 'action-1',
+      type: 'CREATE',
+      targetCampaignId: null,
+      payload: { name: 'โปรร้อนรับหน้าฝน' },
+      status: 'PENDING',
+      createdAt: new Date(),
+    })
+
+    await sendMessage('user-1', 'ช่วยสร้างแคมเปญให้หน่อย')
+
+    expect(updatePendingActionCaptionMock).not.toHaveBeenCalled()
   })
 })

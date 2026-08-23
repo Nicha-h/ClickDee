@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -10,17 +10,8 @@ import {
 } from 'lucide-react'
 import sparklebold from '@/assets/icons/sparklebold.svg'
 import StepIndicator from '@/components/stepIndicator'
-
-type SuggestedIdea = { id: string; prompt: string }
-
-const suggestedIdeas: SuggestedIdea[] = [
-  { id: 'radius-promo', prompt: 'เพิ่มลูกค้าใหม่ในรัศมี 3 กม. งบ 200 บาท/วัน' },
-  { id: 'latte-menu', prompt: 'แนะนำเมนูใหม่ Latte Caramel สำหรับสายของหวาน' },
-  {
-    id: 'afternoon-cold-drink',
-    prompt: 'โปรเครื่องดื่มเย็นดับร้อน ช่วงบ่ายวันธรรมดา',
-  },
-]
+import { getApiAiCampaignIdeas } from '@/api/generated/client'
+import { getUserId, withCredentials } from '@/lib/userId'
 
 const trendPrompt =
   'ใช้โอกาสฝนตกพรุ่งนี้ ทำแคมเปญเครื่องดื่มร้อน + ของหวานในย่านสีลม งบ 300 บาท/วัน'
@@ -32,6 +23,15 @@ function CampaignCreate() {
     () => (location.state as { prompt?: string } | null)?.prompt ?? '',
   )
   const aiReply = (location.state as { aiReply?: string } | null)?.aiReply
+  const [ideas, setIdeas] = useState<string[]>([])
+
+  useEffect(() => {
+    const userId = getUserId()
+    if (!userId) return
+    getApiAiCampaignIdeas(withCredentials()).then((res) => {
+      if (res.status === 200) setIdeas(res.data.ideas)
+    })
+  }, [])
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -103,9 +103,6 @@ function CampaignCreate() {
 
           <div className="mt-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-thai bg-sealight-active text-seadark-active rounded-2xl px-4 py-2 text-lg font-medium">
-                GPT ภาษาไทย
-              </span>
               <span className="font-thai text-lg text-[#8e98a8]">
                 ใช้เครดิต 1 ครั้ง
               </span>
@@ -120,23 +117,25 @@ function CampaignCreate() {
             </button>
           </div>
 
-          <div className="mt-6 border-t border-[#8E98A8] pt-4">
-            <p className="font-thai text-lg font-semibold text-black">
-              หรือเริ่มจากตัวอย่างที่น้องดีแนะนำ
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {suggestedIdeas.map((idea) => (
-                <button
-                  key={idea.id}
-                  type="button"
-                  onClick={() => setPrompt(idea.prompt)}
-                  className="font-thai bg-sealight border-seadark-hover text-seadark-active hover:bg-sealight-hover rounded-2xl border border-dashed px-4 py-2 text-left text-base"
-                >
-                  {idea.prompt}
-                </button>
-              ))}
+          {ideas.length > 0 && (
+            <div className="mt-6 border-t border-[#8E98A8] pt-4">
+              <p className="font-thai text-lg font-semibold text-black">
+                หรือเริ่มจากตัวอย่างที่น้องดีแนะนำ
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {ideas.map((idea, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setPrompt(idea)}
+                    className="font-thai bg-sealight border-seadark-hover text-seadark-active hover:bg-sealight-hover rounded-2xl border border-dashed px-4 py-2 text-left text-base"
+                  >
+                    {idea}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </form>
 
         {/** Right column */}

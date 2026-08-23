@@ -1,6 +1,7 @@
-import aiMascot from '@/assets/placeholders/ai-mascot.png'
+import defaultCampaignImage from '@/assets/decorative/default campaign.png'
 import type { CampaignItem, CampaignStatus } from '@/data/campaigns'
 import type { Campaign as ApiCampaign } from '@/api/generated/client'
+import { summaryRows } from '@/lib/pendingAction'
 
 // The real Campaign model only has name/status/budget/dates — none of the
 // performance fields below exist server-side yet, so they default to
@@ -21,12 +22,12 @@ export function toCampaignItem(campaign: ApiCampaign): CampaignItem {
 
   return {
     id: campaign.id,
-    thumbnail: aiMascot,
+    thumbnail: defaultCampaignImage,
     title: campaign.name,
     goal:
       status === 'draft'
-        ? 'สร้างโดย AI ผู้ช่วย · ยังไม่เผยแพร่'
-        : `งบทั้งหมด ฿${Number(campaign.budget).toLocaleString()}`,
+        ? 'เป้าหมาย: สร้างโดย AI ผู้ช่วย · ยังไม่เผยแพร่'
+        : `เป้าหมาย: งบทั้งหมด ฿${Number(campaign.budget).toLocaleString()}`,
     status,
     source: 'api',
     daysRemaining,
@@ -50,4 +51,14 @@ export function toCampaignItem(campaign: ApiCampaign): CampaignItem {
     channelReach: [],
     creatives: [],
   }
+}
+
+export function campaignSummaryRows(campaign: ApiCampaign): [string, string][] {
+  return summaryRows({
+    name: campaign.name,
+    budget: Number(campaign.budget),
+    startDate: campaign.startDate,
+    endDate: campaign.endDate ?? undefined,
+    caption: campaign.caption,
+  })
 }

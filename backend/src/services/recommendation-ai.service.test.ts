@@ -16,9 +16,11 @@ vi.mock('../lib/openai.js', async () => {
 
 import { generateRecommendations } from './recommendation-ai.service.js'
 import { AiNotConfiguredError, AllTiersExhaustedError } from '../lib/openai.js'
+import { __resetRecommendationCacheForTests } from '../lib/recommendation-cache.js'
 
 beforeEach(() => {
   createMock.mockReset()
+  __resetRecommendationCacheForTests()
 })
 
 function jsonMessage(content: unknown) {
@@ -77,7 +79,9 @@ describe('generateRecommendations', () => {
   it('retries once and succeeds when the first reply is malformed JSON', async () => {
     const campaign = makeCampaign()
     createMock
-      .mockResolvedValueOnce({ choices: [{ message: { content: 'not json' } }] })
+      .mockResolvedValueOnce({
+        choices: [{ message: { content: 'not json' } }],
+      })
       .mockResolvedValueOnce(
         jsonMessage({
           recommendations: [
@@ -168,5 +172,68 @@ describe('generateRecommendations', () => {
     })
     const result = await generateRecommendations([campaign])
     expect(result).toEqual({ recommendations: [] })
+  })
+
+  describe('caching', () => {
+    it('does not call the AI again for the same campaign data', async () => {
+      const campaign = makeCampaign()
+      createMock.mockResolvedValueOnce(
+        jsonMessage({
+          recommendations: [
+            {
+              campaignId: campaign.id,
+              title: 'แคมเปญใกล้หมดเวลา',
+              description: 'แคมเปญนี้จะสิ้นสุดเร็วๆ นี้ ลองพิจารณาขยายเวลา',
+              actionLabel: 'ดูแคมเปญ',
+            },
+          ],
+        }),
+      )
+
+      const first = await generateRecommendations([campaign])
+      const second = await generateRecommendations([makeCampaign()])
+
+      expect(second).toEqual(first)
+      expect(createMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('calls the AI again when a campaign has been updated', async () => {
+      const campaign = makeCampaign()
+      const updatedCampaign = makeCampaign({
+        updatedAt: new Date('2026-08-15'),
+      })
+      createMock.mockResolvedValue(
+        jsonMessage({
+          recommendations: [
+            {
+              campaignId: campaign.id,
+              title: 'แคมเปญใกล้หมดเวลา',
+              description: 'แคมเปญนี้จะสิ้นสุดเร็วๆ นี้ ลองพิจารณาขยายเวลา',
+              actionLabel: 'ดูแคมเปญ',
+            },
+          ],
+        }),
+      )
+
+      await generateRecommendations([campaign])
+      await generateRecommendations([updatedCampaign])
+
+      expect(createMock).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not cache a fail-soft empty result, so the next call retries the AI', async () => {
+      const campaign = makeCampaign()
+      createMock.mockResolvedValue({
+        choices: [{ message: { content: 'not json' } }],
+      })
+
+      const first = await generateRecommendations([campaign])
+      expect(first).toEqual({ recommendations: [] })
+      expect(createMock).toHaveBeenCalledTimes(2)
+
+      const second = await generateRecommendations([campaign])
+      expect(second).toEqual({ recommendations: [] })
+      expect(createMock).toHaveBeenCalledTimes(4)
+    })
   })
 })

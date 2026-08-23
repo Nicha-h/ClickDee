@@ -46,7 +46,10 @@ function CampaignProcessing() {
               .map((m) => m.text)
               .filter(Boolean)
               .join('\n\n') || 'น้องดีต้องการรายละเอียดเพิ่มเติมค่ะ'
-          navigate('/campaign/new', { replace: true, state: { prompt, aiReply } })
+          navigate('/campaign/new', {
+            replace: true,
+            state: { prompt, aiReply },
+          })
         } else {
           navigate('/campaign/new', {
             replace: true,

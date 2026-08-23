@@ -40,9 +40,44 @@ vi.mock('../services/pending-ai-action.service.js', () => ({
   cancelPendingAction: vi.fn(),
 }))
 
+vi.mock('../services/campaign.service.js', () => ({
+  listCampaigns: vi.fn().mockResolvedValue([]),
+  getCampaignById: vi.fn().mockResolvedValue(null),
+}))
+
+vi.mock('../services/insight-ai.service.js', () => ({
+  generateInsights: vi.fn().mockResolvedValue({ insights: [] }),
+}))
+
+vi.mock('../services/idea-ai.service.js', () => ({
+  generateCampaignIdeas: vi.fn().mockResolvedValue({ ideas: [] }),
+  generateCreativeIdeas: vi.fn().mockResolvedValue({ ideas: [] }),
+}))
+
+vi.mock('../services/user.service.js', () => ({
+  findUserById: vi.fn().mockResolvedValue(null),
+}))
+
+const { isAiConfiguredMock } = vi.hoisted(() => ({
+  isAiConfiguredMock: vi.fn(),
+}))
+
+vi.mock('../lib/openai.js', async () => {
+  const actual =
+    await vi.importActual<typeof import('../lib/openai.js')>('../lib/openai.js')
+  return {
+    ...actual,
+    isAiConfigured: isAiConfiguredMock,
+  }
+})
+
 import { app } from '../app.js'
 import * as aiService from '../services/ai.service.js'
 import * as pendingActionService from '../services/pending-ai-action.service.js'
+import * as campaignService from '../services/campaign.service.js'
+import * as insightAiService from '../services/insight-ai.service.js'
+import * as ideaAiService from '../services/idea-ai.service.js'
+import * as userService from '../services/user.service.js'
 import {
   AiNotConfiguredError,
   AiRateLimitError,
@@ -274,5 +309,128 @@ describe('POST /api/ai/actions/:id/cancel', () => {
     })
     const res = await sendRequest()
     expect(res.status).toBe(409)
+  })
+})
+
+describe('GET /api/ai/insights', () => {
+  it('returns hasCampaigns:false without calling the AI when there are no campaigns', async () => {
+    vi.mocked(campaignService.listCampaigns).mockResolvedValueOnce([])
+    const res = await app.request('/api/ai/insights', {
+      headers: await authHeader(),
+    })
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ hasCampaigns: false, insights: [] })
+    expect(insightAiService.generateInsights).not.toHaveBeenCalled()
+  })
+
+  it('returns generated insights when the caller has real campaigns', async () => {
+    vi.mocked(campaignService.listCampaigns).mockResolvedValueOnce([
+      { id: 'campaign-1' } as never,
+    ])
+    vi.mocked(insightAiService.generateInsights).mockResolvedValueOnce({
+      insights: ['แคมเปญของคุณใช้งบไปแล้วบางส่วนค่ะ'],
+    })
+    const res = await app.request('/api/ai/insights', {
+      headers: await authHeader(),
+    })
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({
+      hasCampaigns: true,
+      insights: ['แคมเปญของคุณใช้งบไปแล้วบางส่วนค่ะ'],
+    })
+  })
+})
+
+describe('GET /api/ai/campaigns/:id/insights', () => {
+  it('returns 404 when the campaign is not found', async () => {
+    vi.mocked(campaignService.getCampaignById).mockResolvedValueOnce(null)
+    const res = await app.request('/api/ai/campaigns/campaign-1/insights', {
+      headers: await authHeader(),
+    })
+    expect(res.status).toBe(404)
+  })
+
+  it('returns generated insights for the campaign', async () => {
+    vi.mocked(campaignService.getCampaignById).mockResolvedValueOnce({
+      id: 'campaign-1',
+    } as never)
+    vi.mocked(insightAiService.generateInsights).mockResolvedValueOnce({
+      insights: ['แคมเปญนี้ยังไม่มีแคปชันค่ะ'],
+    })
+    const res = await app.request('/api/ai/campaigns/campaign-1/insights', {
+      headers: await authHeader(),
+    })
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({
+      insights: ['แคมเปญนี้ยังไม่มีแคปชันค่ะ'],
+    })
+  })
+})
+
+describe('GET /api/ai/campaign-ideas', () => {
+  it('returns AI-generated ideas grounded in the caller profile', async () => {
+    vi.mocked(userService.findUserById).mockResolvedValueOnce({
+      id: 'user-1',
+      businessName: 'ร้านทดสอบ',
+    } as never)
+    vi.mocked(ideaAiService.generateCampaignIdeas).mockResolvedValueOnce({
+      ideas: ['เพิ่มลูกค้าใหม่ในรัศมี 3 กม. งบ 200 บาท/วัน'],
+    })
+    const res = await app.request('/api/ai/campaign-ideas', {
+      headers: await authHeader(),
+    })
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({
+      ideas: ['เพิ่มลูกค้าใหม่ในรัศมี 3 กม. งบ 200 บาท/วัน'],
+    })
+  })
+})
+
+describe('GET /api/ai/campaigns/:id/creative-ideas', () => {
+  it('returns 404 when the campaign is not found', async () => {
+    vi.mocked(campaignService.getCampaignById).mockResolvedValueOnce(null)
+    const res = await app.request(
+      '/api/ai/campaigns/campaign-1/creative-ideas',
+      { headers: await authHeader() },
+    )
+    expect(res.status).toBe(404)
+  })
+
+  it('returns AI-generated ideas grounded in the campaign', async () => {
+    vi.mocked(campaignService.getCampaignById).mockResolvedValueOnce({
+      id: 'campaign-1',
+      name: 'โปรทดสอบ',
+    } as never)
+    vi.mocked(ideaAiService.generateCreativeIdeas).mockResolvedValueOnce({
+      ideas: ['โปรโมทส่วนลด 20% เน้นความคุ้มค่า'],
+    })
+    const res = await app.request(
+      '/api/ai/campaigns/campaign-1/creative-ideas',
+      { headers: await authHeader() },
+    )
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({
+      ideas: ['โปรโมทส่วนลด 20% เน้นความคุ้มค่า'],
+    })
+  })
+})
+
+describe('GET /api/ai/status', () => {
+  it('returns active when an AI provider is configured', async () => {
+    isAiConfiguredMock.mockReturnValueOnce(true)
+    const res = await app.request('/api/ai/status', {
+      headers: await authHeader(),
+    })
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ status: 'active' })
+  })
+
+  it('returns inactive when no AI provider is configured', async () => {
+    isAiConfiguredMock.mockReturnValueOnce(false)
+    const res = await app.request('/api/ai/status', {
+      headers: await authHeader(),
+    })
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ status: 'inactive' })
   })
 })

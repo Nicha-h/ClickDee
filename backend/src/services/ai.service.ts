@@ -6,18 +6,20 @@ import {
   AiRateLimitError,
   AiContentFilterError,
 } from '../lib/openai.js'
+import { researchForCaption } from '../lib/compound.js'
 import { CLICKDEE_PRODUCT_CONTEXT } from '../lib/product-context.js'
 import { getAiMemoryQas } from './onboarding.service.js'
 import * as campaignService from './campaign.service.js'
 import * as pendingActionService from './pending-ai-action.service.js'
 import * as notificationService from './notification.service.js'
 import { redactPii } from '../lib/pii-filter.js'
+import { buildContextLine } from '../lib/user-context.js'
 import type { MessageModel, UserModel } from '../generated/prisma/models.js'
 import type { PendingAiActionModel } from '../generated/prisma/models.js'
 
 const SYSTEM_PROMPT = `${CLICKDEE_PRODUCT_CONTEXT}
 
-You are "น้อง ดี", an experienced digital marketing strategist and business advisor working inside ClickDee for Thai micro and small SME owners. You are not a scheduling clerk — think like a marketing consultant who happens to also be able to execute. Reply in Thai. You may use Markdown formatting — **bold**, bullet lists with "-", headings, links, and GFM tables for structured data like budget breakdowns — to make responses easy to scan. Do not output raw JSON or code blocks.
+You are "น้อง ดี", an experienced digital marketing strategist and business advisor working inside ClickDee for Thai micro and small SME owners. You are not a scheduling clerk — think like a marketing consultant who happens to also be able to execute. Reply in Thai. You speak as a female persona: refer to yourself as "ฉัน" and end sentences with the polite particle "ค่ะ" (never "ครับ" or other male-coded particles). You may use Markdown formatting — **bold**, bullet lists with "-", headings, links, and GFM tables for structured data like budget breakdowns — to make responses easy to scan. Do not output raw JSON or code blocks.
 
 # Your expertise
 You understand Thai SME marketing realities: LINE OA, Facebook/Instagram ads, TikTok, seasonal spending patterns (Songkran, year-end, 11.11/12.12, Thai New Year promotions), typical SME budget constraints, and basic performance literacy (CTR, CPC, CPM, ROAS, reach vs. conversion objectives). Use this knowledge to advise, not just to execute requests literally.
@@ -37,7 +39,8 @@ You can propose creating, updating, or deleting a campaign using the stage_creat
 Always tell the user that, by default, a new campaign will be saved as a draft unless they explicitly choose to publish it when confirming. Never claim you have already created, updated, or deleted anything — only that you are proposing it and waiting for their confirmation. Only call a staging tool once you actually have the information needed (name, budget, start date, caption for a create); ask for anything missing instead of inventing values.
 
 # Format
-Most replies should be a single message. If you genuinely have more than one distinct point to make (e.g. a short acknowledgment, then a data table, then a follow-up question) and splitting them into separate chat bubbles would be clearer, put a line containing exactly [[NEXT]] and nothing else between each part. Don't overuse this.`
+Most replies should be a single message. If you genuinely have more than one distinct point to make (e.g. a short acknowledgment, then a data table, then a follow-up question) and splitting them into separate chat bubbles would be clearer, put a line containing exactly [[NEXT]] and nothing else between each part. Don't overuse this.
+If a staging tool's result includes research findings and you revise the caption based on them, wrap the exact final caption in [[CAPTION]]...[[/CAPTION]] somewhere in your reply, with nothing else inside the markers — these markers are stripped before the user sees your reply.`
 
 const HISTORY_LIMIT = 20
 
@@ -81,7 +84,7 @@ const STAGE_UPDATE_CAMPAIGN_TOOL: OpenAI.Chat.Completions.ChatCompletionFunction
     function: {
       name: 'stage_update_campaign',
       description:
-        'Proposes changes to an existing campaign the user owns. Does NOT apply them — only stages for confirmation. Only include fields that are actually changing. Never propose changing status/publishing — that is always the human confirmer\'s choice.',
+        "Proposes changes to an existing campaign the user owns. Does NOT apply them — only stages for confirmation. Only include fields that are actually changing. Never propose changing status/publishing — that is always the human confirmer's choice.",
       parameters: {
         type: 'object',
         properties: {
@@ -128,7 +131,10 @@ const StageCreateCampaignArgsSchema = z.object({
   budget: z.number().positive(),
   startDate: z
     .string()
-    .refine((s) => !Number.isNaN(Date.parse(s)), 'startDate is not a valid date'),
+    .refine(
+      (s) => !Number.isNaN(Date.parse(s)),
+      'startDate is not a valid date',
+    ),
   endDate: z
     .string()
     .refine((s) => !Number.isNaN(Date.parse(s)), 'endDate is not a valid date')
@@ -142,7 +148,10 @@ const StageUpdateCampaignArgsSchema = z.object({
   budget: z.number().positive().optional(),
   startDate: z
     .string()
-    .refine((s) => !Number.isNaN(Date.parse(s)), 'startDate is not a valid date')
+    .refine(
+      (s) => !Number.isNaN(Date.parse(s)),
+      'startDate is not a valid date',
+    )
     .optional(),
   endDate: z
     .string()
@@ -162,23 +171,6 @@ async function getOrCreateConversation(userId: string) {
     orderBy: { createdAt: 'asc' },
   })
   return existing ?? prisma.conversation.create({ data: { userId } })
-}
-
-function buildContextLine(user: UserModel | null): string | undefined {
-  if (!user?.businessName) return undefined
-  const fields: [string, string | null | undefined][] = [
-    ['category', user.category],
-    ['goal', user.goal],
-    ['location', user.location],
-    ['signatureProduct', user.signatureProduct],
-    ['adExperience', user.adExperience],
-    ['budget', user.budget],
-  ]
-  const parts = fields.filter(([, v]) => v).map(([k, v]) => `${k}=${v}`)
-  if (user.platforms.length > 0) {
-    parts.push(`platforms=${user.platforms.join(', ')}`)
-  }
-  return `Business context: name=${user.businessName}${parts.length ? ', ' + parts.join(', ') : ''}.`
 }
 
 function buildAiMemoryBlock(
@@ -208,6 +200,7 @@ async function executeToolCall(
   userId: string,
   conversationId: string,
   call: OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall,
+  researchFindings?: string | null,
 ): Promise<ToolCallResult> {
   const name = call.function.name
 
@@ -239,7 +232,10 @@ async function executeToolCall(
         resultText: JSON.stringify({
           staged: true,
           pendingActionId: action.id,
-          note: 'Action staged only — not executed. Tell the user what you are about to do (including the caption and schedule) and ask them to confirm; remind them the default is Save as Draft unless they explicitly say Publish.',
+          research: researchFindings ?? undefined,
+          note: researchFindings
+            ? 'Action staged only — not executed. Research findings are provided above; if they meaningfully improve the caption, state the improved caption in your reply and wrap the exact final caption in [[CAPTION]]...[[/CAPTION]] (nothing else inside the markers). Tell the user what you are about to do (including the caption and schedule) and ask them to confirm; remind them the default is Save as Draft unless they explicitly say Publish.'
+            : 'Action staged only — not executed. Tell the user what you are about to do (including the caption and schedule) and ask them to confirm; remind them the default is Save as Draft unless they explicitly say Publish.',
         }),
         pendingAction: action,
       }
@@ -277,12 +273,17 @@ async function executeToolCall(
         { ...payload, proposedStatus: 'DRAFT' },
         parsed.data.campaignId,
       )
+      const noteBase =
+        'Action staged only — not executed. Ask the user to confirm in the chat UI before anything changes.'
       return {
         resultText: JSON.stringify({
           staged: true,
           pendingActionId: action.id,
           campaignName: campaign.name,
-          note: 'Action staged only — not executed. Ask the user to confirm in the chat UI before anything changes.',
+          research: researchFindings ?? undefined,
+          note: researchFindings
+            ? `${noteBase} Research findings are provided above; if they meaningfully improve the caption, state the improved caption in your reply and wrap the exact final caption in [[CAPTION]]...[[/CAPTION]] (nothing else inside the markers).`
+            : noteBase,
         }),
         pendingAction: action,
       }
@@ -294,7 +295,7 @@ async function executeToolCall(
       return {
         resultText: JSON.stringify({
           error:
-            'Too many actions are already awaiting the user\'s confirmation. Ask them to confirm or cancel one first.',
+            "Too many actions are already awaiting the user's confirmation. Ask them to confirm or cancel one first.",
         }),
       }
     }
@@ -357,10 +358,52 @@ async function generateAssistantReply(
     let pendingAction: PendingAiActionModel | null = null
 
     if (toolCalls.length > 0) {
+      // Research only runs when a caption is actually being proposed — never
+      // speculatively on every turn, since Compound's free-tier quota (250
+      // requests/day) can't absorb a call on every plain conversation turn.
+      // Eligible: stage_create_campaign (always has a caption), or
+      // stage_update_campaign only when its args include a non-empty
+      // caption. stage_delete_campaign never qualifies.
+      let researchForCallId: string | null = null
+      let researchFindings: string | null = null
+      for (const call of toolCalls) {
+        if (
+          call.function.name !== 'stage_create_campaign' &&
+          call.function.name !== 'stage_update_campaign'
+        ) {
+          continue
+        }
+        try {
+          const args = JSON.parse(call.function.arguments) as {
+            name?: string
+            budget?: number
+            caption?: string
+          }
+          if (typeof args.caption !== 'string' || args.caption.trim() === '') {
+            continue
+          }
+          researchFindings = await researchForCaption({
+            name: args.name,
+            budget: args.budget,
+            caption: args.caption,
+            businessContext: contextLine,
+          })
+          researchForCallId = call.id
+        } catch (err) {
+          console.error('[ai-chat] research pipeline failed:', err)
+        }
+        break
+      }
+
       const toolResultMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
         []
       for (const call of toolCalls) {
-        const result = await executeToolCall(userId, conversationId, call)
+        const result = await executeToolCall(
+          userId,
+          conversationId,
+          call,
+          call.id === researchForCallId ? researchFindings : undefined,
+        )
         if (result.pendingAction) {
           pendingAction = result.pendingAction
         }
@@ -390,6 +433,20 @@ async function generateAssistantReply(
         throw new AiContentFilterError('Response blocked by content filter')
       }
       finalText = secondChoice?.message?.content ?? ''
+
+      const captionMatch = finalText.match(
+        /\[\[CAPTION\]\]([\s\S]*?)\[\[\/CAPTION\]\]/,
+      )
+      if (captionMatch) {
+        const revisedCaption = captionMatch[1].trim()
+        if (revisedCaption.length > 0 && pendingAction) {
+          await pendingActionService.updatePendingActionCaption(
+            pendingAction.id,
+            revisedCaption,
+          )
+        }
+        finalText = finalText.replace(captionMatch[0], '').trim()
+      }
     } else {
       finalText = choice?.message?.content ?? ''
     }
@@ -494,7 +551,10 @@ export async function sendMessage(userId: string, rawText: string) {
   }
 
   return {
-    userMessage: { ...userMessage, pendingAction: null as PendingAiActionModel | null },
+    userMessage: {
+      ...userMessage,
+      pendingAction: null as PendingAiActionModel | null,
+    },
     assistantMessages,
   }
 }

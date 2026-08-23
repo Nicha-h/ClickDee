@@ -51,12 +51,20 @@ function isProviderConfigured(provider: Provider): boolean {
   return provider === 'gemini' ? !!env.GEMINI_API_KEY : !!env.GROQ_API_KEY
 }
 
+// Additive export for a lightweight "is AI usable at all" status check (e.g.
+// the home-page AI Agent status pill) — same condition createChatCompletion
+// uses to throw AiNotConfiguredError, just exposed as a boolean instead.
+export function isAiConfigured(): boolean {
+  return isProviderConfigured('gemini') || isProviderConfigured('groq')
+}
+
 function getClientForProvider(provider: Provider): OpenAI {
   const cached = clientCache.get(provider)
   if (cached) return cached
 
   const apiKey = provider === 'gemini' ? env.GEMINI_API_KEY : env.GROQ_API_KEY
-  const baseURL = provider === 'gemini' ? env.GEMINI_BASE_URL : env.GROQ_BASE_URL
+  const baseURL =
+    provider === 'gemini' ? env.GEMINI_BASE_URL : env.GROQ_BASE_URL
   const client = new OpenAI({
     apiKey,
     baseURL: baseURL.replace(/\/+$/, ''),
@@ -68,6 +76,15 @@ function getClientForProvider(provider: Provider): OpenAI {
   })
   clientCache.set(provider, client)
   return client
+}
+
+// Additive export for lib/compound.ts, which calls Compound directly (never
+// through the cascade below — Compound must not occupy a CHAIN slot or share
+// cooldown state with the chat tiers). Reuses the same client-construction
+// options (baseURL trimming, maxRetries: 0, timeout) rather than duplicating
+// them; does not touch CHAIN/currentIndex/cooldown logic.
+export function getGroqClient(): OpenAI {
+  return getClientForProvider('groq')
 }
 
 function parseRetryAfterMs(err: RateLimitError): number {

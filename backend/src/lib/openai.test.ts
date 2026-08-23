@@ -181,7 +181,9 @@ describe('createChatCompletion', () => {
 
   it('does not cascade on a content-filtered response — returns it as-is', async () => {
     const filtered = {
-      choices: [{ finish_reason: 'content_filter', message: { content: null } }],
+      choices: [
+        { finish_reason: 'content_filter', message: { content: null } },
+      ],
     }
     createMock.mockResolvedValueOnce(filtered)
 

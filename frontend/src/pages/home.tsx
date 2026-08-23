@@ -20,6 +20,7 @@ import HomeSkeleton from '@/components/homeSkeleton'
 import {
   getApiAuthAccountId,
   getApiAiRecommendations,
+  getApiAiStatus,
 } from '@/api/generated/client'
 import type { Recommendation } from '@/api/generated/client'
 import { getUserId, withCredentials } from '@/lib/userId'
@@ -40,32 +41,6 @@ const salesRangeOptions: { value: SalesRangeKey; label: string }[] = [
 const salesDataByRange = buildSalesDataByRange()
 const rainPromoCampaign = campaigns.find((c) => c.id === 'rain-promo-2026')!
 const miloPromoCampaign = campaigns.find((c) => c.id === 'milo-promo-2026')!
-
-type DemoRecommendation = {
-  title: string
-  description: string
-  actionLabel: string
-  campaignId: string
-}
-
-// Example content shown when the signed-in user has no real campaigns yet
-// for the AI to generate suggestions from — see the "ตัวอย่าง" badge below.
-const DEMO_RECOMMENDATIONS: DemoRecommendation[] = [
-  {
-    title: 'ครีเอทีฟใหม่พร้อมทดสอบ',
-    description:
-      'AI สร้าง 3 ภาพใหม่สำหรับเมนูลาเต้คาราเมล กดดูและเริ่ม A/B Test ได้เลย',
-    actionLabel: 'เริ่มเลย',
-    campaignId: 'latte-caramel-2026',
-  },
-  {
-    title: 'งบใกล้หมดสำหรับโปรไมโล',
-    description:
-      'ใช้ไป 90% แล้ว — AI แนะนำให้เพิ่ม ฿2,000 เพื่อให้รันต่ออีก 3 วัน',
-    actionLabel: 'เพิ่มงบ',
-    campaignId: 'milo-promo-2026',
-  },
-]
 
 type RecommendationsState =
   | { status: 'loading' }
@@ -99,6 +74,9 @@ function Home() {
   const [businessName, setBusinessName] = useState<string | null>(null)
   const [recommendationsState, setRecommendationsState] =
     useState<RecommendationsState>({ status: 'loading' })
+  const [aiStatus, setAiStatus] = useState<'loading' | 'active' | 'inactive'>(
+    'loading',
+  )
   {
     /** Summary data PLACEHOLDER*/
   }
@@ -158,14 +136,20 @@ function Home() {
     })
   }, [])
 
-  const isRealRecommendations =
-    recommendationsState.status === 'loaded' &&
+  useEffect(() => {
+    const userId = getUserId()
+    if (!userId) return
+    getApiAiStatus(withCredentials()).then((res) => {
+      if (res.status === 200) setAiStatus(res.data.status)
+    })
+  }, [])
+
+  const showRecommendations =
+    recommendationsState.status === 'loading' ||
     recommendationsState.hasCampaigns
-  const cardsToRender: (Recommendation | DemoRecommendation)[] =
+  const cardsToRender: Recommendation[] =
     recommendationsState.status === 'loaded'
-      ? isRealRecommendations
-        ? recommendationsState.recommendations
-        : DEMO_RECOMMENDATIONS
+      ? recommendationsState.recommendations
       : []
 
   if (isLoading) return <HomeSkeleton />
@@ -203,14 +187,22 @@ function Home() {
         <div className="flex flex-1 flex-col gap-4">
           {/** AI Agent Status + time update */}
           <div className="font-thai -mt-4 flex w-full flex-row flex-wrap items-center justify-start gap-2 font-semibold">
-            {/** AI Agent Status TODO: Make this relate to the real AI status [active/inactive/error] with relative colors*/}
-            <div className="text-amalfi mt-2 flex items-center gap-2 rounded-full border-2 border-black bg-white px-3 py-1 text-xs whitespace-nowrap sm:px-4 sm:py-2 sm:text-sm lg:text-lg">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500"></span>
-              </span>
-              AI Agent · กำลังทำงาน
-            </div>
+            {aiStatus === 'inactive' ? (
+              <div className="mt-2 flex items-center gap-2 rounded-full border-2 border-black bg-white px-3 py-1 text-xs whitespace-nowrap text-[#6B7280] sm:px-4 sm:py-2 sm:text-sm lg:text-lg">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#8E98A8]"></span>
+                </span>
+                AI Agent · ไม่พร้อมใช้งาน
+              </div>
+            ) : (
+              <div className="text-amalfi mt-2 flex items-center gap-2 rounded-full border-2 border-black bg-white px-3 py-1 text-xs whitespace-nowrap sm:px-4 sm:py-2 sm:text-sm lg:text-lg">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500"></span>
+                </span>
+                AI Agent · กำลังทำงาน
+              </div>
+            )}
             <h2 className="mt-3 text-xs sm:ml-5 md:text-sm lg:text-base">
               อัปเดทล่าสุด 2 ชั่วโมงที่แล้ว
             </h2>
@@ -218,11 +210,14 @@ function Home() {
           {/** filler msg*/}
           <div className="flex flex-col items-start justify-start gap-2">
             <div className="font-thai text-amalfidark text-2xl font-semibold">
-              วันนี้ น้องดีดูแลโฆษณาให้คุณอยู่นะคะ ☕
+              {aiStatus === 'inactive'
+                ? 'AI ยังไม่พร้อมใช้งานในขณะนี้'
+                : 'วันนี้ น้องดีดูแลโฆษณาให้คุณอยู่นะคะ ☕'}
             </div>
             <div className="font-thai text-amalfi text-lg">
-              ระบบกำลังทำงานเต็มที่เพื่อยอดขายของคุณ — วิเคราะห์ตลาด ปรับงบ
-              และเขียนโฆษณาให้อัตโนมัติ แค่คลิกเดียว ก็สร้างแคมเปญใหม่ได้เลย
+              {aiStatus === 'inactive'
+                ? 'ระบบ AI ยังไม่ได้ตั้งค่าไว้ — ฟีเจอร์ที่เกี่ยวกับ AI จะยังใช้งานไม่ได้ในตอนนี้'
+                : 'ระบบกำลังทำงานเต็มที่เพื่อยอดขายของคุณ — วิเคราะห์ตลาด ปรับงบ และเขียนโฆษณาให้อัตโนมัติ แค่คลิกเดียว ก็สร้างแคมเปญใหม่ได้เลย'}
             </div>
           </div>
         </div>
@@ -487,70 +482,60 @@ function Home() {
         {/** Right column */}
         <div className="flex w-full flex-col gap-5 md:w-[40%] lg:w-150">
           {/** AI recommendations*/}
-          <div className="w-full rounded-xl border-2 border-[#8E98A8] p-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
-            <div className="flex flex-row items-center gap-3">
-              <div className="bg-citrus rounded-xl p-3 shadow-md">
-                <img src={sparklebold} alt="Sparkle" className="h-7 w-7" />
-              </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
+          {showRecommendations && (
+            <div className="w-full rounded-xl border-2 border-[#8E98A8] p-5 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">
+              <div className="flex flex-row items-center gap-3">
+                <div className="bg-citrus rounded-xl p-3 shadow-md">
+                  <img src={sparklebold} alt="Sparkle" className="h-7 w-7" />
+                </div>
+                <div>
                   <h2 className="font-thai text-amalfidark text-2xl font-semibold">
                     น้องดีแนะนำให้คุณ
                   </h2>
-                  {recommendationsState.status === 'loaded' &&
-                    !isRealRecommendations && (
-                      <span className="font-thai rounded-full bg-[#f0e9ff] px-2 py-0.5 text-xs font-medium text-[#7f66ba]">
-                        ตัวอย่าง
-                      </span>
-                    )}
+                  {recommendationsState.status === 'loading' ? (
+                    <Skeleton className="mt-1 h-5 w-40" />
+                  ) : (
+                    <p className="font-thai text-base text-black">
+                      {cardsToRender.length} สิ่งที่ทำได้ใน 30 วินาที
+                    </p>
+                  )}
                 </div>
+              </div>
+              <div className="mt-4 flex flex-col gap-3">
                 {recommendationsState.status === 'loading' ? (
-                  <Skeleton className="mt-1 h-5 w-40" />
-                ) : (
-                  <p className="font-thai text-base text-black">
-                    {cardsToRender.length} สิ่งที่ทำได้ใน 30 วินาที
+                  <>
+                    <RecommendationCardSkeleton />
+                    <RecommendationCardSkeleton />
+                  </>
+                ) : cardsToRender.length === 0 ? (
+                  <p className="font-thai text-base text-[#8E98A8]">
+                    ยังไม่มีคำแนะนำตอนนี้ ลองใหม่อีกครั้งภายหลัง
                   </p>
+                ) : (
+                  cardsToRender.map((rec, i) => (
+                    <div
+                      key={`${rec.campaignId}-${i}`}
+                      className="rounded-[10px] border border-[#8E98A8] px-5 py-4"
+                    >
+                      <p className="font-thai text-xl font-semibold text-black">
+                        {rec.title}
+                      </p>
+                      <p className="font-thai mt-1 text-base text-black">
+                        {rec.description}
+                      </p>
+                      <button
+                        onClick={() => navigate('/campaign')}
+                        className="bg-sealight-hover border-seadark text-seadark font-thai hover:bg-sealight-active mt-5 flex items-center gap-1 rounded-full border px-7 py-1 text-base transition-colors hover:cursor-pointer"
+                      >
+                        {rec.actionLabel}
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))
                 )}
               </div>
             </div>
-            <div className="mt-4 flex flex-col gap-3">
-              {recommendationsState.status === 'loading' ? (
-                <>
-                  <RecommendationCardSkeleton />
-                  <RecommendationCardSkeleton />
-                </>
-              ) : isRealRecommendations && cardsToRender.length === 0 ? (
-                <p className="font-thai text-base text-[#8E98A8]">
-                  ยังไม่มีคำแนะนำตอนนี้ ลองใหม่อีกครั้งภายหลัง
-                </p>
-              ) : (
-                cardsToRender.map((rec, i) => (
-                  <div
-                    key={`${rec.campaignId}-${i}`}
-                    className="rounded-[10px] border border-[#8E98A8] px-5 py-4"
-                  >
-                    <p className="font-thai text-xl font-semibold text-black">
-                      {rec.title}
-                    </p>
-                    <p className="font-thai mt-1 text-base text-black">
-                      {rec.description}
-                    </p>
-                    <button
-                      onClick={() =>
-                        isRealRecommendations
-                          ? navigate('/campaign')
-                          : navigate(`/campaign/${rec.campaignId}/edit`)
-                      }
-                      className="bg-sealight-hover border-seadark text-seadark font-thai hover:bg-sealight-active mt-5 flex items-center gap-1 rounded-full border px-7 py-1 text-base transition-colors hover:cursor-pointer"
-                    >
-                      {rec.actionLabel}
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          )}
 
           {/** Local trend */}
           <div className="w-full rounded-xl border-2 border-[#8E98A8] p-5 pb-8 shadow-[0_5px_5px_rgba(0,0,0,0.25)]/30">

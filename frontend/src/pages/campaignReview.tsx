@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ChevronLeft,
   Plus,
@@ -8,18 +8,25 @@ import {
   Users,
   MousePointerClick,
   ShoppingCart,
-  Shuffle,
   X,
 } from 'lucide-react'
 import facebook from '@/assets/logos/facebook.svg'
+import defaultCampaignImage from '@/assets/decorative/default campaign.png'
 import StepIndicator from '@/components/stepIndicator'
-import { campaigns } from '@/data/campaigns'
+import ConfirmDialog from '@/components/confirmDialog'
 import {
   postApiAiActionsIdConfirm,
   postApiAiActionsIdCancel,
+  getApiCampaignsId,
+  patchApiCampaignsId,
+  deleteApiCampaignsId,
 } from '@/api/generated/client'
-import type { PendingAiAction } from '@/api/generated/client'
+import type {
+  PendingAiAction,
+  Campaign as ApiCampaign,
+} from '@/api/generated/client'
 import { pendingActionSummary } from '@/lib/pendingAction'
+import { campaignSummaryRows } from '@/lib/campaignAdapters'
 import { withCredentials } from '@/lib/userId'
 
 // Illustrative-only content: audience sizing, per-channel budget split, a
@@ -36,8 +43,6 @@ const exampleForecast = {
   clicks: [1223, 1855],
   orders: [159, 278],
 }
-const exampleCreatives = campaigns[0].creatives
-
 function ExampleBadge() {
   return (
     <span className="font-thai rounded-full bg-[#f0e9ff] px-2 py-0.5 text-xs font-medium text-[#7f66ba]">
@@ -47,26 +52,32 @@ function ExampleBadge() {
 }
 
 function CampaignReview() {
-  const navigate = useNavigate()
   const location = useLocation()
+  const { campaignId } = useParams()
   const pendingAction = (
     location.state as {
       pendingAction?: NonNullable<PendingAiAction>
     } | null
   )?.pendingAction
 
-  useEffect(() => {
-    if (!pendingAction) {
-      navigate('/campaign/new', { replace: true })
-    }
-  }, [pendingAction, navigate])
-
-  if (!pendingAction) return null
-
-  return <CampaignReviewView pendingAction={pendingAction} />
+  if (pendingAction) {
+    return <PendingActionReview pendingAction={pendingAction} />
+  }
+  if (campaignId) {
+    return <DraftCampaignReview campaignId={campaignId} />
+  }
+  return <RedirectToNewCampaign />
 }
 
-function CampaignReviewView({
+function RedirectToNewCampaign() {
+  const navigate = useNavigate()
+  useEffect(() => {
+    navigate('/campaign/new', { replace: true })
+  }, [navigate])
+  return null
+}
+
+function PendingActionReview({
   pendingAction,
 }: {
   pendingAction: NonNullable<PendingAiAction>
@@ -75,29 +86,6 @@ function CampaignReviewView({
   const { rows } = pendingActionSummary(pendingAction)
   const [isResolving, setIsResolving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  // Illustrative-only budget slider — not tied to the real campaign budget
-  // above, which comes from what the AI already proposed.
-  const [days, setDays] = useState(14)
-  const [perDay, setPerDay] = useState(350)
-  const exampleTotalBudget = days * perDay
-
-  const [interests, setInterests] = useState(exampleInterests)
-  const [newInterest, setNewInterest] = useState('')
-  const [isAddingInterest, setIsAddingInterest] = useState(false)
-
-  const removeInterest = (tag: string) =>
-    setInterests((prev) => prev.filter((t) => t !== tag))
-
-  const addInterest = (e: FormEvent) => {
-    e.preventDefault()
-    const trimmed = newInterest.trim()
-    if (trimmed && !interests.includes(trimmed)) {
-      setInterests((prev) => [...prev, trimmed])
-    }
-    setNewInterest('')
-    setIsAddingInterest(false)
-  }
 
   const handleLaunch = async (publish: boolean) => {
     setIsResolving(true)
@@ -131,6 +119,177 @@ function CampaignReviewView({
     } finally {
       navigate('/campaign/new')
     }
+  }
+
+  return (
+    <CampaignReviewLayout
+      rows={rows}
+      budget={pendingAction.payload.budget}
+      caption={pendingAction.payload.caption}
+      name={pendingAction.payload.name}
+      isResolving={isResolving}
+      error={error}
+      onLaunch={() => handleLaunch(true)}
+      secondaryAction={{
+        label: 'บันทึกเป็นฉบับร่าง',
+        onClick: () => handleLaunch(false),
+      }}
+      tertiaryAction={{
+        label: 'เริ่มใหม่ด้วยบรีฟอื่น',
+        onClick: handleRestart,
+      }}
+    />
+  )
+}
+
+function DraftCampaignReview({ campaignId }: { campaignId: string }) {
+  const navigate = useNavigate()
+  const [campaign, setCampaign] = useState<ApiCampaign | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isResolving, setIsResolving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  useEffect(() => {
+    getApiCampaignsId(campaignId, withCredentials()).then((res) => {
+      if (res.status === 200) setCampaign(res.data)
+      setIsLoading(false)
+    })
+  }, [campaignId])
+
+  useEffect(() => {
+    if (campaign && campaign.status !== 'DRAFT') {
+      navigate(`/campaign/${campaignId}/report`, { replace: true })
+    }
+  }, [campaign, campaignId, navigate])
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-full min-w-full items-center justify-center py-10">
+        <p className="font-thai text-xl text-black">กำลังโหลด...</p>
+      </div>
+    )
+  }
+
+  if (!campaign) {
+    return (
+      <div className="flex min-h-full min-w-full flex-col items-center justify-center gap-4 py-10">
+        <p className="font-thai text-xl text-black">ไม่พบแคมเปญนี้</p>
+        <Link to="/campaign" className="font-thai text-amalfi underline">
+          กลับไปหน้าแคมเปญ
+        </Link>
+      </div>
+    )
+  }
+
+  if (campaign.status !== 'DRAFT') return null
+
+  const handleLaunch = async () => {
+    setIsResolving(true)
+    setError(null)
+    try {
+      const res = await patchApiCampaignsId(
+        campaignId,
+        { status: 'ACTIVE' },
+        withCredentials(),
+      )
+      if (res.status === 200) {
+        navigate(`/campaign/${campaignId}/report`)
+      } else {
+        setError('ไม่สามารถเปิดตัวแคมเปญได้ กรุณาลองใหม่อีกครั้ง')
+      }
+    } catch {
+      setError('ไม่สามารถเปิดตัวแคมเปญได้ กรุณาลองใหม่อีกครั้ง')
+    } finally {
+      setIsResolving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    setIsResolving(true)
+    try {
+      const res = await deleteApiCampaignsId(campaignId, withCredentials())
+      if (res.status === 204) {
+        setConfirmingDelete(false)
+        navigate('/campaign')
+      }
+    } finally {
+      setIsResolving(false)
+    }
+  }
+
+  return (
+    <>
+      <CampaignReviewLayout
+        rows={campaignSummaryRows(campaign)}
+        budget={Number(campaign.budget)}
+        caption={campaign.caption}
+        name={campaign.name}
+        isResolving={isResolving}
+        error={error}
+        onLaunch={handleLaunch}
+        tertiaryAction={{
+          label: 'ลบแคมเปญฉบับร่าง',
+          onClick: () => setConfirmingDelete(true),
+        }}
+      />
+      <ConfirmDialog
+        open={confirmingDelete}
+        title="ยืนยันการลบแคมเปญ"
+        message="คุณแน่ใจหรือไม่ว่าต้องการลบแคมเปญนี้ การดำเนินการนี้ไม่สามารถย้อนกลับได้"
+        confirmLabel="ลบแคมเปญ"
+        confirmDisabled={isResolving}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmingDelete(false)}
+      />
+    </>
+  )
+}
+
+function CampaignReviewLayout({
+  rows,
+  budget,
+  caption,
+  name,
+  isResolving,
+  error,
+  onLaunch,
+  secondaryAction,
+  tertiaryAction,
+}: {
+  rows: [string, string][]
+  budget?: number
+  caption?: string | null
+  name?: string
+  isResolving: boolean
+  error: string | null
+  onLaunch: () => void
+  secondaryAction?: { label: string; onClick: () => void }
+  tertiaryAction: { label: string; onClick: () => void }
+}) {
+  const navigate = useNavigate()
+
+  // Illustrative-only budget slider — not tied to the real campaign budget
+  // above, which comes from what the AI already proposed.
+  const [days, setDays] = useState(14)
+  const [perDay, setPerDay] = useState(350)
+  const exampleTotalBudget = days * perDay
+
+  const [interests, setInterests] = useState(exampleInterests)
+  const [newInterest, setNewInterest] = useState('')
+  const [isAddingInterest, setIsAddingInterest] = useState(false)
+
+  const removeInterest = (tag: string) =>
+    setInterests((prev) => prev.filter((t) => t !== tag))
+
+  const addInterest = (e: FormEvent) => {
+    e.preventDefault()
+    const trimmed = newInterest.trim()
+    if (trimmed && !interests.includes(trimmed)) {
+      setInterests((prev) => [...prev, trimmed])
+    }
+    setNewInterest('')
+    setIsAddingInterest(false)
   }
 
   return (
@@ -259,49 +418,29 @@ function CampaignReviewView({
                 />
               </div>
               <span className="text-base font-semibold text-black">
-                {pendingAction.payload.budget !== undefined
-                  ? `฿${pendingAction.payload.budget.toLocaleString('th-TH')}`
+                {budget !== undefined
+                  ? `฿${budget.toLocaleString('th-TH')}`
                   : '-'}
               </span>
             </div>
           </div>
 
           <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
-            <div className="flex items-center gap-2">
-              <h3 className="font-thai text-amalfidark text-2xl font-bold">
-                ครีเอทีฟตัวอย่าง
-              </h3>
-              <ExampleBadge />
-            </div>
+            <h3 className="font-thai text-amalfidark text-2xl font-bold">
+              ครีเอทีฟที่ AI สร้าง
+            </h3>
             <p className="font-thai mt-1 text-lg text-black">
-              ตัวอย่างหน้าตาครีเอทีฟ — สร้างครีเอทีฟจริงได้หลังเปิดตัวแคมเปญ
+              สร้างครีเอทีฟเพิ่มเติมได้หลังเปิดตัวแคมเปญ
             </p>
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {exampleCreatives.map((creative) => (
-                <div
-                  key={creative.rank}
-                  className="min-w-0 overflow-hidden rounded-xl border border-[#8E98A8]"
-                >
-                  <img
-                    src={creative.image}
-                    alt={creative.caption}
-                    className="h-37 w-full object-cover"
-                  />
-                  <div className="p-3">
-                    <p className="font-thai text-lg text-black">
-                      {creative.caption}
-                    </p>
-                    <button
-                      type="button"
-                      disabled
-                      className="font-thai text-seadark mt-2 flex cursor-not-allowed items-center gap-1 text-lg opacity-60"
-                    >
-                      <Shuffle className="h-3 w-3" />
-                      สุ่มใหม่
-                    </button>
-                  </div>
-                </div>
-              ))}
+            <div className="mt-4 max-w-xs min-w-0 overflow-hidden rounded-xl border border-[#8E98A8]">
+              <img
+                src={defaultCampaignImage}
+                alt={caption ?? name ?? ''}
+                className="h-37 w-full object-cover"
+              />
+              <div className="p-3">
+                <p className="font-thai text-lg text-black">{caption ?? '-'}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -414,13 +553,11 @@ function CampaignReviewView({
             </div>
           </div>
 
-          {error && (
-            <p className="font-thai text-base text-red-600">{error}</p>
-          )}
+          {error && <p className="font-thai text-base text-red-600">{error}</p>}
 
           <button
             type="button"
-            onClick={() => handleLaunch(true)}
+            onClick={onLaunch}
             disabled={isResolving}
             className="bg-citrus hover:bg-citrushover font-thai text-amalfidark flex w-full items-center justify-center gap-2 rounded-xl px-6 py-4 text-2xl font-bold shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] transition-all hover:scale-105 hover:cursor-pointer disabled:opacity-50"
           >
@@ -439,21 +576,23 @@ function CampaignReviewView({
             </svg>
             เปิดตัวแคมเปญเลย
           </button>
+          {secondaryAction && (
+            <button
+              type="button"
+              onClick={secondaryAction.onClick}
+              disabled={isResolving}
+              className="font-thai bg-sealight-hover border-seadark text-seadark hover:bg-sealight-active hover:text-seadark-active w-full rounded-xl border-[1.5px] py-3 text-lg font-semibold hover:scale-105 hover:cursor-pointer disabled:opacity-50"
+            >
+              {secondaryAction.label}
+            </button>
+          )}
           <button
             type="button"
-            onClick={() => handleLaunch(false)}
-            disabled={isResolving}
-            className="font-thai bg-sealight-hover border-seadark text-seadark hover:bg-sealight-active hover:text-seadark-active w-full rounded-xl border-[1.5px] py-3 text-lg font-semibold hover:scale-105 hover:cursor-pointer disabled:opacity-50"
-          >
-            บันทึกเป็นฉบับร่าง
-          </button>
-          <button
-            type="button"
-            onClick={handleRestart}
+            onClick={tertiaryAction.onClick}
             disabled={isResolving}
             className="font-thai w-full py-2 text-center text-lg text-[#8e98a8] underline hover:scale-105 hover:cursor-pointer disabled:opacity-50"
           >
-            เริ่มใหม่ด้วยบรีฟอื่น
+            {tertiaryAction.label}
           </button>
         </div>
       </div>

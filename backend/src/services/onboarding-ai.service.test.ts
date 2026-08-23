@@ -84,7 +84,9 @@ describe('generateFollowupQuestion', () => {
 
   it('retries once and succeeds when the first reply is malformed JSON', async () => {
     createMock
-      .mockResolvedValueOnce({ choices: [{ message: { content: 'not json' } }] })
+      .mockResolvedValueOnce({
+        choices: [{ message: { content: 'not json' } }],
+      })
       .mockResolvedValueOnce(
         jsonMessage({ done: false, question: 'ลูกค้าส่วนใหญ่มาจากไหน?' }),
       )
@@ -118,7 +120,10 @@ describe('generateFollowupQuestion', () => {
         jsonMessage({ done: false, question: 'ลูกค้าหลักของคุณคือใคร?' }),
       )
       .mockResolvedValueOnce(
-        jsonMessage({ done: false, question: 'ลูกค้ามาจากช่องทางไหนบ่อยที่สุด?' }),
+        jsonMessage({
+          done: false,
+          question: 'ลูกค้ามาจากช่องทางไหนบ่อยที่สุด?',
+        }),
       )
     const result = await generateFollowupQuestion({}, previousAnswers)
     expect(result.question).toBe('ลูกค้ามาจากช่องทางไหนบ่อยที่สุด?')
@@ -133,7 +138,9 @@ describe('generateFollowupQuestion', () => {
       .mockResolvedValueOnce(
         jsonMessage({ done: false, question: 'ลูกค้าหลักของคุณคือใคร?' }),
       )
-      .mockResolvedValueOnce({ choices: [{ message: { content: 'not json' } }] })
+      .mockResolvedValueOnce({
+        choices: [{ message: { content: 'not json' } }],
+      })
     const result = await generateFollowupQuestion({}, previousAnswers)
     expect(result.question).toBe('ลูกค้าหลักของคุณคือใคร?')
     expect(createMock).toHaveBeenCalledTimes(2)

@@ -5,22 +5,20 @@ import { ChevronLeft, Sparkles } from 'lucide-react'
 import sparklebold from '@/assets/icons/sparklebold.svg'
 import { campaigns } from '@/data/campaigns'
 import type { CampaignItem } from '@/data/campaigns'
-import { getApiCampaignsId } from '@/api/generated/client'
+import {
+  getApiCampaignsId,
+  getApiAiCampaignsIdCreativeIdeas,
+} from '@/api/generated/client'
 import { toCampaignItem } from '@/lib/campaignAdapters'
 import { withCredentials } from '@/lib/userId'
 
-type SuggestedIdea = { id: string; prompt: string }
-
-const suggestedIdeas: SuggestedIdea[] = [
-  {
-    id: 'discount-focus',
-    prompt: 'โปรโมทส่วนลด 20% เน้นความคุ้มค่า สไตล์สดใส',
-  },
-  { id: 'new-menu', prompt: 'แนะนำเมนูใหม่ให้น่าลอง เน้นภาพสวยกินแล้วอยากลอง' },
-  {
-    id: 'limited-time',
-    prompt: 'สร้างความเร่งด่วน โปรวันนี้เท่านั้น ลดจริง 25%',
-  },
+// Mock/demo campaigns have no backing Campaign row to ground a real AI call
+// on, so they keep this static illustrative list; real (API) campaigns fetch
+// AI-generated ideas instead — see CreativeCreateView below.
+const MOCK_SUGGESTED_IDEAS = [
+  'โปรโมทส่วนลด 20% เน้นความคุ้มค่า สไตล์สดใส',
+  'แนะนำเมนูใหม่ให้น่าลอง เน้นภาพสวยกินแล้วอยากลอง',
+  'สร้างความเร่งด่วน โปรวันนี้เท่านั้น ลดจริง 25%',
 ]
 
 function CreativeCreate() {
@@ -65,6 +63,18 @@ function CreativeCreate() {
 function CreativeCreateView({ campaign }: { campaign: CampaignItem }) {
   const navigate = useNavigate()
   const [prompt, setPrompt] = useState('')
+  const [ideas, setIdeas] = useState<string[]>(
+    campaign.source === 'api' ? [] : MOCK_SUGGESTED_IDEAS,
+  )
+
+  useEffect(() => {
+    if (campaign.source !== 'api') return
+    getApiAiCampaignsIdCreativeIdeas(campaign.id, withCredentials()).then(
+      (res) => {
+        if (res.status === 200) setIdeas(res.data.ideas)
+      },
+    )
+  }, [campaign.id, campaign.source])
 
   const worstCreative =
     campaign.creatives.length > 0
@@ -147,23 +157,25 @@ function CreativeCreateView({ campaign }: { campaign: CampaignItem }) {
             </button>
           </div>
 
-          <div className="mt-6 border-t border-[#8E98A8] pt-4">
-            <p className="font-thai text-lg font-semibold text-black">
-              หรือเริ่มจากตัวอย่างที่น้องดีแนะนำ
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {suggestedIdeas.map((idea) => (
-                <button
-                  key={idea.id}
-                  type="button"
-                  onClick={() => setPrompt(idea.prompt)}
-                  className="font-thai bg-sealight border-seadark-hover text-seadark-active hover:bg-sealight-hover rounded-2xl border border-dashed px-4 py-2 text-left text-base"
-                >
-                  {idea.prompt}
-                </button>
-              ))}
+          {ideas.length > 0 && (
+            <div className="mt-6 border-t border-[#8E98A8] pt-4">
+              <p className="font-thai text-lg font-semibold text-black">
+                หรือเริ่มจากตัวอย่างที่น้องดีแนะนำ
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {ideas.map((idea, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setPrompt(idea)}
+                    className="font-thai bg-sealight border-seadark-hover text-seadark-active hover:bg-sealight-hover rounded-2xl border border-dashed px-4 py-2 text-left text-base"
+                  >
+                    {idea}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </form>
 
         {/** Right column */}

@@ -1,18 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, Sparkles } from 'lucide-react'
-import campaignReportCreative1 from '@/assets/placeholders/campaign-report-creative-1.jpg'
-import campaignReportCreative2 from '@/assets/placeholders/campaign-report-creative-2.jpg'
-import campaignReportCreative3 from '@/assets/placeholders/campaign-report-creative-3.jpg'
+import defaultCampaignImage from '@/assets/decorative/default campaign.png'
 import type { Creative } from '@/data/campaigns'
-
-const PROCESSING_DELAY_MS = 3000
-
-const placeholderImages = [
-  campaignReportCreative1,
-  campaignReportCreative2,
-  campaignReportCreative3,
-]
+import { postApiAiCampaignsIdCreative } from '@/api/generated/client'
+import { withCredentials } from '@/lib/userId'
 
 type NewCreative = Omit<Creative, 'rank' | 'badgeBorderColor'>
 
@@ -21,24 +13,46 @@ function CreativeProcessing() {
   const location = useLocation()
   const { campaignId } = useParams()
   const prompt = (location.state as { prompt?: string } | null)?.prompt ?? ''
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      const newCreative: NewCreative = {
-        image:
-          placeholderImages[
-            Math.floor(Math.random() * placeholderImages.length)
-          ],
-        caption: prompt,
-        impressions: Math.floor(500 + Math.random() * 1500),
-        ctr: Math.round((3 + Math.random() * 3) * 100) / 100,
+    if (!campaignId) return
+    let cancelled = false
+
+    const run = async () => {
+      setError(null)
+      try {
+        const res = await postApiAiCampaignsIdCreative(
+          campaignId,
+          { prompt },
+          withCredentials(),
+        )
+        if (cancelled) return
+        if (res.status === 200) {
+          const newCreative: NewCreative = {
+            image: defaultCampaignImage,
+            caption: res.data.caption,
+            impressions: Math.floor(500 + Math.random() * 1500),
+            ctr: Math.round((3 + Math.random() * 3) * 100) / 100,
+          }
+          navigate(`/campaign/${campaignId}/report`, {
+            replace: true,
+            state: { newCreative },
+          })
+        } else {
+          setError('ไม่สามารถสร้างครีเอทีฟได้ กรุณาลองใหม่อีกครั้ง')
+        }
+      } catch {
+        if (!cancelled) {
+          setError('ไม่สามารถสร้างครีเอทีฟได้ กรุณาลองใหม่อีกครั้ง')
+        }
       }
-      navigate(`/campaign/${campaignId}/report`, {
-        replace: true,
-        state: { newCreative },
-      })
-    }, PROCESSING_DELAY_MS)
-    return () => clearTimeout(timeout)
+    }
+
+    run()
+    return () => {
+      cancelled = true
+    }
   }, [navigate, campaignId, prompt])
 
   return (
@@ -62,22 +76,39 @@ function CreativeProcessing() {
         </div>
       </div>
 
-      <div className="bg-sealight mt-6 flex h-113 flex-col items-center justify-center rounded-xl shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
-        <div className="relative flex h-35 w-35 items-center justify-center">
-          <span className="bg-sea absolute inline-flex h-28 w-28 animate-ping rounded-full opacity-60" />
-          <span className="bg-sea absolute inline-flex h-28 w-28 animate-ping rounded-full opacity-60 [animation-delay:0.5s]" />
-          <span className="bg-sea relative flex h-28 w-28 animate-[breathe_2.4s_ease-in-out_infinite] items-center justify-center rounded-full shadow-lg">
-            <Sparkles className="h-14 w-14 animate-[spin_6s_linear_infinite] text-white" />
-          </span>
+      {error ? (
+        <div className="bg-sealight mt-6 flex h-113 flex-col items-center justify-center gap-4 rounded-xl shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+          <p className="font-thai text-xl text-[#be2c2c]">{error}</p>
+          <button
+            type="button"
+            onClick={() =>
+              navigate(`/campaign/${campaignId}/creative/new`, {
+                state: { prompt },
+              })
+            }
+            className="bg-citrus hover:bg-citrushover font-thai rounded-2xl px-6 py-3 text-lg font-semibold text-black transition-all hover:scale-105 hover:cursor-pointer"
+          >
+            ลองใหม่อีกครั้ง
+          </button>
         </div>
-        <h2 className="font-thai text-amalfidark mt-6 text-xl font-bold sm:text-2xl lg:text-3xl">
-          น้องดีกำลังสร้างครีเอทีฟให้คุณอยู่...
-        </h2>
-        <p className="font-thai mt-2 text-xl text-[#8e98a8]">
-          AI กำลังวิเคราะห์ครีเอทีฟที่ทำผลงานดีที่สุด
-          เพื่อสร้างใบใหม่ที่มีโอกาสชนะการทดสอบ
-        </p>
-      </div>
+      ) : (
+        <div className="bg-sealight mt-6 flex h-113 flex-col items-center justify-center rounded-xl shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+          <div className="relative flex h-35 w-35 items-center justify-center">
+            <span className="bg-sea absolute inline-flex h-28 w-28 animate-ping rounded-full opacity-60" />
+            <span className="bg-sea absolute inline-flex h-28 w-28 animate-ping rounded-full opacity-60 [animation-delay:0.5s]" />
+            <span className="bg-sea relative flex h-28 w-28 animate-[breathe_2.4s_ease-in-out_infinite] items-center justify-center rounded-full shadow-lg">
+              <Sparkles className="h-14 w-14 animate-[spin_6s_linear_infinite] text-white" />
+            </span>
+          </div>
+          <h2 className="font-thai text-amalfidark mt-6 text-xl font-bold sm:text-2xl lg:text-3xl">
+            น้องดีกำลังสร้างครีเอทีฟให้คุณอยู่...
+          </h2>
+          <p className="font-thai mt-2 text-xl text-[#8e98a8]">
+            AI กำลังวิเคราะห์ครีเอทีฟที่ทำผลงานดีที่สุด
+            เพื่อสร้างใบใหม่ที่มีโอกาสชนะการทดสอบ
+          </p>
+        </div>
+      )}
       <div className="h-24 w-full shrink-0"></div>
     </div>
   )

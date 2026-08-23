@@ -318,6 +318,22 @@ export interface RecommendationsResponse {
   recommendations: Recommendation[];
 }
 
+export interface InsightsResponse {
+  hasCampaigns: boolean;
+  /** @maxItems 3 */
+  insights: string[];
+}
+
+export interface CampaignInsightsResponse {
+  /** @maxItems 3 */
+  insights: string[];
+}
+
+export interface IdeasResponse {
+  /** @maxItems 3 */
+  ideas: string[];
+}
+
 export interface SendAiMessageResponse {
   userMessage: AiMessage;
   /** @minItems 1 */
@@ -330,6 +346,18 @@ export interface SendAiMessageInput {
      * @maxLength 4000
      */
   text: string;
+}
+
+export interface GenerateCreativeResponse {
+  caption: string;
+}
+
+export interface GenerateCreativeInput {
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  prompt: string;
 }
 
 export type ConfirmPendingActionResponseStatus = typeof ConfirmPendingActionResponseStatus[keyof typeof ConfirmPendingActionResponseStatus];
@@ -462,6 +490,18 @@ export interface Notification {
   read: boolean;
   createdAt: string;
 }
+
+export type GetApiAiStatus200Status = typeof GetApiAiStatus200Status[keyof typeof GetApiAiStatus200Status];
+
+
+export const GetApiAiStatus200Status = {
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export type GetApiAiStatus200 = {
+  status: GetApiAiStatus200Status;
+};
 
 export type PostApiNotificationsIdRead200 = {
   success: boolean;
@@ -1168,6 +1208,283 @@ export const getApiAiRecommendations = async ( options?: RequestInit): Promise<g
 
   const data: getApiAiRecommendationsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getApiAiRecommendationsResponse
+}
+
+
+
+export type getApiAiInsightsResponse200 = {
+  data: InsightsResponse
+  status: 200
+}
+
+export type getApiAiInsightsResponseSuccess = (getApiAiInsightsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiAiInsightsResponse = (getApiAiInsightsResponseSuccess)
+
+export const getGetApiAiInsightsUrl = () => {
+
+
+
+
+  return `${apiBaseUrl}/api/ai/insights`
+}
+
+export const getApiAiInsights = async ( options?: RequestInit): Promise<getApiAiInsightsResponse> => {
+
+  const res = await fetch(getGetApiAiInsightsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiAiInsightsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiAiInsightsResponse
+}
+
+
+
+export type getApiAiCampaignsIdInsightsResponse200 = {
+  data: CampaignInsightsResponse
+  status: 200
+}
+
+export type getApiAiCampaignsIdInsightsResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type getApiAiCampaignsIdInsightsResponseSuccess = (getApiAiCampaignsIdInsightsResponse200) & {
+  headers: Headers;
+};
+export type getApiAiCampaignsIdInsightsResponseError = (getApiAiCampaignsIdInsightsResponse404) & {
+  headers: Headers;
+};
+
+export type getApiAiCampaignsIdInsightsResponse = (getApiAiCampaignsIdInsightsResponseSuccess | getApiAiCampaignsIdInsightsResponseError)
+
+export const getGetApiAiCampaignsIdInsightsUrl = (id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/ai/campaigns/${id}/insights`
+}
+
+export const getApiAiCampaignsIdInsights = async (id: string, options?: RequestInit): Promise<getApiAiCampaignsIdInsightsResponse> => {
+
+  const res = await fetch(getGetApiAiCampaignsIdInsightsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiAiCampaignsIdInsightsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiAiCampaignsIdInsightsResponse
+}
+
+
+
+export type getApiAiCampaignIdeasResponse200 = {
+  data: IdeasResponse
+  status: 200
+}
+
+export type getApiAiCampaignIdeasResponseSuccess = (getApiAiCampaignIdeasResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiAiCampaignIdeasResponse = (getApiAiCampaignIdeasResponseSuccess)
+
+export const getGetApiAiCampaignIdeasUrl = () => {
+
+
+
+
+  return `${apiBaseUrl}/api/ai/campaign-ideas`
+}
+
+export const getApiAiCampaignIdeas = async ( options?: RequestInit): Promise<getApiAiCampaignIdeasResponse> => {
+
+  const res = await fetch(getGetApiAiCampaignIdeasUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiAiCampaignIdeasResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiAiCampaignIdeasResponse
+}
+
+
+
+export type getApiAiCampaignsIdCreativeIdeasResponse200 = {
+  data: IdeasResponse
+  status: 200
+}
+
+export type getApiAiCampaignsIdCreativeIdeasResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type getApiAiCampaignsIdCreativeIdeasResponseSuccess = (getApiAiCampaignsIdCreativeIdeasResponse200) & {
+  headers: Headers;
+};
+export type getApiAiCampaignsIdCreativeIdeasResponseError = (getApiAiCampaignsIdCreativeIdeasResponse404) & {
+  headers: Headers;
+};
+
+export type getApiAiCampaignsIdCreativeIdeasResponse = (getApiAiCampaignsIdCreativeIdeasResponseSuccess | getApiAiCampaignsIdCreativeIdeasResponseError)
+
+export const getGetApiAiCampaignsIdCreativeIdeasUrl = (id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/ai/campaigns/${id}/creative-ideas`
+}
+
+export const getApiAiCampaignsIdCreativeIdeas = async (id: string, options?: RequestInit): Promise<getApiAiCampaignsIdCreativeIdeasResponse> => {
+
+  const res = await fetch(getGetApiAiCampaignsIdCreativeIdeasUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiAiCampaignsIdCreativeIdeasResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiAiCampaignsIdCreativeIdeasResponse
+}
+
+
+
+export type getApiAiStatusResponse200 = {
+  data: GetApiAiStatus200
+  status: 200
+}
+
+export type getApiAiStatusResponseSuccess = (getApiAiStatusResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiAiStatusResponse = (getApiAiStatusResponseSuccess)
+
+export const getGetApiAiStatusUrl = () => {
+
+
+
+
+  return `${apiBaseUrl}/api/ai/status`
+}
+
+export const getApiAiStatus = async ( options?: RequestInit): Promise<getApiAiStatusResponse> => {
+
+  const res = await fetch(getGetApiAiStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiAiStatusResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiAiStatusResponse
+}
+
+
+
+export type postApiAiCampaignsIdCreativeResponse200 = {
+  data: GenerateCreativeResponse
+  status: 200
+}
+
+export type postApiAiCampaignsIdCreativeResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type postApiAiCampaignsIdCreativeResponse422 = {
+  data: Error
+  status: 422
+}
+
+export type postApiAiCampaignsIdCreativeResponse429 = {
+  data: Error
+  status: 429
+}
+
+export type postApiAiCampaignsIdCreativeResponse503 = {
+  data: Error
+  status: 503
+}
+
+export type postApiAiCampaignsIdCreativeResponseSuccess = (postApiAiCampaignsIdCreativeResponse200) & {
+  headers: Headers;
+};
+export type postApiAiCampaignsIdCreativeResponseError = (postApiAiCampaignsIdCreativeResponse404 | postApiAiCampaignsIdCreativeResponse422 | postApiAiCampaignsIdCreativeResponse429 | postApiAiCampaignsIdCreativeResponse503) & {
+  headers: Headers;
+};
+
+export type postApiAiCampaignsIdCreativeResponse = (postApiAiCampaignsIdCreativeResponseSuccess | postApiAiCampaignsIdCreativeResponseError)
+
+export const getPostApiAiCampaignsIdCreativeUrl = (id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/ai/campaigns/${id}/creative`
+}
+
+export const postApiAiCampaignsIdCreative = async (id: string,
+    generateCreativeInput?: GenerateCreativeInput, options?: RequestInit): Promise<postApiAiCampaignsIdCreativeResponse> => {
+
+  const res = await fetch(getPostApiAiCampaignsIdCreativeUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(generateCreativeInput)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiAiCampaignsIdCreativeResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiAiCampaignsIdCreativeResponse
 }
 
 

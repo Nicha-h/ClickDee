@@ -1,18 +1,13 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-const {
-  findFirstMock,
-  updateManyMock,
-  updateMock,
-  createMock,
-  countMock,
-} = vi.hoisted(() => ({
-  findFirstMock: vi.fn(),
-  updateManyMock: vi.fn(),
-  updateMock: vi.fn(),
-  createMock: vi.fn(),
-  countMock: vi.fn(),
-}))
+const { findFirstMock, updateManyMock, updateMock, createMock, countMock } =
+  vi.hoisted(() => ({
+    findFirstMock: vi.fn(),
+    updateManyMock: vi.fn(),
+    updateMock: vi.fn(),
+    createMock: vi.fn(),
+    countMock: vi.fn(),
+  }))
 vi.mock('../db/client.js', () => ({
   prisma: {
     pendingAiAction: {
@@ -25,15 +20,12 @@ vi.mock('../db/client.js', () => ({
   },
 }))
 
-const {
-  createCampaignMock,
-  updateCampaignMock,
-  deleteCampaignMock,
-} = vi.hoisted(() => ({
-  createCampaignMock: vi.fn(),
-  updateCampaignMock: vi.fn(),
-  deleteCampaignMock: vi.fn(),
-}))
+const { createCampaignMock, updateCampaignMock, deleteCampaignMock } =
+  vi.hoisted(() => ({
+    createCampaignMock: vi.fn(),
+    updateCampaignMock: vi.fn(),
+    deleteCampaignMock: vi.fn(),
+  }))
 vi.mock('./campaign.service.js', () => ({
   createCampaign: createCampaignMock,
   updateCampaign: updateCampaignMock,
@@ -66,7 +58,12 @@ function pendingAction(overrides: Record<string, unknown> = {}) {
     conversationId: 'conv-1',
     type: 'CREATE',
     targetCampaignId: null,
-    payload: { name: 'Launch', budget: 1000, startDate: '2026-09-01', caption: 'Hi' },
+    payload: {
+      name: 'Launch',
+      budget: 1000,
+      startDate: '2026-09-01',
+      caption: 'Hi',
+    },
     status: 'PENDING',
     createdAt: new Date(),
     resolvedAt: null,

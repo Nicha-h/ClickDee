@@ -1,6 +1,12 @@
+import { createHash } from 'node:crypto'
 import { z } from 'zod'
 import { createChatCompletion } from '../lib/openai.js'
 import { CLICKDEE_PRODUCT_CONTEXT } from '../lib/product-context.js'
+import { env } from '../config/env.js'
+import {
+  getCachedRecommendations,
+  setCachedRecommendations,
+} from '../lib/recommendation-cache.js'
 import type { CampaignModel } from '../generated/prisma/models.js'
 
 export type RecommendationItem = {
@@ -35,7 +41,7 @@ You are generating short, actionable suggestions for a small business owner abou
 
 Hard constraint: the campaign data you're given does NOT include any performance metrics — no reach, impressions, clicks, CTR, conversions, ROAS, or orders. Meta Ads API integration for reporting is not available yet. You must NEVER invent, imply, or reference any such performance number (e.g. never say things like "ROI is high" or "reach increased") — reason strictly from schedule, budget amount, status, and caption presence/absence.
 
-Good recommendation angles: a campaign's end date is coming up soon (consider extending or reviewing it); a campaign has been in DRAFT status for a while (ready to publish?); a campaign has no caption set (consider adding a promotional message); a campaign just started and has no end date (consider setting one); a PAUSED campaign has been idle for a while (resume or archive?). Keep tone encouraging and concrete, in Thai.
+Good recommendation angles: a campaign's end date is coming up soon (consider extending or reviewing it); a campaign has been in DRAFT status for a while (ready to publish?); a campaign has no caption set (consider adding a promotional message); a campaign just started and has no end date (consider setting one); a PAUSED campaign has been idle for a while (resume or archive?). Keep tone encouraging and concrete, in Thai, written as a female persona — use "ค่ะ" as the sentence-ending particle in "description" where it reads naturally, and "ฉัน" if you refer to yourself. Short "actionLabel" button text (e.g. "ดูแคมเปญ") stays as a plain imperative — don't force ค่ะ into a 2-4 word label.
 
 Reply with ONLY strict JSON, no markdown, no code fences, matching exactly this shape:
 {"recommendations": [{"campaignId": string, "title": string, "description": string, "actionLabel": string}, ...]}
@@ -46,6 +52,19 @@ Rules:
 - "description" is one short Thai sentence explaining the suggestion and, if relevant, a concrete next step.
 - "actionLabel" is a short Thai button label (2-4 words), e.g. "ดูแคมเปญ", "ตั้งงบใหม่", "เพิ่มแคปชัน".
 - Prefer the most time-sensitive or highest-impact suggestion first.`
+
+// Content fingerprint of the campaigns influencing the AI's output. Campaign
+// `updatedAt` bumps automatically on any field change (Prisma `@updatedAt`),
+// so this key changes whenever the caller's campaign data actually changes,
+// without needing to hunt down every campaign-mutating route and add
+// explicit cache-busting calls. Campaign ids are globally unique cuids, so
+// no userId needs to be folded in.
+function buildCacheKey(campaigns: CampaignModel[]): string {
+  const fingerprint = campaigns
+    .map((c) => `${c.id}:${c.updatedAt.getTime()}`)
+    .join('|')
+  return createHash('sha256').update(fingerprint).digest('hex')
+}
 
 function daysBetween(a: Date, b: Date): number {
   return Math.round((a.getTime() - b.getTime()) / 86_400_000)
@@ -138,6 +157,13 @@ export async function generateRecommendations(
 ): Promise<{ recommendations: RecommendationItem[] }> {
   if (campaigns.length === 0) return EMPTY_RESULT
 
+  const cacheKey = buildCacheKey(campaigns)
+  const cached = getCachedRecommendations(cacheKey)
+  if (cached !== undefined) {
+    console.debug('[recommendation-ai] cache hit, skipping AI call')
+    return { recommendations: cached }
+  }
+
   const validIds = new Set(campaigns.map((c) => c.id))
 
   try {
@@ -155,6 +181,11 @@ export async function generateRecommendations(
       )
       return EMPTY_RESULT
     }
+    setCachedRecommendations(
+      cacheKey,
+      result,
+      env.RECOMMENDATION_CACHE_TTL_SECONDS * 1000,
+    )
     return { recommendations: result }
   } catch (err) {
     // Recommendations are supplementary, read-only home-page content, not a

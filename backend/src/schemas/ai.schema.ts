@@ -29,4 +29,17 @@ export const SendAiMessageResponseSchema = z
   })
   .openapi('SendAiMessageResponse')
 
+export const GenerateCreativeSchema = z
+  .object({
+    prompt: z.string().min(1).max(2000),
+  })
+  .openapi('GenerateCreativeInput')
+
+export const GenerateCreativeResponseSchema = z
+  .object({
+    caption: z.string(),
+  })
+  .openapi('GenerateCreativeResponse')
+
 export type SendAiMessageInput = z.infer<typeof SendAiMessageSchema>
+export type GenerateCreativeInput = z.infer<typeof GenerateCreativeSchema>

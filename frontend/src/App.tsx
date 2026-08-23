@@ -100,6 +100,10 @@ const App = () => {
           path="/campaign/:campaignId/report"
           element={<CampaignReport />}
         />
+        <Route
+          path="/campaign/:campaignId/review"
+          element={<CampaignReview />}
+        />
         <Route path="/campaign/:campaignId/edit" element={<CampaignEdit />} />
         <Route
           path="/campaign/:campaignId/creative/new"

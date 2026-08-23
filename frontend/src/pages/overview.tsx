@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import ppl from '@/assets/icons/ppl.svg'
@@ -15,7 +15,9 @@ import {
 } from '@/components/trendChartUtils'
 import { useSimulatedLoading } from '@/components/useSimulatedLoading'
 import OverviewSkeleton from '@/components/overviewSkeleton'
-import { campaigns } from '@/data/campaigns'
+import { Skeleton } from '@/components/skeleton'
+import { getApiAiInsights } from '@/api/generated/client'
+import { getUserId, withCredentials } from '@/lib/userId'
 
 {
   /** Summary data PLACEHOLDER*/
@@ -67,13 +69,6 @@ const rangeSubtitles: Record<string, string> = {
 }
 
 {
-  /** AI insights: reuse the top campaign's own mock insights so this stays
-   * consistent with what campaignReport.tsx shows for the same campaign. */
-}
-const topInsightsCampaign = campaigns.find((c) => c.id === 'milo-promo-2026')
-const aiInsights = topInsightsCampaign?.insights ?? []
-
-{
   /** Top-performing campaigns PLACEHOLDER*/
 }
 const topCampaigns = [
@@ -103,9 +98,25 @@ const topCampaigns = [
   },
 ]
 
+type InsightsState =
+  { status: 'loading' } | { status: 'loaded'; insights: string[] }
+
 function Overview() {
   const [activeRange, setActiveRange] = useState('week')
   const isLoading = useSimulatedLoading()
+  const [insightsState, setInsightsState] = useState<InsightsState>({
+    status: 'loading',
+  })
+
+  useEffect(() => {
+    const userId = getUserId()
+    if (!userId) return
+    getApiAiInsights(withCredentials()).then((res) => {
+      if (res.status === 200) {
+        setInsightsState({ status: 'loaded', insights: res.data.insights })
+      }
+    })
+  }, [])
 
   if (isLoading) return <OverviewSkeleton />
 
@@ -269,7 +280,6 @@ function Overview() {
       </div>
 
       {/** AI insights */}
-      {/* TODO: replace with real AI-generated insights once backend/AI integration exists */}
       <div className="border-seadark-hover bg-sealight mt-6 rounded-[10px] border p-6">
         <h3 className="font-thai text-amalfidark text-2xl font-bold">
           น้องดี AI สรุปให้
@@ -278,17 +288,28 @@ function Overview() {
           3 ข้อสำคัญที่คุณควรรู้จากรายงานนี้
         </p>
         <div className="mt-4 flex flex-col flex-wrap gap-4 sm:flex-row">
-          {aiInsights.map((insight, i) => (
-            <div
-              key={insight}
-              className="border-seadark-hover flex min-w-40 flex-1 gap-2 rounded-xl border bg-white p-3 sm:min-w-55"
-            >
-              <span className="bg-sealight-active text-amalfidark flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold">
-                {i + 1}
-              </span>
-              <p className="font-thai text-base text-black">{insight}</p>
-            </div>
-          ))}
+          {insightsState.status === 'loading' ? (
+            <>
+              <Skeleton className="h-16 min-w-40 flex-1 rounded-xl sm:min-w-55" />
+              <Skeleton className="h-16 min-w-40 flex-1 rounded-xl sm:min-w-55" />
+            </>
+          ) : insightsState.insights.length === 0 ? (
+            <p className="font-thai text-base text-[#8E98A8]">
+              ยังไม่มีข้อมูลสรุปตอนนี้
+            </p>
+          ) : (
+            insightsState.insights.map((insight, i) => (
+              <div
+                key={insight}
+                className="border-seadark-hover flex min-w-40 flex-1 gap-2 rounded-xl border bg-white p-3 sm:min-w-55"
+              >
+                <span className="bg-sealight-active text-amalfidark flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold">
+                  {i + 1}
+                </span>
+                <p className="font-thai text-base text-black">{insight}</p>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
