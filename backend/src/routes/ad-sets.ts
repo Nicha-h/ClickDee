@@ -143,3 +143,25 @@ adSetsApp.openapi(updateAdSetRoute, async (c) => {
   const adSet = await adSetService.getAdSetById(userId, campaignId, id)
   return c.json(serializeAdSet(adSet!), 200)
 })
+
+const deleteAdSetRoute = createRoute({
+  method: 'delete',
+  path: '/{campaignId}/ad-sets/{id}',
+  tags: ['AdSets'],
+  middleware: [requireAuth] as const,
+  request: { params: AdSetIdParamSchema },
+  responses: {
+    204: { description: 'Ad set deleted' },
+    404: {
+      content: { 'application/json': { schema: ErrorSchema } },
+      description: 'Ad set not found',
+    },
+  },
+})
+adSetsApp.openapi(deleteAdSetRoute, async (c) => {
+  const userId = c.get('userId')
+  const { campaignId, id } = c.req.valid('param')
+  const deleted = await adSetService.deleteAdSet(userId, campaignId, id)
+  if (!deleted) return c.json({ message: 'Ad set not found' }, 404)
+  return c.body(null, 204)
+})

@@ -11,6 +11,7 @@ import {
   Plus,
   Square,
   Pencil,
+  Trash2,
   UploadCloud,
   Zap,
   TriangleAlert,
@@ -55,6 +56,8 @@ import {
   getApiCampaignsCampaignIdAdSets,
   getApiCampaignsCampaignIdAdSetsAdSetIdCreatives,
   getApiCampaignsCampaignIdAdSetsAdSetIdAds,
+  deleteApiCampaignsCampaignIdAdSetsId,
+  deleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesId,
 } from '@/api/generated/client'
 import type {
   CampaignStatus as ApiCampaignStatus,
@@ -178,8 +181,7 @@ function formatSchedule(adSet: AdSet): string | null {
 
 function formatTargeting(targeting: AdSet['targeting']): string {
   const automation = targeting?.targeting_automation as
-    | { advantage_audience?: number }
-    | undefined
+    { advantage_audience?: number } | undefined
   if (automation?.advantage_audience) {
     return 'กลุ่มเป้าหมายอัตโนมัติ (Advantage+)'
   }
@@ -290,6 +292,71 @@ function AdSetsSection({ campaignId }: { campaignId: string }) {
   const [expandedAds, setExpandedAds] = useState<Record<string, boolean>>({})
   const location = useLocation()
 
+  const [deleteAdSetId, setDeleteAdSetId] = useState<string | null>(null)
+  const [deleteCreativeTarget, setDeleteCreativeTarget] = useState<{
+    adSetId: string
+    creativeId: string
+  } | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteCreativeError, setDeleteCreativeError] = useState<string | null>(
+    null,
+  )
+
+  const handleDeleteAdSetConfirm = async () => {
+    if (!deleteAdSetId) return
+    setIsDeleting(true)
+    try {
+      const res = await deleteApiCampaignsCampaignIdAdSetsId(
+        campaignId,
+        deleteAdSetId,
+        withCredentials(),
+      )
+      if (res.status === 204) {
+        setItems((prev) =>
+          prev ? prev.filter((item) => item.adSet.id !== deleteAdSetId) : prev,
+        )
+        setDeleteAdSetId(null)
+      }
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleDeleteCreativeConfirm = async () => {
+    if (!deleteCreativeTarget) return
+    setIsDeleting(true)
+    setDeleteCreativeError(null)
+    try {
+      const res = await deleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesId(
+        campaignId,
+        deleteCreativeTarget.adSetId,
+        deleteCreativeTarget.creativeId,
+        withCredentials(),
+      )
+      if (res.status === 204) {
+        setItems((prev) =>
+          prev
+            ? prev.map((item) =>
+                item.adSet.id === deleteCreativeTarget.adSetId
+                  ? {
+                      ...item,
+                      creatives: item.creatives.filter(
+                        (c) => c.id !== deleteCreativeTarget.creativeId,
+                      ),
+                    }
+                  : item,
+              )
+            : prev,
+        )
+        setDeleteCreativeTarget(null)
+      } else {
+        setDeleteCreativeError(res.data.message)
+      }
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   useEffect(() => {
     getApiCampaignsCampaignIdAdSets(campaignId, withCredentials()).then(
       (res) => {
@@ -393,6 +460,14 @@ function AdSetsSection({ campaignId }: { campaignId: string }) {
                   <Pencil className="h-4 w-4" />
                   แก้ไข
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => setDeleteAdSetId(adSet.id)}
+                  className="font-thai flex items-center gap-1 text-base text-[#E07070] hover:cursor-pointer hover:text-[#c85050]"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  ลบ
+                </button>
                 <StatusPill
                   style={getPushStatusBadge(
                     !!adSet.metaAdSetId,
@@ -431,6 +506,19 @@ function AdSetsSection({ campaignId }: { campaignId: string }) {
                           <Pencil className="h-3.5 w-3.5" />
                           แก้ไข
                         </Link>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDeleteCreativeTarget({
+                              adSetId: adSet.id,
+                              creativeId: c.id,
+                            })
+                          }
+                          className="font-thai flex items-center gap-1 text-sm text-[#E07070] hover:cursor-pointer hover:text-[#c85050]"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          ลบ
+                        </button>
                       </div>
                       {expandedCreatives[c.id] && (
                         <CreativeDetail creative={c} />
@@ -496,6 +584,35 @@ function AdSetsSection({ campaignId }: { campaignId: string }) {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteAdSetId !== null}
+        title="ยืนยันการลบ Ad Set"
+        message="คุณแน่ใจหรือไม่ว่าต้องการลบ Ad Set นี้ ครีเอทีฟและโฆษณาทั้งหมดภายใต้ Ad Set นี้จะถูกลบไปด้วย การดำเนินการนี้ไม่สามารถย้อนกลับได้"
+        confirmLabel="ลบ Ad Set"
+        confirmDisabled={isDeleting}
+        onConfirm={handleDeleteAdSetConfirm}
+        onCancel={() => setDeleteAdSetId(null)}
+      />
+
+      <ConfirmDialog
+        open={deleteCreativeTarget !== null}
+        title="ยืนยันการลบครีเอทีฟ"
+        message="คุณแน่ใจหรือไม่ว่าต้องการลบครีเอทีฟนี้ การดำเนินการนี้ไม่สามารถย้อนกลับได้"
+        confirmLabel="ลบครีเอทีฟ"
+        confirmDisabled={isDeleting}
+        onConfirm={handleDeleteCreativeConfirm}
+        onCancel={() => {
+          setDeleteCreativeTarget(null)
+          setDeleteCreativeError(null)
+        }}
+      >
+        {deleteCreativeError && (
+          <p className="font-thai -mt-3 mb-3 text-sm text-red-600">
+            {deleteCreativeError}
+          </p>
+        )}
+      </ConfirmDialog>
     </div>
   )
 }

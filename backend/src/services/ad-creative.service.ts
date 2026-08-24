@@ -374,6 +374,28 @@ export async function deriveCreativeDetails(
   }
 }
 
+export async function deleteAdCreative(
+  userId: string,
+  campaignId: string,
+  adSetId: string,
+  id: string,
+) {
+  const creative = await getAdCreativeById(userId, campaignId, adSetId, id)
+  if (!creative) return false
+
+  const adUsingCreative = await prisma.ad.findFirst({
+    where: { creativeId: id, userId },
+  })
+  if (adUsingCreative) {
+    throw new AdCreativeValidationError(
+      'ครีเอทีฟนี้ถูกใช้งานโดยโฆษณาอยู่ ไม่สามารถลบได้ กรุณาลบโฆษณาที่ใช้ครีเอทีฟนี้ก่อน',
+    )
+  }
+
+  await prisma.adCreative.deleteMany({ where: { id, adSetId, userId } })
+  return true
+}
+
 const CREATE_SCHEMA_BY_FORMAT = {
   IMAGE_POST: CreateImagePostCreativeSchema,
   VIDEO_POST: CreateVideoPostCreativeSchema,

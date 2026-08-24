@@ -171,3 +171,30 @@ adCreativesApp.openapi(updateAdCreativeRoute, async (c) => {
   )
   return c.json(await serializeAdCreative(userId, creative!), 200)
 })
+
+const deleteAdCreativeRoute = createRoute({
+  method: 'delete',
+  path: '/{campaignId}/ad-sets/{adSetId}/creatives/{id}',
+  tags: ['AdCreatives'],
+  middleware: [requireAuth] as const,
+  request: { params: AdCreativeIdParamSchema },
+  responses: {
+    204: { description: 'Ad creative deleted' },
+    404: {
+      content: { 'application/json': { schema: ErrorSchema } },
+      description: 'Ad creative not found',
+    },
+  },
+})
+adCreativesApp.openapi(deleteAdCreativeRoute, async (c) => {
+  const userId = c.get('userId')
+  const { campaignId, adSetId, id } = c.req.valid('param')
+  const deleted = await adCreativeService.deleteAdCreative(
+    userId,
+    campaignId,
+    adSetId,
+    id,
+  )
+  if (!deleted) return c.json({ message: 'Ad creative not found' }, 404)
+  return c.body(null, 204)
+})

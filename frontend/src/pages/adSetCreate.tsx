@@ -1,22 +1,27 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Pencil, Plus, Trash2 } from 'lucide-react'
 import {
   getApiCampaignsId,
   getApiCampaignsCampaignIdAdSetsId,
   postApiCampaignsCampaignIdAdSets,
   patchApiCampaignsCampaignIdAdSetsId,
+  deleteApiCampaignsCampaignIdAdSetsId,
+  getApiCampaignsCampaignIdAdSetsAdSetIdCreatives,
+  deleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesId,
   CreateAdSetInputOptimizationGoal,
   CreateAdSetInputBillingEvent,
 } from '@/api/generated/client'
 import type {
   Campaign as ApiCampaign,
+  AdCreative,
   CreateAdSetInputOptimizationGoal as OptimizationGoal,
   CreateAdSetInputBillingEvent as BillingEvent,
 } from '@/api/generated/client'
 import { withCredentials } from '@/lib/userId'
 import { useGoBack } from '@/components/useGoBack'
+import ConfirmDialog from '@/components/confirmDialog'
 
 const OPTIMIZATION_GOAL_LABELS: Record<string, string> = {
   LINK_CLICKS: 'คลิกลิงก์',
@@ -61,6 +66,26 @@ function AdSetCreate() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const [creatives, setCreatives] = useState<AdCreative[] | null>(null)
+  const [deleteCreativeId, setDeleteCreativeId] = useState<string | null>(null)
+  const [deleteCreativeError, setDeleteCreativeError] = useState<string | null>(
+    null,
+  )
+  const [isDeletingCreative, setIsDeletingCreative] = useState(false)
+  const [showDeleteAdSet, setShowDeleteAdSet] = useState(false)
+  const [isDeletingAdSet, setIsDeletingAdSet] = useState(false)
+
+  useEffect(() => {
+    if (!isEditMode || !campaignId || !adSetId) return
+    getApiCampaignsCampaignIdAdSetsAdSetIdCreatives(
+      campaignId,
+      adSetId,
+      withCredentials(),
+    ).then((res) => {
+      if (res.status === 200) setCreatives(res.data)
+    })
+  }, [isEditMode, campaignId, adSetId])
+
   useEffect(() => {
     if (!campaignId) return
     Promise.all([
@@ -81,8 +106,7 @@ function AdSetCreate() {
         setBillingEvent(adSet.billingEvent as BillingEvent)
 
         const automation = adSet.targeting?.targeting_automation as
-          | { advantage_audience?: number }
-          | undefined
+          { advantage_audience?: number } | undefined
         const advantage = !!automation?.advantage_audience
         setUseAdvantage(advantage)
         if (!advantage) {
@@ -198,6 +222,47 @@ function AdSetCreate() {
     }
   }
 
+  const handleDeleteCreativeConfirm = async () => {
+    if (!deleteCreativeId || !campaignId || !adSetId) return
+    setIsDeletingCreative(true)
+    setDeleteCreativeError(null)
+    try {
+      const res = await deleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesId(
+        campaignId,
+        adSetId,
+        deleteCreativeId,
+        withCredentials(),
+      )
+      if (res.status === 204) {
+        setCreatives((prev) =>
+          prev ? prev.filter((c) => c.id !== deleteCreativeId) : prev,
+        )
+        setDeleteCreativeId(null)
+      } else {
+        setDeleteCreativeError(res.data.message)
+      }
+    } finally {
+      setIsDeletingCreative(false)
+    }
+  }
+
+  const handleDeleteAdSetConfirm = async () => {
+    if (!campaignId || !adSetId) return
+    setIsDeletingAdSet(true)
+    try {
+      const res = await deleteApiCampaignsCampaignIdAdSetsId(
+        campaignId,
+        adSetId,
+        withCredentials(),
+      )
+      if (res.status === 204) {
+        navigate(`/campaign/${campaignId}/report`)
+      }
+    } finally {
+      setIsDeletingAdSet(false)
+    }
+  }
+
   return (
     <div className="min-h-full min-w-full py-10">
       <div className="flex items-center gap-4">
@@ -216,6 +281,16 @@ function AdSetCreate() {
             สำหรับแคมเปญ &quot;{campaign.name}&quot;
           </p>
         </div>
+        {isEditMode && (
+          <button
+            type="button"
+            onClick={() => setShowDeleteAdSet(true)}
+            className="font-thai ml-auto flex items-center gap-1 text-base text-[#E07070] hover:cursor-pointer hover:text-[#c85050]"
+          >
+            <Trash2 className="h-5 w-5" />
+            ลบ Ad Set นี้
+          </button>
+        )}
       </div>
 
       <form
@@ -396,6 +471,61 @@ function AdSetCreate() {
           )}
         </div>
 
+        {isEditMode && (
+          <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">
+            <div className="flex items-center justify-between">
+              <h3 className="font-thai text-amalfidark text-2xl font-bold">
+                ครีเอทีฟ
+              </h3>
+              <Link
+                to={`/campaign/${campaignId}/adset/${adSetId}/creative/new`}
+                className="bg-seaactive font-thai hover:bg-seadark flex items-center gap-1 rounded-[15px] px-4 py-2 text-base text-white transition-all hover:scale-105 hover:cursor-pointer"
+              >
+                <Plus className="h-5 w-5" />
+                เพิ่มครีเอทีฟ
+              </Link>
+            </div>
+
+            {creatives === null ? (
+              <p className="font-thai mt-4 text-base text-[#8E98A8]">
+                กำลังโหลด...
+              </p>
+            ) : creatives.length === 0 ? (
+              <p className="font-thai mt-4 text-base text-[#8E98A8]">
+                ยังไม่มีครีเอทีฟ
+              </p>
+            ) : (
+              <div className="mt-3 flex flex-col gap-2">
+                {creatives.map((c) => (
+                  <div
+                    key={c.id}
+                    className="font-thai flex flex-wrap items-center gap-3 rounded-lg bg-[rgba(142,152,168,0.15)] px-3 py-2 text-base text-black"
+                  >
+                    <span className="flex-1">
+                      {c.name} · {c.format}
+                    </span>
+                    <Link
+                      to={`/campaign/${campaignId}/adset/${adSetId}/creative/${c.id}/edit`}
+                      className="text-seadark hover:text-seadark-active flex items-center gap-1 text-sm hover:cursor-pointer"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      แก้ไข
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteCreativeId(c.id)}
+                      className="flex items-center gap-1 text-sm text-[#E07070] hover:cursor-pointer hover:text-[#c85050]"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      ลบ
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {error && <p className="font-thai text-base text-red-600">{error}</p>}
 
         <div className="flex gap-3">
@@ -422,6 +552,35 @@ function AdSetCreate() {
         </div>
       </form>
       <div className="h-24 w-full shrink-0"></div>
+
+      <ConfirmDialog
+        open={showDeleteAdSet}
+        title="ยืนยันการลบ Ad Set"
+        message="คุณแน่ใจหรือไม่ว่าต้องการลบ Ad Set นี้ ครีเอทีฟและโฆษณาทั้งหมดภายใต้ Ad Set นี้จะถูกลบไปด้วย การดำเนินการนี้ไม่สามารถย้อนกลับได้"
+        confirmLabel="ลบ Ad Set"
+        confirmDisabled={isDeletingAdSet}
+        onConfirm={handleDeleteAdSetConfirm}
+        onCancel={() => setShowDeleteAdSet(false)}
+      />
+
+      <ConfirmDialog
+        open={deleteCreativeId !== null}
+        title="ยืนยันการลบครีเอทีฟ"
+        message="คุณแน่ใจหรือไม่ว่าต้องการลบครีเอทีฟนี้ การดำเนินการนี้ไม่สามารถย้อนกลับได้"
+        confirmLabel="ลบครีเอทีฟ"
+        confirmDisabled={isDeletingCreative}
+        onConfirm={handleDeleteCreativeConfirm}
+        onCancel={() => {
+          setDeleteCreativeId(null)
+          setDeleteCreativeError(null)
+        }}
+      >
+        {deleteCreativeError && (
+          <p className="font-thai -mt-3 mb-3 text-sm text-red-600">
+            {deleteCreativeError}
+          </p>
+        )}
+      </ConfirmDialog>
     </div>
   )
 }

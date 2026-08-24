@@ -82,6 +82,13 @@ export async function createAdSet(
   })
 }
 
+export async function deleteAdSet(userId: string, campaignId: string, id: string) {
+  const result = await prisma.adSet.deleteMany({
+    where: { id, campaignId, userId },
+  })
+  return result.count > 0
+}
+
 export async function updateAdSet(
   userId: string,
   campaignId: string,
