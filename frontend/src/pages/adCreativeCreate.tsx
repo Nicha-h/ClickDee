@@ -704,9 +704,9 @@ function AdCreativeCreate() {
                   type={storyMediaType}
                   label={storyMediaType === 'IMAGE' ? 'รูปภาพ' : 'วิดีโอ'}
                   onUploaded={(id, previewUrl) => {
-                  setMediaAssetId(id)
-                  setMediaAssetUrl(resolveAssetUrl(previewUrl) ?? null)
-                }}
+                    setMediaAssetId(id)
+                    setMediaAssetUrl(resolveAssetUrl(previewUrl) ?? null)
+                  }}
                   existingPreviewUrl={
                     storyMediaType === 'IMAGE'
                       ? (mediaAssetUrl ?? undefined)

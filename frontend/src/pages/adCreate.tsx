@@ -138,8 +138,8 @@ function AdCreate() {
 
       {isEditMode && isPublished && (
         <p className="font-thai mt-4 max-w-2xl rounded-lg bg-[rgba(254,215,23,0.25)] px-4 py-2 text-base text-black">
-          โฆษณานี้เผยแพร่บน Meta แล้ว — การเปลี่ยนครีเอทีฟจะอัปเดตโฆษณาที่ใช้งานอยู่บน
-          Meta ด้วย
+          โฆษณานี้เผยแพร่บน Meta แล้ว —
+          การเปลี่ยนครีเอทีฟจะอัปเดตโฆษณาที่ใช้งานอยู่บน Meta ด้วย
         </p>
       )}
 

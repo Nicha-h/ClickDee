@@ -372,7 +372,7 @@ function CampaignReviewLayout({
               </dl>
             </div>
             {contentWarnings && contentWarnings.length > 0 && (
-              <ul className="font-thai border-yellow-400/60 bg-yellow-50 mt-4 space-y-1 rounded-lg border p-3 text-base text-yellow-800">
+              <ul className="font-thai mt-4 space-y-1 rounded-lg border border-yellow-400/60 bg-yellow-50 p-3 text-base text-yellow-800">
                 {contentWarnings.map((warning) => (
                   <li key={warning} className="flex gap-1.5">
                     <span aria-hidden="true">⚠</span>

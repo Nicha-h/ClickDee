@@ -448,7 +448,7 @@ function Home() {
                     <h2 className="font-thai truncate text-2xl font-semibold text-black">
                       {campaign.title}
                     </h2>
-                    <h3 className="font-thai text-lg font-semibold text-citrusdark">
+                    <h3 className="font-thai text-citrusdark text-lg font-semibold">
                       ROI {campaign.roi.toFixed(1)}x
                     </h3>
                   </div>

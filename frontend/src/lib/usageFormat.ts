@@ -29,9 +29,9 @@ export function formatResetLabel(
 }
 
 export function progressBarColor(used: number, total: number): string {
-  if (total <= 0) return '#17438D'
+  if (total <= 0) return '#fed717'
   const pct = (used / total) * 100
-  if (pct >= 100) return '#E07070'
+  if (pct >= 100) return '#D92A2A'
   if (pct >= 80) return '#F59E0B'
-  return '#17438D'
+  return '#fed717'
 }
