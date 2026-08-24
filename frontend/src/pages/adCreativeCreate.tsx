@@ -536,7 +536,10 @@ function AdCreativeCreate() {
               <MediaUploadField
                 type="IMAGE"
                 label="รูปภาพ"
-                onUploaded={setMediaAssetId}
+                onUploaded={(id, previewUrl) => {
+                  setMediaAssetId(id)
+                  setMediaAssetUrl(resolveAssetUrl(previewUrl) ?? null)
+                }}
                 existingPreviewUrl={mediaAssetUrl ?? undefined}
               />
               <label className="font-thai mt-4 block text-lg font-bold text-black">
@@ -557,7 +560,10 @@ function AdCreativeCreate() {
               <MediaUploadField
                 type="VIDEO"
                 label="วิดีโอ"
-                onUploaded={setMediaAssetId}
+                onUploaded={(id, previewUrl) => {
+                  setMediaAssetId(id)
+                  setMediaAssetUrl(resolveAssetUrl(previewUrl) ?? null)
+                }}
                 existingLabel={mediaAssetId ? 'วิดีโอปัจจุบัน' : undefined}
               />
               <label className="font-thai mt-4 block text-lg font-bold text-black">
@@ -625,7 +631,12 @@ function AdCreativeCreate() {
                     <MediaUploadField
                       type="IMAGE"
                       label={`รูปการ์ด #${i + 1}`}
-                      onUploaded={(id) => updateCard(i, { mediaAssetId: id })}
+                      onUploaded={(id, previewUrl) =>
+                        updateCard(i, {
+                          mediaAssetId: id,
+                          mediaAssetUrl: resolveAssetUrl(previewUrl) ?? null,
+                        })
+                      }
                       existingPreviewUrl={card.mediaAssetUrl ?? undefined}
                     />
                     <label className="font-thai mt-3 block text-base font-bold text-black">
@@ -692,7 +703,10 @@ function AdCreativeCreate() {
                 <MediaUploadField
                   type={storyMediaType}
                   label={storyMediaType === 'IMAGE' ? 'รูปภาพ' : 'วิดีโอ'}
-                  onUploaded={setMediaAssetId}
+                  onUploaded={(id, previewUrl) => {
+                  setMediaAssetId(id)
+                  setMediaAssetUrl(resolveAssetUrl(previewUrl) ?? null)
+                }}
                   existingPreviewUrl={
                     storyMediaType === 'IMAGE'
                       ? (mediaAssetUrl ?? undefined)

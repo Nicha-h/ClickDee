@@ -11,6 +11,7 @@ import type {
   UpdateAdCreativeInput,
 } from '../schemas/ad-creative.schema.js'
 import { syncCreativeEditToMeta } from './meta-publish.service.js'
+import { resolveMediaAssetPreviewUrl } from './media.service.js'
 import type {
   AdCreativeModel,
   MediaAssetModel,
@@ -272,9 +273,10 @@ async function mediaRefFromImageHash(userId: string, hash: string | undefined) {
     where: { metaImageHash: hash, userId },
   })
   if (!asset) return {}
+  const previewUrl = resolveMediaAssetPreviewUrl(asset)
   return {
     mediaAssetId: asset.id,
-    ...(asset.sourceUrl && { mediaAssetUrl: asset.sourceUrl }),
+    ...(previewUrl && { mediaAssetUrl: previewUrl }),
   }
 }
 
@@ -287,9 +289,10 @@ async function mediaRefFromVideoId(
     where: { metaVideoId: videoId, userId },
   })
   if (!asset) return {}
+  const previewUrl = resolveMediaAssetPreviewUrl(asset)
   return {
     mediaAssetId: asset.id,
-    ...(asset.sourceUrl && { mediaAssetUrl: asset.sourceUrl }),
+    ...(previewUrl && { mediaAssetUrl: previewUrl }),
   }
 }
 

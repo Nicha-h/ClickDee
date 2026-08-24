@@ -6,6 +6,8 @@
 // Run from backend/: node --import tsx scripts/seed-admin810.ts
 // (or: pnpm --filter backend seed:admin810)
 import { randomBytes, randomUUID } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
 import { prisma } from '../src/db/client.js'
 import { hashPassword } from '../src/lib/password.js'
 import { findUserByEmail } from '../src/services/user.service.js'
@@ -14,6 +16,9 @@ import { createAdSet } from '../src/services/ad-set.service.js'
 import { createAdCreative } from '../src/services/ad-creative.service.js'
 import { createAd } from '../src/services/ad.service.js'
 import { storeInsights } from '../src/services/ad-insight.service.js'
+import { uploadBufferToCloudinary } from '../src/lib/cloudinary-client.js'
+import { getCloudinaryCredentials } from '../src/config/cloudinary.js'
+import { env } from '../src/config/env.js'
 import type { CreateCampaignInput } from '../src/schemas/campaign.schema.js'
 import type { CreateAdSetInput } from '../src/schemas/ad-set.schema.js'
 import type { CreateImagePostCreativeInput } from '../src/schemas/ad-creative.schema.js'
@@ -77,22 +82,45 @@ type SeedCampaign = {
   budgetTotal: number
   objective: CreateCampaignInput['objective']
   creativeCaption: string
-  // File name under backend/static/placeholders/, served via app.ts's
-  // '/static/*' route (see seedImageUrl below) — the actual campaign
-  // artwork, matching frontend/src/data/campaigns.ts's mock thumbnails.
+  // File name under backend/static/placeholders/, uploaded to Cloudinary by
+  // seedImageUrl below — the actual campaign artwork, matching
+  // frontend/src/data/campaigns.ts's mock thumbnails.
   imageFile: string
 }
 
-// Deliberately a relative path, not an absolute "http://localhost:3000/..."
-// URL: in production the backend runs on a container-internal port that's
-// not reachable from the browser at all (see Dockerfile/docker/nginx.conf —
-// only nginx's port 8080 is exposed, which proxies '/static/' through to the
-// backend same-origin). The frontend prefixes this with its own apiBaseUrl
-// before rendering (see frontend/src/lib/assetUrl.ts) — that's what makes a
-// single stored value work in both dev (cross-origin 5173 -> 3000) and prod
-// (same-origin via nginx) without this script needing to know which.
-function seedImageUrl(imageFile: string): string {
-  return `/static/placeholders/${imageFile}`
+// Uploads backend/static/placeholders/<imageFile> to Cloudinary (reusing the
+// same lib/cloudinary-client.ts helper media.service.ts uses for real
+// uploads, not a second hand-rolled implementation) and returns its
+// absolute, always-reachable secure_url. Replaces the old relative
+// "/static/placeholders/..." path, which only worked via app.ts's
+// '/static/*' route + nginx proxy — and 404s in production today, since the
+// Dockerfile never copies backend/static/ into the runtime image. Unlike
+// media.service.ts's live upload path (where a Cloudinary failure is
+// non-fatal), this throws on failure: a seed run has no independent
+// fallback the way a real upload has Meta's hash, so a silently-broken image
+// URL here is worse than a loud failure telling the operator to configure
+// Cloudinary.
+const cloudinaryUrlCache = new Map<string, string>()
+async function seedImageUrl(imageFile: string): Promise<string> {
+  const cached = cloudinaryUrlCache.get(imageFile)
+  if (cached) return cached
+
+  if (!getCloudinaryCredentials()) {
+    throw new Error(
+      'Cloudinary is not configured — seed-admin810.ts requires CLOUDINARY_CLOUD_NAME/CLOUDINARY_API_KEY/CLOUDINARY_API_SECRET to host placeholder images (see backend/.env.example).',
+    )
+  }
+
+  const filePath = path.join('static', 'placeholders', imageFile)
+  const buffer = await readFile(filePath)
+  const result = await uploadBufferToCloudinary({
+    buffer,
+    publicId: `seed-placeholder-${path.parse(imageFile).name}`,
+    resourceType: 'image',
+    folder: `clickdee/${env.NODE_ENV}/seed`,
+  })
+  cloudinaryUrlCache.set(imageFile, result.secureUrl)
+  return result.secureUrl
 }
 
 const SEED_CAMPAIGNS: SeedCampaign[] = [
@@ -251,18 +279,18 @@ function campaignDates(status: CreateCampaignInput['status']) {
 }
 
 async function fixExistingCampaignImage(campaignId: string, seed: SeedCampaign) {
-  const correctUrl = seedImageUrl(seed.imageFile)
+  const correctUrl = await seedImageUrl(seed.imageFile)
   const mediaAssets = await prisma.mediaAsset.findMany({
     where: { creative: { adSet: { campaignId } } },
   })
   for (const asset of mediaAssets) {
-    if (asset.sourceUrl === correctUrl) continue
+    if (asset.cloudinaryUrl === correctUrl) continue
     await prisma.mediaAsset.update({
       where: { id: asset.id },
-      data: { sourceUrl: correctUrl },
+      data: { cloudinaryUrl: correctUrl },
     })
     console.log(
-      `  Fixed image for "${seed.title}" (${asset.id}): ${asset.sourceUrl} -> ${correctUrl}`,
+      `  Fixed image for "${seed.title}" (${asset.id}): ${asset.cloudinaryUrl} -> ${correctUrl}`,
     )
   }
 }
@@ -299,14 +327,15 @@ async function seedCampaign(userId: string, seed: SeedCampaign) {
   // of the app follows for locally-created draft objects). The frontend's
   // own placeholder images are bundled JS module imports, not servable URLs
   // a backend seed script can reuse directly — copies live in
-  // backend/static/placeholders/, served via app.ts's '/static/*' route.
+  // backend/static/placeholders/, uploaded to Cloudinary by seedImageUrl
+  // above (sourceUrl stays null here since there's no Meta upload at all).
   const mediaAsset = await prisma.mediaAsset.create({
     data: {
       userId,
       type: 'IMAGE',
       status: 'READY',
       metaImageHash: `sim_hash_${randomId()}`,
-      sourceUrl: seedImageUrl(seed.imageFile),
+      cloudinaryUrl: await seedImageUrl(seed.imageFile),
     },
   })
 

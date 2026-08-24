@@ -23,6 +23,7 @@ const MAX_POLL_ATTEMPTS = 20
 interface MediaAssetResponse {
   id: string
   status: 'PENDING' | 'READY' | 'FAILED'
+  previewUrl: string | null
 }
 
 async function parseErrorMessage(res: Response, fallback: string) {
@@ -39,12 +40,13 @@ function MediaUploadField({
 }: {
   type: 'IMAGE' | 'VIDEO'
   label?: string
-  onUploaded: (mediaAssetId: string) => void
+  onUploaded: (mediaAssetId: string, previewUrl: string | null) => void
   /** Shown (in edit mode) until the user picks a replacement file. */
   existingPreviewUrl?: string
   existingLabel?: string
 }) {
   const [state, setState] = useState<UploadState>({ phase: 'idle' })
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const pollAttempts = useRef(0)
 
   const pollVideoStatus = (mediaAssetId: string) => {
@@ -65,7 +67,7 @@ function MediaUploadField({
         if (asset.status === 'READY') {
           clearInterval(interval)
           setState({ phase: 'ready', fileName: '' })
-          onUploaded(mediaAssetId)
+          onUploaded(mediaAssetId, asset.previewUrl)
         } else if (
           asset.status === 'FAILED' ||
           pollAttempts.current >= MAX_POLL_ATTEMPTS
@@ -104,12 +106,16 @@ function MediaUploadField({
         throw new Error(await parseErrorMessage(res, 'อัปโหลดไม่สำเร็จ'))
       }
       const asset = (await res.json()) as MediaAssetResponse
+      // Cloudinary's upload is synchronous and independent of Meta's async
+      // video processing, so a preview URL is already available here even
+      // for a video that still needs to be polled to READY below.
+      setPreviewUrl(asset.previewUrl)
       if (type === 'VIDEO') {
         setState({ phase: 'processing' })
         pollVideoStatus(asset.id)
       } else {
         setState({ phase: 'ready', fileName: file.name })
-        onUploaded(asset.id)
+        onUploaded(asset.id, asset.previewUrl)
       }
     } catch (err) {
       setState({
@@ -162,6 +168,21 @@ function MediaUploadField({
           กำลังประมวลผลวิดีโอ...
         </p>
       )}
+      {(state.phase === 'processing' || state.phase === 'ready') &&
+        previewUrl &&
+        (type === 'IMAGE' ? (
+          <img
+            src={previewUrl}
+            alt=""
+            className="mt-1 h-24 w-24 rounded-lg object-cover"
+          />
+        ) : (
+          <video
+            src={previewUrl}
+            controls
+            className="mt-1 h-24 w-40 rounded-lg object-cover"
+          />
+        ))}
       {state.phase === 'ready' && (
         <p className="font-thai mt-1 flex items-center gap-1 text-base text-[#519b5c]">
           <CheckCircle2 className="h-4 w-4" />

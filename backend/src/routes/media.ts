@@ -12,6 +12,7 @@ function serializeMediaAsset(asset: MediaAssetModel) {
     status: asset.status,
     metaImageHash: asset.metaImageHash,
     metaVideoId: asset.metaVideoId,
+    previewUrl: mediaService.resolveMediaAssetPreviewUrl(asset),
     createdAt: asset.createdAt.toISOString(),
     updatedAt: asset.updatedAt.toISOString(),
   }

@@ -6,6 +6,7 @@ import {
   getDevMetaCredentials,
   MetaNotConfiguredError,
 } from '../config/meta.js'
+import { uploadBufferToCloudinary } from '../lib/cloudinary-client.js'
 
 // Demo/offline escape hatch (env.META_SIMULATE_PUBLISH) — see config/env.ts
 // and meta-publish.service.ts's identical helper.
@@ -17,6 +18,41 @@ interface UploadFileInput {
   fileName: string
   contentType: string
   fileData: Buffer
+}
+
+// Best-effort: Cloudinary is a preview-hosting concern only, never a
+// requirement for actually publishing an ad (Meta's own hash/id is). Runs
+// unconditionally — including under env.META_SIMULATE_PUBLISH, which exists
+// solely to work around Meta's Development-mode restriction and has no
+// bearing on whether Cloudinary hosting should also happen. A failure here
+// is logged and swallowed so it never blocks the Meta upload that follows.
+async function tryUploadToCloudinary(
+  assetId: string,
+  resourceType: 'image' | 'video',
+  file: UploadFileInput,
+) {
+  try {
+    return await uploadBufferToCloudinary({
+      buffer: file.fileData,
+      publicId: assetId,
+      resourceType,
+      folder: `clickdee/${env.NODE_ENV}`,
+    })
+  } catch (err) {
+    console.error('Cloudinary upload failed (non-fatal):', err)
+    return null
+  }
+}
+
+// Single seam deciding "which URL do we show for this asset" now that two
+// independent providers can each supply one: Cloudinary's (reliable, set for
+// every upload — image/video, real/simulated) takes precedence over Meta's
+// own returned image URL (image-only, real-upload-only).
+export function resolveMediaAssetPreviewUrl(asset: {
+  cloudinaryUrl: string | null
+  sourceUrl: string | null
+}): string | null {
+  return asset.cloudinaryUrl ?? asset.sourceUrl
 }
 
 interface AdImagesResponse {
@@ -33,10 +69,22 @@ export async function uploadImage(userId: string, file: UploadFileInput) {
     data: { userId, type: 'IMAGE', status: 'PENDING' },
   })
 
+  const cloudinaryResult = await tryUploadToCloudinary(asset.id, 'image', file)
+  const cloudinaryFields = cloudinaryResult
+    ? {
+        cloudinaryUrl: cloudinaryResult.secureUrl,
+        cloudinaryPublicId: cloudinaryResult.publicId,
+      }
+    : {}
+
   if (env.META_SIMULATE_PUBLISH) {
     return prisma.mediaAsset.update({
       where: { id: asset.id },
-      data: { status: 'READY', metaImageHash: simulatedMetaId('image') },
+      data: {
+        status: 'READY',
+        metaImageHash: simulatedMetaId('image'),
+        ...cloudinaryFields,
+      },
     })
   }
 
@@ -58,12 +106,13 @@ export async function uploadImage(userId: string, file: UploadFileInput) {
         status: 'READY',
         metaImageHash: entry.hash,
         sourceUrl: entry.url,
+        ...cloudinaryFields,
       },
     })
   } catch (err) {
     await prisma.mediaAsset.update({
       where: { id: asset.id },
-      data: { status: 'FAILED' },
+      data: { status: 'FAILED', ...cloudinaryFields },
     })
     throw err
   }
@@ -84,10 +133,22 @@ export async function uploadVideo(userId: string, file: UploadFileInput) {
     data: { userId, type: 'VIDEO', status: 'PENDING' },
   })
 
+  const cloudinaryResult = await tryUploadToCloudinary(asset.id, 'video', file)
+  const cloudinaryFields = cloudinaryResult
+    ? {
+        cloudinaryUrl: cloudinaryResult.secureUrl,
+        cloudinaryPublicId: cloudinaryResult.publicId,
+      }
+    : {}
+
   if (env.META_SIMULATE_PUBLISH) {
     return prisma.mediaAsset.update({
       where: { id: asset.id },
-      data: { status: 'READY', metaVideoId: simulatedMetaId('video') },
+      data: {
+        status: 'READY',
+        metaVideoId: simulatedMetaId('video'),
+        ...cloudinaryFields,
+      },
     })
   }
 
@@ -105,12 +166,12 @@ export async function uploadVideo(userId: string, file: UploadFileInput) {
     )
     return prisma.mediaAsset.update({
       where: { id: asset.id },
-      data: { metaVideoId: result.id },
+      data: { metaVideoId: result.id, ...cloudinaryFields },
     })
   } catch (err) {
     await prisma.mediaAsset.update({
       where: { id: asset.id },
-      data: { status: 'FAILED' },
+      data: { status: 'FAILED', ...cloudinaryFields },
     })
     throw err
   }

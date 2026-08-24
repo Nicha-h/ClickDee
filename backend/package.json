@@ -24,6 +24,7 @@
     "@hono/zod-openapi": "^1.5.1",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.8.0",
+    "cloudinary": "^2.10.1",
     "dotenv": "^17.4.2",
     "hono": "^4.12.31",
     "jose": "^6.2.9",

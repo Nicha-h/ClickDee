@@ -75,6 +75,13 @@ const EnvSchema = z.object({
     .optional()
     .default('false')
     .transform((v) => v === 'true'),
+  // Cloudinary — best-effort preview hosting for MediaAsset uploads,
+  // independent of Meta (see config/cloudinary.ts). All optional, same
+  // "null if any unset" pattern as getDevMetaCredentials — media.service.ts
+  // skips the Cloudinary upload (never the Meta one) when unset.
+  CLOUDINARY_CLOUD_NAME: z.string().min(1).optional(),
+  CLOUDINARY_API_KEY: z.string().min(1).optional(),
+  CLOUDINARY_API_SECRET: z.string().min(1).optional(),
 })
 
 export const env = EnvSchema.parse(process.env)
