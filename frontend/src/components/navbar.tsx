@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import home from '@/assets/icons/home.svg'
 import robot from '@/assets/icons/robot.svg'
 import rocket from '@/assets/icons/rocket.svg'
@@ -8,27 +8,18 @@ import account from '@/assets/icons/account.svg'
 import logout from '@/assets/icons/logout.svg'
 import sparklebold from '@/assets/icons/sparklebold.svg'
 import logo from '@/assets/logos/logo.svg'
-import CreditPanel, { type CreditUsage } from '@/components/creditPanel'
+import UsagePanel from '@/components/usagePanel'
 import Portal from '@/components/portal'
-import { clearUserId } from '@/lib/userId'
-{
-  /* placeholder for AI token management */
-}
-const AI_TOKEN = 100
-const AI_TOKEN_MAX = 200
-
-{
-  /** Credit usage breakdown PLACEHOLDER */
-}
-const creditUsage: CreditUsage[] = [
-  { label: 'สร้างแคมเปญ (Campaign generation)', used: 68, total: 100 },
-  { label: 'สร้างภาพโฆษณา (Image generation)', used: 54, total: 70 },
-  { label: 'สร้างวิดีโอ (Video generation)', used: 20, total: 30 },
-]
+import { useAuth } from '@/lib/authContext'
+import { useSubscription } from '@/lib/subscriptionContext'
+import { progressBarColor } from '@/lib/usageFormat'
 
 function Navbar({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const navigate = useNavigate()
+  const { logout: signOut } = useAuth()
+  const { usage, tierConfig } = useSubscription()
   const [activeButton, setActiveButton] = useState('Home')
-  const [creditOpen, setCreditOpen] = useState(false)
+  const [usageOpen, setUsageOpen] = useState(false)
   const handleClick = (buttonName: string) => {
     setActiveButton(buttonName)
   }
@@ -157,42 +148,43 @@ function Navbar({ open, onClose }: { open: boolean; onClose: () => void }) {
         <div className="mb-5 grid items-end justify-center gap-2 p-4">
           <div className="relative mx-5 w-70">
             <div
-              onClick={() => setCreditOpen((open) => !open)}
+              onClick={() => setUsageOpen((open) => !open)}
               className="font-thai h-50 w-70 cursor-pointer items-center justify-start rounded-2xl border-3 border-white/30 bg-white/10 p-7 text-2xl text-white shadow-lg backdrop-blur-md"
             >
               <div>
                 <div className="text-2lg mb-2 flex items-center gap-2 font-semibold">
                   <img src={sparklebold} alt="Sparkle" className="h-6 w-6" />
-                  AI Token
+                  Usage
                 </div>
                 <div className="text-base font-semibold">
-                  เหลือ {AI_TOKEN} / {AI_TOKEN_MAX} tokens
+                  Ads Created {usage.adsCreated} / {tierConfig.quota.adsCreated}
                 </div>
                 <div className="py-2 text-base font-bold">
                   เดือนนี้ใช้งานไปแล้ว
                 </div>
 
-                {/* TODO: come fix this later */}
                 <div className="h-2 w-full rounded-full bg-white/20">
                   <div
-                    className="bg-citrus h-2 rounded-full"
-                    style={{ width: `${(AI_TOKEN / AI_TOKEN_MAX) * 100}%` }}
+                    className="h-2 rounded-full"
+                    style={{
+                      width: `${Math.min((usage.adsCreated / tierConfig.quota.adsCreated) * 100, 100)}%`,
+                      backgroundColor: progressBarColor(
+                        usage.adsCreated,
+                        tierConfig.quota.adsCreated,
+                      ),
+                    }}
                   />
                 </div>
               </div>
             </div>
-            <CreditPanel
-              open={creditOpen}
-              onClose={() => setCreditOpen(false)}
-              usage={creditUsage}
-            />
+            <UsagePanel open={usageOpen} onClose={() => setUsageOpen(false)} />
           </div>
-          {/** logout btn */}
           <NavLink
             to="/login"
-            onClick={() => {
-              clearUserId()
+            onClick={(event) => {
+              event.preventDefault()
               handleClick('logout')
+              void signOut().finally(() => navigate('/login'))
             }}
             className={`font-thai mx-5 flex h-16 w-70 items-center justify-start rounded-2xl p-7 text-xl text-white transition-transform duration-200 hover:-translate-x-0.5`}
           >

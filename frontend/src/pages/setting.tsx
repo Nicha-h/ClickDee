@@ -10,37 +10,8 @@ import {
   postApiAuthLogout,
 } from '@/api/generated/client'
 import { clearUserId, getUserId, withCredentials } from '@/lib/userId'
-
-type PlanKey = 'free' | 'starter' | 'pro'
-
-{
-  /** Plan catalog PLACEHOLDER */
-}
-const plans: {
-  key: PlanKey
-  name: string
-  price: string
-  desc: string
-}[] = [
-  {
-    key: 'free',
-    name: 'Free',
-    price: '0 บาท/เดือน',
-    desc: 'ทดลองใช้งานฟีเจอร์พื้นฐาน',
-  },
-  {
-    key: 'starter',
-    name: 'Starter',
-    price: '490 บาท/เดือน',
-    desc: 'เหมาะสำหรับเริ่มต้นยิงแอด',
-  },
-  {
-    key: 'pro',
-    name: 'Pro',
-    price: '1,490 บาท/เดือน',
-    desc: 'ฟีเจอร์ขั้นสูง + AI วิเคราะห์เชิงลึก',
-  },
-]
+import { TIERS } from '@/data/tiers'
+import { useSubscription } from '@/lib/subscriptionContext'
 
 type NotifyKey = 'notifyEmail' | 'notifyLine' | 'notifyBudget'
 
@@ -58,7 +29,7 @@ const notifyToggles: { key: NotifyKey; label: string; desc: string }[] = [
 ]
 
 function Setting() {
-  const [plan, setPlan] = useState<PlanKey>('free')
+  const { tier, setTier } = useSubscription()
   const [notifySettings, setNotifySettings] = useState<
     Record<NotifyKey, boolean>
   >({
@@ -136,9 +107,11 @@ function Setting() {
           แพ็กเกจและการเรียกเก็บเงิน
         </h2>
         <div className="flex flex-wrap items-stretch gap-5">
-          {plans.map((p) => {
-            const isCurrent = plan === p.key
+          {TIERS.map((p) => {
+            const isCurrent = tier === p.key
             const isPro = p.key === 'pro'
+            const quotaSuffix =
+              p.resetPeriod === 'lifetime' ? ' (lifetime)' : '/mo'
             return (
               <div
                 key={p.key}
@@ -162,14 +135,34 @@ function Setting() {
                 </div>
                 <div className="mb-1 text-2xl font-bold">{p.price}</div>
                 <p
-                  className={`font-thai mb-5 text-sm ${isPro ? 'text-white/80' : 'text-[#6B7280]'}`}
+                  className={`font-thai mb-4 text-sm ${isPro ? 'text-white/80' : 'text-[#6B7280]'}`}
                 >
                   {p.desc}
                 </p>
+                <ul
+                  className={`mb-5 flex flex-col gap-1 text-sm ${isPro ? 'text-white/90' : 'text-[#374151]'}`}
+                >
+                  <li>
+                    Ads Created: {p.quota.adsCreated}
+                    {quotaSuffix}
+                  </li>
+                  <li>
+                    Consultant Questions: {p.quota.consultantQuestions}
+                    {quotaSuffix}
+                  </li>
+                  <li>
+                    AI Image Creation: {p.quota.aiImageCreation}
+                    {quotaSuffix}
+                  </li>
+                  <li>
+                    AI Video Creation: {p.quota.aiVideoCreation}
+                    {quotaSuffix}
+                  </li>
+                </ul>
                 {!isCurrent && (
                   <button
                     type="button"
-                    onClick={() => setPlan(p.key)}
+                    onClick={() => setTier(p.key)}
                     className="bg-amalfidark font-thai hover:bg-amalfidarker w-full rounded-xl py-3 text-sm font-semibold text-white"
                   >
                     อัปเกรดแพ็กเกจ
