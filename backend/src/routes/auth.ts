@@ -130,6 +130,30 @@ authApp.openapi(logoutRoute, async (c) => {
   return c.body(null, 204)
 })
 
+const getMeRoute = createRoute({
+  method: 'get',
+  path: '/me',
+  tags: ['Auth'],
+  middleware: [requireAuth] as const,
+  responses: {
+    200: {
+      content: { 'application/json': { schema: UserSchema } },
+      description: 'Current authenticated user',
+    },
+    401: {
+      content: { 'application/json': { schema: ErrorSchema } },
+      description: 'Not authenticated',
+    },
+  },
+})
+authApp.openapi(getMeRoute, async (c) => {
+  const user = await userService.findUserById(c.get('userId'))
+  if (!user) {
+    return c.json({ message: 'Unauthorized' }, 401)
+  }
+  return c.json(serializeUser(user), 200)
+})
+
 const getAccountRoute = createRoute({
   method: 'get',
   path: '/account/{id}',

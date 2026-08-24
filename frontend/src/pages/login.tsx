@@ -7,6 +7,7 @@ import AuthSocialButtons from '@/components/authSocialButtons'
 import { useNavigate } from 'react-router-dom'
 import { postApiAuthLogin } from '@/api/generated/client'
 import { setUserId, withCredentials } from '@/lib/userId'
+import { useAuth } from '@/lib/authContext'
 
 const loginSchema = z.object({
   email: z.string().email('กรุณากรอกอีเมลให้ถูกต้อง'),
@@ -21,6 +22,7 @@ function Login() {
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
+  const { markAuthenticated } = useAuth()
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
@@ -40,6 +42,7 @@ function Login() {
         return
       }
       setUserId(res.data.id)
+      markAuthenticated()
       navigate('/home')
     } catch {
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')

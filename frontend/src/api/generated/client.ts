@@ -1873,6 +1873,55 @@ export const patchApiCampaignsCampaignIdAdSetsId = async (campaignId: string,
 
 
 
+export type deleteApiCampaignsCampaignIdAdSetsIdResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteApiCampaignsCampaignIdAdSetsIdResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type deleteApiCampaignsCampaignIdAdSetsIdResponseSuccess = (deleteApiCampaignsCampaignIdAdSetsIdResponse204) & {
+  headers: Headers;
+};
+export type deleteApiCampaignsCampaignIdAdSetsIdResponseError = (deleteApiCampaignsCampaignIdAdSetsIdResponse404) & {
+  headers: Headers;
+};
+
+export type deleteApiCampaignsCampaignIdAdSetsIdResponse = (deleteApiCampaignsCampaignIdAdSetsIdResponseSuccess | deleteApiCampaignsCampaignIdAdSetsIdResponseError)
+
+export const getDeleteApiCampaignsCampaignIdAdSetsIdUrl = (campaignId: string,
+    id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/campaigns/${campaignId}/ad-sets/${id}`
+}
+
+export const deleteApiCampaignsCampaignIdAdSetsId = async (campaignId: string,
+    id: string, options?: RequestInit): Promise<deleteApiCampaignsCampaignIdAdSetsIdResponse> => {
+
+  const res = await fetch(getDeleteApiCampaignsCampaignIdAdSetsIdUrl(campaignId,id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteApiCampaignsCampaignIdAdSetsIdResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as deleteApiCampaignsCampaignIdAdSetsIdResponse
+}
+
+
+
 export type getApiCampaignsCampaignIdAdSetsAdSetIdCreativesResponse200 = {
   data: AdCreative[]
   status: 200
@@ -2064,6 +2113,57 @@ export const patchApiCampaignsCampaignIdAdSetsAdSetIdCreativesId = async (campai
 
   const data: patchApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as patchApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse
+}
+
+
+
+export type deleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type deleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponseSuccess = (deleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse204) & {
+  headers: Headers;
+};
+export type deleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponseError = (deleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse404) & {
+  headers: Headers;
+};
+
+export type deleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse = (deleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponseSuccess | deleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponseError)
+
+export const getDeleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdUrl = (campaignId: string,
+    adSetId: string,
+    id: string,) => {
+
+
+
+
+  return `${apiBaseUrl}/api/campaigns/${campaignId}/ad-sets/${adSetId}/creatives/${id}`
+}
+
+export const deleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesId = async (campaignId: string,
+    adSetId: string,
+    id: string, options?: RequestInit): Promise<deleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse> => {
+
+  const res = await fetch(getDeleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdUrl(campaignId,adSetId,id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as deleteApiCampaignsCampaignIdAdSetsAdSetIdCreativesIdResponse
 }
 
 
@@ -2549,6 +2649,53 @@ export const postApiAuthLogout = async ( options?: RequestInit): Promise<postApi
 
   const data: postApiAuthLogoutResponse['data'] = body ? JSON.parse(body) : undefined
   return { data, status: res.status, headers: res.headers } as postApiAuthLogoutResponse
+}
+
+
+
+export type getApiAuthMeResponse200 = {
+  data: User
+  status: 200
+}
+
+export type getApiAuthMeResponse401 = {
+  data: Error
+  status: 401
+}
+
+export type getApiAuthMeResponseSuccess = (getApiAuthMeResponse200) & {
+  headers: Headers;
+};
+export type getApiAuthMeResponseError = (getApiAuthMeResponse401) & {
+  headers: Headers;
+};
+
+export type getApiAuthMeResponse = (getApiAuthMeResponseSuccess | getApiAuthMeResponseError)
+
+export const getGetApiAuthMeUrl = () => {
+
+
+
+
+  return `${apiBaseUrl}/api/auth/me`
+}
+
+export const getApiAuthMe = async ( options?: RequestInit): Promise<getApiAuthMeResponse> => {
+
+  const res = await fetch(getGetApiAuthMeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiAuthMeResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiAuthMeResponse
 }
 
 

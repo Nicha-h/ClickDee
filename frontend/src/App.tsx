@@ -26,6 +26,7 @@ import Setting from '@/pages/setting'
 import Topbar from '@/components/Topbar'
 import ScrollToTopButton from '@/components/scrollToTopButton'
 import DashboardTransitionLoader from '@/components/dashboardTransitionLoader'
+import ProtectedRoute from '@/components/protectedRoute'
 
 const TRANSITION_DURATION_MS = 750
 
@@ -88,54 +89,59 @@ const App = () => {
         element={<OnboardingPersonalize />}
       />
       <Route path="/onboarding/done" element={<OnboardingDone />} />
-      <Route element={<DashboardLayout />}>
-        <Route path="/home" element={<Home />} />
-        <Route path="/campaign" element={<Campaign />} />
-        <Route path="/campaign/new" element={<CampaignCreate />} />
-        <Route
-          path="/campaign/new/processing"
-          element={<CampaignProcessing />}
-        />
-        <Route path="/campaign/new/review" element={<CampaignReview />} />
-        <Route
-          path="/campaign/:campaignId/report"
-          element={<CampaignReport />}
-        />
-        <Route
-          path="/campaign/:campaignId/review"
-          element={<CampaignReview />}
-        />
-        <Route path="/campaign/:campaignId/edit" element={<CampaignEdit />} />
-        <Route
-          path="/campaign/:campaignId/adset/new"
-          element={<AdSetCreate />}
-        />
-        <Route
-          path="/campaign/:campaignId/adset/:adSetId/edit"
-          element={<AdSetCreate />}
-        />
-        <Route
-          path="/campaign/:campaignId/adset/:adSetId/creative/new"
-          element={<AdCreativeCreate />}
-        />
-        <Route
-          path="/campaign/:campaignId/adset/:adSetId/creative/:creativeId/edit"
-          element={<AdCreativeCreate />}
-        />
-        <Route
-          path="/campaign/:campaignId/adset/:adSetId/ad/new"
-          element={<AdCreate />}
-        />
-        <Route
-          path="/campaign/:campaignId/adset/:adSetId/ad/:adId/edit"
-          element={<AdCreate />}
-        />
-        <Route path="/ai" element={<Ai />} />
-        <Route path="/overview" element={<Overview />} />
-        <Route path="/integration" element={<Integration />} />
-        <Route path="/integration/facebook" element={<IntegrationFacebook />} />
-        <Route path="/account" element={<Account />} />
-        <Route path="/setting" element={<Setting />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<DashboardLayout />}>
+          <Route path="/home" element={<Home />} />
+          <Route path="/campaign" element={<Campaign />} />
+          <Route path="/campaign/new" element={<CampaignCreate />} />
+          <Route
+            path="/campaign/new/processing"
+            element={<CampaignProcessing />}
+          />
+          <Route path="/campaign/new/review" element={<CampaignReview />} />
+          <Route
+            path="/campaign/:campaignId/report"
+            element={<CampaignReport />}
+          />
+          <Route
+            path="/campaign/:campaignId/review"
+            element={<CampaignReview />}
+          />
+          <Route path="/campaign/:campaignId/edit" element={<CampaignEdit />} />
+          <Route
+            path="/campaign/:campaignId/adset/new"
+            element={<AdSetCreate />}
+          />
+          <Route
+            path="/campaign/:campaignId/adset/:adSetId/edit"
+            element={<AdSetCreate />}
+          />
+          <Route
+            path="/campaign/:campaignId/adset/:adSetId/creative/new"
+            element={<AdCreativeCreate />}
+          />
+          <Route
+            path="/campaign/:campaignId/adset/:adSetId/creative/:creativeId/edit"
+            element={<AdCreativeCreate />}
+          />
+          <Route
+            path="/campaign/:campaignId/adset/:adSetId/ad/new"
+            element={<AdCreate />}
+          />
+          <Route
+            path="/campaign/:campaignId/adset/:adSetId/ad/:adId/edit"
+            element={<AdCreate />}
+          />
+          <Route path="/ai" element={<Ai />} />
+          <Route path="/overview" element={<Overview />} />
+          <Route path="/integration" element={<Integration />} />
+          <Route
+            path="/integration/facebook"
+            element={<IntegrationFacebook />}
+          />
+          <Route path="/account" element={<Account />} />
+          <Route path="/setting" element={<Setting />} />
+        </Route>
       </Route>
     </Routes>
   )

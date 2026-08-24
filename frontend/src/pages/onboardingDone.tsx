@@ -9,6 +9,7 @@ import ellipseTop from '@/assets/decorative/welcome-ellipse-top.svg'
 import ellipseBottom from '@/assets/decorative/welcome-ellipse-bottom.svg'
 import { postApiAuthSignup } from '@/api/generated/client'
 import { setUserId, withCredentials } from '@/lib/userId'
+import { useAuth } from '@/lib/authContext'
 
 type DoneState = {
   answers?: OnboardingAnswers
@@ -61,6 +62,7 @@ function buildSummaryRows(answers: OnboardingAnswers): SummaryRow[] {
 
 function OnboardingDone() {
   const navigate = useNavigate()
+  const { markAuthenticated } = useAuth()
   const location = useLocation()
   const {
     answers = {},
@@ -115,6 +117,7 @@ function OnboardingDone() {
         return
       }
       setUserId(res.data.id)
+      markAuthenticated()
       navigate('/home')
     } catch {
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
