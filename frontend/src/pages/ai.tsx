@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type SubmitEvent } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Zap,
@@ -535,7 +535,7 @@ function Ai() {
     )
   }
 
-  const handleSend = async (event: FormEvent) => {
+  const handleSend = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     const text = inputValue.trim()
     if (!text || !userId || isSending) return

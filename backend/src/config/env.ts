@@ -9,11 +9,10 @@ const EnvSchema = z.object({
   DATABASE_URL: z.string().min(1),
   GEMINI_API_KEY: z.string().min(1).optional(),
   GEMINI_BASE_URL: z
-    .string()
     .url()
     .default('https://generativelanguage.googleapis.com/v1beta/openai/'),
   GROQ_API_KEY: z.string().min(1).optional(),
-  GROQ_BASE_URL: z.string().url().default('https://api.groq.com/openai/v1'),
+  GROQ_BASE_URL: z.url().default('https://api.groq.com/openai/v1'),
   // Research model for the Distiller -> Compound -> Formatter caption
   // pipeline (see lib/compound.ts). Unlike the pinned cascade CHAIN in
   // lib/openai.ts, this is env-overridable: Compound isn't cooldown-tracked

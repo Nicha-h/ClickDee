@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   ChevronLeft,
@@ -35,7 +35,7 @@ function CampaignCreate() {
     })
   }, [])
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!prompt.trim()) return
     navigate('/campaign/new/processing', { state: { prompt } })

@@ -10,8 +10,8 @@ export const AdSchema = z
     metaStatus: z.string().nullable(),
     metaEffectiveStatus: z.string().nullable(),
     metaReviewFeedback: z.string().nullable(),
-    createdAt: z.string().datetime(),
-    updatedAt: z.string().datetime(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
   })
   .openapi('Ad')
 

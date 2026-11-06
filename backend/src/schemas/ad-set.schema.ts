@@ -77,16 +77,16 @@ export const AdSetSchema = z
     dailyBudget: z.number().int().nullable(),
     lifetimeBudget: z.number().int().nullable(),
     bidAmount: z.number().int().nullable(),
-    startTime: z.string().datetime().nullable(),
-    endTime: z.string().datetime().nullable(),
+    startTime: z.iso.datetime().nullable(),
+    endTime: z.iso.datetime().nullable(),
     promotedObject: z.record(z.string(), z.unknown()).nullable(),
     advantagePlacements: z.boolean(),
     metaAdSetId: z.string().nullable(),
     metaStatus: z.string().nullable(),
     metaEffectiveStatus: z.string().nullable(),
     metaReviewFeedback: z.string().nullable(),
-    createdAt: z.string().datetime(),
-    updatedAt: z.string().datetime(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
   })
   .openapi('AdSet')
 
@@ -101,8 +101,8 @@ export const CreateAdSetSchema = z
     dailyBudget: z.number().int().positive().optional(),
     lifetimeBudget: z.number().int().positive().optional(),
     bidAmount: z.number().int().positive().optional(),
-    startTime: z.string().datetime().optional(),
-    endTime: z.string().datetime().optional(),
+    startTime: z.iso.datetime().optional(),
+    endTime: z.iso.datetime().optional(),
     // Conditionally required (checked in ad-set.service.ts against the
     // parent campaign's objective, since app-install/lead-gen campaigns need
     // these but this schema alone doesn't know the campaign's objective).
@@ -126,8 +126,8 @@ export const UpdateAdSetSchema = z
     dailyBudget: z.number().int().positive().optional(),
     lifetimeBudget: z.number().int().positive().optional(),
     bidAmount: z.number().int().positive().optional(),
-    startTime: z.string().datetime().optional(),
-    endTime: z.string().datetime().optional(),
+    startTime: z.iso.datetime().optional(),
+    endTime: z.iso.datetime().optional(),
     promotedObject: z.record(z.string(), z.unknown()).optional(),
     destinationType: DestinationTypeEnum.optional(),
     dsaBeneficiary: z.string().optional(),

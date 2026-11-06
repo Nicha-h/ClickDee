@@ -52,7 +52,7 @@ export const CreateImagePostCreativeSchema = z
     ...BaseCreativeFields,
     format: z.literal('IMAGE_POST'),
     mediaAssetId: z.string().min(1),
-    link: z.string().url(),
+    link: z.url(),
     message: z.string().min(1).max(2000),
     callToActionType: CallToActionTypeEnum,
   })
@@ -66,9 +66,9 @@ export const CreateVideoPostCreativeSchema = z
     title: z.string().max(200).optional(),
     message: z.string().min(1).max(2000),
     callToActionType: CallToActionTypeEnum,
-    ctaLink: z.string().url(),
+    ctaLink: z.url(),
     // Auto-fetched by Meta if omitted, per Task 3.
-    thumbnailUrl: z.string().url().optional(),
+    thumbnailUrl: z.url().optional(),
   })
   .openapi('CreateVideoPostCreativeInput')
 
@@ -80,17 +80,17 @@ export const CreateReelsCreativeSchema = z
     title: z.string().max(200).optional(),
     message: z.string().min(1).max(2000),
     callToActionType: CallToActionTypeEnum,
-    ctaLink: z.string().url(),
+    ctaLink: z.url(),
     // Same video_data object_story_spec as VIDEO_POST (Task 3) — Reels
     // just adds placement/aspect-ratio constraints on top, not a shape
     // difference, so it shares these optional fields too.
-    thumbnailUrl: z.string().url().optional(),
+    thumbnailUrl: z.url().optional(),
   })
   .openapi('CreateReelsCreativeInput')
 
 const CarouselCardSchema = z.object({
   mediaAssetId: z.string().min(1),
-  link: z.string().url(),
+  link: z.url(),
   name: z.string().min(1).max(200),
   description: z.string().max(200).optional(),
 })
@@ -115,10 +115,10 @@ export const CreateStoryCreativeSchema = z
     // a "story" ad, not a distinct object_story_spec shape.
     mediaType: z.enum(['IMAGE', 'VIDEO']),
     mediaAssetId: z.string().min(1),
-    link: z.string().url().optional(),
+    link: z.url().optional(),
     message: z.string().max(2000).optional(),
     callToActionType: CallToActionTypeEnum.optional(),
-    ctaLink: z.string().url().optional(),
+    ctaLink: z.url().optional(),
   })
   .openapi('CreateStoryCreativeInput')
 
@@ -172,8 +172,8 @@ export const AdCreativeSchema = z
     creativeDetails: z.record(z.string(), z.unknown()),
     metaCreativeId: z.string().nullable(),
     metaReviewFeedback: z.string().nullable(),
-    createdAt: z.string().datetime(),
-    updatedAt: z.string().datetime(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
   })
   .openapi('AdCreative')
 
@@ -190,12 +190,12 @@ export const UpdateAdCreativeSchema = z
     pageId: z.string().min(1).optional(),
     instagramUserId: z.string().min(1).optional(),
     mediaAssetId: z.string().min(1).optional(),
-    link: z.string().url().optional(),
+    link: z.url().optional(),
     message: z.string().max(2000).optional(),
     callToActionType: CallToActionTypeEnum.optional(),
     title: z.string().max(200).optional(),
-    ctaLink: z.string().url().optional(),
-    thumbnailUrl: z.string().url().optional(),
+    ctaLink: z.url().optional(),
+    thumbnailUrl: z.url().optional(),
     mediaType: z.enum(['IMAGE', 'VIDEO']).optional(),
     childAttachments: z.array(CarouselCardSchema).min(2).max(10).optional(),
   })

@@ -6,8 +6,8 @@ export const InsightBreakdownEnum = z.enum(['publisher_platform', 'placement'])
 
 export const InsightsQuerySchema = z
   .object({
-    since: z.string().datetime().optional(),
-    until: z.string().datetime().optional(),
+    since: z.iso.datetime().optional(),
+    until: z.iso.datetime().optional(),
     datePreset: z.string().optional(),
     breakdowns: z
       .string()
@@ -63,7 +63,7 @@ export const AdInsightSchema = z
     videoP100Watched: z.number().int().nullable(),
     videoThruplayWatched: z.number().int().nullable(),
     purchaseRoas: z.number().nullable(),
-    fetchedAt: z.string().datetime(),
+    fetchedAt: z.iso.datetime(),
   })
   .openapi('AdInsight')
 

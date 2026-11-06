@@ -10,7 +10,7 @@ export const AiMessageSchema = z
     text: z.string(),
     list: z.array(z.string()).nullable(),
     closing: z.string().nullable(),
-    createdAt: z.string().datetime(),
+    createdAt: z.iso.datetime(),
     pendingAction: PendingAiActionSchema.nullable().optional(),
     redacted: z.boolean().optional(),
   })

@@ -1,11 +1,11 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { z } from 'zod'
 import AuthBrandPanel from '@/components/authBrandPanel'
 import AuthSocialButtons from '@/components/authSocialButtons'
 
-const emailSchema = z.string().email('กรุณากรอกอีเมลให้ถูกต้อง')
+const emailSchema = z.email('กรุณากรอกอีเมลให้ถูกต้อง')
 
 function SignUp() {
   const [email, setEmail] = useState('')
@@ -20,7 +20,7 @@ function SignUp() {
   // Account isn't created here — email/password are carried through the
   // onboarding flow via route state, and the account is created once the
   // full business profile exists too (see onboardingDone.tsx).
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     const emailResult = emailSchema.safeParse(email)
     if (!emailResult.success) {

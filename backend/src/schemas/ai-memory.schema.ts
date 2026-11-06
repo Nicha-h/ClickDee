@@ -5,7 +5,7 @@ export const AiMemoryItemSchema = z
     id: z.string(),
     question: z.string(),
     answer: z.string(),
-    createdAt: z.string().datetime(),
+    createdAt: z.iso.datetime(),
   })
   .openapi('AiMemoryItem')
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   ChevronLeft,
@@ -317,7 +317,7 @@ function AdCreativeCreate() {
     }
   }
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
     const payload = buildPayload()

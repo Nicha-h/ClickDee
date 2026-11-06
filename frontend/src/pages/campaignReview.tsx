@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   ChevronLeft,
@@ -316,7 +316,7 @@ function CampaignReviewLayout({
   const removeInterest = (tag: string) =>
     setInterests((prev) => prev.filter((t) => t !== tag))
 
-  const addInterest = (e: FormEvent) => {
+  const addInterest = (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     const trimmed = newInterest.trim()
     if (trimmed && !interests.includes(trimmed)) {

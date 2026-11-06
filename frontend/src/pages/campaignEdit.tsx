@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ChevronLeft,
@@ -84,7 +84,7 @@ function ApiCampaignEditView({ campaign }: { campaign: ApiCampaign }) {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSaving(true)
     setError(null)
@@ -300,7 +300,7 @@ function CampaignEditView({
   const removeInterest = (tag: string) =>
     setInterests((prev) => prev.filter((t) => t !== tag))
 
-  const addInterest = (e: FormEvent) => {
+  const addInterest = (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     const trimmed = newInterest.trim()
     if (trimmed && !interests.includes(trimmed)) {

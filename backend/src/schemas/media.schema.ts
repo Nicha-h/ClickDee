@@ -10,8 +10,8 @@ export const MediaAssetSchema = z
     status: MediaAssetStatusEnum,
     metaImageHash: z.string().nullable(),
     metaVideoId: z.string().nullable(),
-    createdAt: z.string().datetime(),
-    updatedAt: z.string().datetime(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
   })
   .openapi('MediaAsset')
 

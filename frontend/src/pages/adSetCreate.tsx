@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, Pencil, Plus, Trash2 } from 'lucide-react'
 import {
@@ -157,7 +157,7 @@ function AdSetCreate() {
 
   const needsOwnBudget = !campaign.campaignBudgetOptimization
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSaving(true)
     setError(null)

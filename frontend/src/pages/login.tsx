@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { z } from 'zod'
@@ -10,7 +10,7 @@ import { setUserId, withCredentials } from '@/lib/userId'
 import { useAuth } from '@/lib/authContext'
 
 const loginSchema = z.object({
-  email: z.string().email('กรุณากรอกอีเมลให้ถูกต้อง'),
+  email: z.email('กรุณากรอกอีเมลให้ถูกต้อง'),
   password: z.string().min(1, 'กรุณากรอกรหัสผ่าน'),
 })
 
@@ -24,7 +24,7 @@ function Login() {
   const navigate = useNavigate()
   const { markAuthenticated } = useAuth()
 
-  const handleSubmit = async (event: FormEvent) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const result = loginSchema.safeParse({ email, password })

@@ -7,7 +7,7 @@ export const AiMemoryQaSchema = z.object({
 
 export const SignupSchema = z
   .object({
-    email: z.string().email(),
+    email: z.email(),
     password: z.string().min(8),
     businessName: z.string().min(1).optional(),
     location: z.string().min(1).optional(),
@@ -27,7 +27,7 @@ export const SignupSchema = z
 
 export const LoginSchema = z
   .object({
-    email: z.string().email(),
+    email: z.email(),
     password: z.string().min(1),
   })
   .openapi('LoginInput')
@@ -49,7 +49,7 @@ export const UserSchema = z
     peakHours: z.string().nullable(),
     promoHighlight: z.string().nullable(),
     customerPersona: z.string().nullable(),
-    createdAt: z.string().datetime(),
+    createdAt: z.iso.datetime(),
   })
   .openapi('User')
 
@@ -66,7 +66,7 @@ export const DeleteAccountSchema = z
 export const UpdateAccountSchema = z
   .object({
     name: z.string().min(1).optional(),
-    email: z.string().email().optional(),
+    email: z.email().optional(),
     businessName: z.string().min(1).optional(),
     location: z.string().min(1).optional(),
     category: z.string().min(1).optional(),

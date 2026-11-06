@@ -12,7 +12,7 @@ export const NotificationSchema = z
     pendingActionId: z.string().nullable(),
     pendingActionStatus: PendingActionStatusEnum.nullable(),
     read: z.boolean(),
-    createdAt: z.string().datetime(),
+    createdAt: z.iso.datetime(),
   })
   .openapi('Notification')
 

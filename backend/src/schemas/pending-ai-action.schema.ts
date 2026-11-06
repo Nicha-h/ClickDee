@@ -72,7 +72,7 @@ export const PendingAiActionSchema = z
     targetCampaignId: z.string().nullable(),
     payload: PendingActionPayloadSchema,
     status: PendingActionStatusEnum,
-    createdAt: z.string().datetime(),
+    createdAt: z.iso.datetime(),
     // Non-blocking content warnings computed at serialization time from
     // payload.caption (see lib/caption-content-screen.ts) — surfaced so the
     // human confirming this action can spot a link or injected-instruction-
