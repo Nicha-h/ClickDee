@@ -20,4 +20,15 @@ export default defineConfig([
       },
     },
   },
+  {
+    // Type-aware, so limited to files in tsconfig.json (which excludes tests).
+    files: ['src/**/*.ts'],
+    ignores: ['**/*.test.ts'],
+    languageOptions: {
+      parserOptions: { projectService: true },
+    },
+    rules: {
+      '@typescript-eslint/no-deprecated': 'error',
+    },
+  },
 ])

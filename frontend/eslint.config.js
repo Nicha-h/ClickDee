@@ -24,4 +24,14 @@ export default defineConfig([
       },
     },
   },
+  {
+    // Type-aware, so limited to files covered by tsconfig.app.json.
+    files: ['src/**/*.{ts,tsx}'],
+    languageOptions: {
+      parserOptions: { projectService: true },
+    },
+    rules: {
+      '@typescript-eslint/no-deprecated': 'error',
+    },
+  },
 ])
