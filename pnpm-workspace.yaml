@@ -5,3 +5,7 @@ packages:
 onlyBuiltDependencies:
   - '@prisma/engines'
   - 'prisma'
+# Patched minimatch (GHSA-g3hv-75wg-m249) only ships in v11; eslint still
+# depends on ^10. Remove once eslint's own range picks it up.
+overrides:
+  minimatch@<11.0.1: ^11.0.1

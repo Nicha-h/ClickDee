@@ -1,4 +1,5 @@
 import { prisma } from '../db/client.js'
+import type { Prisma } from '../generated/prisma/client.js'
 import type {
   CreateAdSetInput,
   UpdateAdSetInput,
@@ -68,13 +69,13 @@ export async function createAdSet(
       name: input.name,
       optimizationGoal: input.optimizationGoal,
       billingEvent: input.billingEvent,
-      targeting: input.targeting,
+      targeting: input.targeting as Prisma.InputJsonValue,
       dailyBudget: input.dailyBudget,
       lifetimeBudget: input.lifetimeBudget,
       bidAmount: input.bidAmount,
       startTime: input.startTime ? new Date(input.startTime) : undefined,
       endTime: input.endTime ? new Date(input.endTime) : undefined,
-      promotedObject: input.promotedObject,
+      promotedObject: input.promotedObject as Prisma.InputJsonValue | undefined,
       destinationType: input.destinationType,
       dsaBeneficiary: input.dsaBeneficiary,
       advantagePlacements: input.advantagePlacements,
@@ -82,7 +83,11 @@ export async function createAdSet(
   })
 }
 
-export async function deleteAdSet(userId: string, campaignId: string, id: string) {
+export async function deleteAdSet(
+  userId: string,
+  campaignId: string,
+  id: string,
+) {
   const result = await prisma.adSet.deleteMany({
     where: { id, campaignId, userId },
   })
@@ -105,7 +110,9 @@ export async function updateAdSet(
       ...(input.billingEvent !== undefined && {
         billingEvent: input.billingEvent,
       }),
-      ...(input.targeting !== undefined && { targeting: input.targeting }),
+      ...(input.targeting !== undefined && {
+        targeting: input.targeting as Prisma.InputJsonValue,
+      }),
       ...(input.dailyBudget !== undefined && {
         dailyBudget: input.dailyBudget,
       }),
@@ -118,7 +125,7 @@ export async function updateAdSet(
       }),
       ...(input.endTime !== undefined && { endTime: new Date(input.endTime) }),
       ...(input.promotedObject !== undefined && {
-        promotedObject: input.promotedObject,
+        promotedObject: input.promotedObject as Prisma.InputJsonValue,
       }),
       ...(input.destinationType !== undefined && {
         destinationType: input.destinationType,
