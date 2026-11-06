@@ -31,7 +31,11 @@ vi.mock('openai', async () => {
   return { ...actual, default: MockOpenAI }
 })
 
-import { RateLimitError } from 'openai'
+import {
+  RateLimitError,
+  APIConnectionTimeoutError,
+  InternalServerError,
+} from 'openai'
 import {
   createChatCompletion,
   __resetCascadeStateForTests,
@@ -52,6 +56,19 @@ function rateLimitError(retryAfterSeconds?: number) {
     { message: 'rate limited' },
     'rate limited',
     headers,
+  )
+}
+
+function timeoutError() {
+  return new APIConnectionTimeoutError({ message: 'Request timed out.' })
+}
+
+function internalServerError() {
+  return new InternalServerError(
+    503,
+    { message: 'no body' },
+    '503 status code (no body)',
+    new Headers(),
   )
 }
 
@@ -137,6 +154,38 @@ describe('createChatCompletion', () => {
     expect(groqConfig).toBeDefined()
   })
 
+  it('cascades to the next tier on a connection timeout', async () => {
+    createMock
+      .mockImplementationOnce(() => {
+        throw timeoutError()
+      })
+      .mockResolvedValueOnce({ id: 'ok' })
+
+    const result = await createChatCompletion(MESSAGES)
+
+    expect(result).toEqual({ id: 'ok' })
+    expect(createMock).toHaveBeenCalledTimes(2)
+    expect(createMock.mock.calls[1][0]).toMatchObject({
+      model: 'gemini-3.6-flash',
+    })
+  })
+
+  it('cascades to the next tier on a provider 5xx', async () => {
+    createMock
+      .mockImplementationOnce(() => {
+        throw internalServerError()
+      })
+      .mockResolvedValueOnce({ id: 'ok' })
+
+    const result = await createChatCompletion(MESSAGES)
+
+    expect(result).toEqual({ id: 'ok' })
+    expect(createMock).toHaveBeenCalledTimes(2)
+    expect(createMock.mock.calls[1][0]).toMatchObject({
+      model: 'gemini-3.6-flash',
+    })
+  })
+
   it('starts the next request from the last-successful tier, not the top', async () => {
     createMock
       .mockImplementationOnce(() => {
@@ -193,7 +242,7 @@ describe('createChatCompletion', () => {
     expect(createMock).toHaveBeenCalledTimes(1)
   })
 
-  it('does not cascade on a non-rate-limit error — rethrows immediately', async () => {
+  it('does not cascade on a non-availability error — rethrows immediately', async () => {
     const boom = new Error('boom')
     createMock.mockImplementationOnce(() => {
       throw boom

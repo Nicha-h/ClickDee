@@ -82,7 +82,7 @@ vi.mock('./notification.service.js', () => ({
 import { sendMessage } from './ai.service.js'
 import {
   AiContentFilterError,
-  AiRateLimitError,
+  AiNotConfiguredError,
   AllTiersExhaustedError,
 } from '../lib/openai.js'
 
@@ -326,13 +326,25 @@ describe('sendMessage', () => {
     )
   })
 
-  it('wraps an all-tiers-exhausted error from the cascade', async () => {
+  it('falls back to an apology reply when the cascade exhausts all tiers, without throwing', async () => {
     createMock.mockImplementationOnce(() => {
       throw new AllTiersExhaustedError('all tiers exhausted')
     })
 
+    const result = await sendMessage('user-1', 'x')
+
+    expect(result.assistantMessages).toHaveLength(1)
+    expect(result.assistantMessages[0].content).toContain('ขออภัยค่ะ')
+    expect(result.assistantMessages[0].pendingActionId).toBeNull()
+  })
+
+  it('still throws AiNotConfiguredError instead of falling back', async () => {
+    createMock.mockImplementationOnce(() => {
+      throw new AiNotConfiguredError('No AI provider is configured')
+    })
+
     await expect(sendMessage('user-1', 'x')).rejects.toBeInstanceOf(
-      AiRateLimitError,
+      AiNotConfiguredError,
     )
   })
 

@@ -5,6 +5,7 @@ import {
   createChatCompletion,
   AiRateLimitError,
   AiContentFilterError,
+  AiNotConfiguredError,
 } from '../lib/openai.js'
 import { researchForCaption } from '../lib/compound.js'
 import { CLICKDEE_PRODUCT_CONTEXT } from '../lib/product-context.js'
@@ -45,6 +46,17 @@ Most replies should be a single message. If you genuinely have more than one dis
 If a staging tool's result includes research findings and you revise the caption based on them, wrap the exact final caption in [[CAPTION]]...[[/CAPTION]] somewhere in your reply, with nothing else inside the markers — these markers are stripped before the user sees your reply.`
 
 const HISTORY_LIMIT = 20
+
+// sendMessage's last line of defense: the user's own Message row is already
+// persisted by the time generateAssistantReply runs, so letting a transient
+// AI-availability error (AllTiersExhaustedError, or any other cascade-
+// exhausting failure) propagate would leave that message orphaned with no
+// reply. AiContentFilterError and AiNotConfiguredError are excluded — those
+// are policy/config problems, not availability blips, and keep their
+// existing distinct route-level responses (422 / 503) instead of a
+// misleading "try again" bubble.
+const FALLBACK_REPLY_TEXT =
+  'ขออภัยค่ะ ตอนนี้ระบบ AI ขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้งในอีกสักครู่นะคะ'
 
 const STAGE_CREATE_CAMPAIGN_TOOL: OpenAI.Chat.Completions.ChatCompletionFunctionTool =
   {
@@ -604,13 +616,29 @@ export async function sendMessage(userId: string, rawText: string) {
   })
 
   const aiMemory = await getAiMemoryQas(userId)
-  const { bubbles: bubbleTexts, pendingAction } = await generateAssistantReply(
-    userId,
-    conversation.id,
-    user,
-    history,
-    aiMemory,
-  )
+  let reply: AssistantReply
+  try {
+    reply = await generateAssistantReply(
+      userId,
+      conversation.id,
+      user,
+      history,
+      aiMemory,
+    )
+  } catch (err) {
+    if (
+      err instanceof AiContentFilterError ||
+      err instanceof AiNotConfiguredError
+    ) {
+      throw err
+    }
+    console.error(
+      '[ai-chat] falling back to an apology reply after an unexpected error:',
+      err,
+    )
+    reply = { bubbles: [FALLBACK_REPLY_TEXT], pendingAction: null }
+  }
+  const { bubbles: bubbleTexts, pendingAction } = reply
 
   // Sequential, not Promise.all — createdAt ordering must be deterministic
   // since GET /api/ai/messages sorts by it, and concurrent creates could tie.

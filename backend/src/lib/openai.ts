@@ -1,4 +1,9 @@
-import OpenAI, { RateLimitError } from 'openai'
+import OpenAI, {
+  RateLimitError,
+  APIConnectionError,
+  InternalServerError,
+  type APIError,
+} from 'openai'
 import { env } from '../config/env.js'
 
 export class AiNotConfiguredError extends Error {}
@@ -87,7 +92,7 @@ export function getGroqClient(): OpenAI {
   return getClientForProvider('groq')
 }
 
-function parseRetryAfterMs(err: RateLimitError): number {
+function parseRetryAfterMs(err: APIError): number {
   const raw = err.headers?.get('retry-after')
   if (!raw) return DEFAULT_COOLDOWN_MS
 
@@ -106,11 +111,14 @@ type ChatParams = Omit<
 >
 
 // Walks CHAIN starting from currentIndex, skipping any model still in its
-// cooldown window or whose provider isn't configured. On a 429, the model is
-// put on cooldown and the walk continues to the next entry for this same
-// request. Any other error (including a content-filter block, which surfaces
-// as a normal 200 with finish_reason rather than an exception) is not a
-// capacity problem, so it is not cascaded — it rethrows immediately.
+// cooldown window or whose provider isn't configured. On a 429, a connection
+// error (including a timeout), or a 5xx from the provider, the model is put
+// on cooldown and the walk continues to the next entry for this same
+// request — all three are availability problems, not request problems, so
+// the next tier is worth a try. Any other error (including a content-filter
+// block, which surfaces as a normal 200 with finish_reason rather than an
+// exception) is not an availability problem, so it is not cascaded — it
+// rethrows immediately.
 export async function createChatCompletion(
   params: ChatParams,
 ): Promise<OpenAI.Chat.Completions.ChatCompletion> {
@@ -141,11 +149,20 @@ export async function createChatCompletion(
         console.debug(`[ai] served by ${entry.provider}/${entry.model}`)
         return result
       } catch (err) {
-        if (!(err instanceof RateLimitError)) throw err
-        const cooldownMs = parseRetryAfterMs(err)
+        const isAvailabilityError =
+          err instanceof RateLimitError ||
+          err instanceof APIConnectionError ||
+          err instanceof InternalServerError
+        if (!isAvailabilityError) throw err
+        // Only RateLimitError carries a meaningful Retry-After; a timeout or
+        // 5xx has no such signal, so it just takes the default cooldown.
+        const cooldownMs =
+          err instanceof RateLimitError
+            ? parseRetryAfterMs(err)
+            : DEFAULT_COOLDOWN_MS
         cooldownUntil.set(entry.model, Date.now() + cooldownMs)
         console.debug(
-          `[ai] ${entry.provider}/${entry.model} rate-limited, cooling down ${cooldownMs}ms`,
+          `[ai] ${entry.provider}/${entry.model} unavailable (${err.constructor.name}), cooling down ${cooldownMs}ms`,
         )
       }
     }
@@ -153,5 +170,7 @@ export async function createChatCompletion(
     i = (i + 1) % CHAIN.length
   }
 
-  throw new AllTiersExhaustedError('All AI provider tiers are rate-limited')
+  throw new AllTiersExhaustedError(
+    'All AI provider tiers are rate-limited or unavailable',
+  )
 }
