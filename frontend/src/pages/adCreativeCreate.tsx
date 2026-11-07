@@ -146,6 +146,9 @@ function AdCreativeCreate() {
   const [showPreview, setShowPreview] = useState(false)
 
   const [isSuggesting, setIsSuggesting] = useState(false)
+  // Non-blocking warnings the backend's content screen attached to the
+  // AI-suggested caption; cleared as soon as the user edits the text.
+  const [captionWarnings, setCaptionWarnings] = useState<string[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(isEditMode)
   const [isPublished, setIsPublished] = useState(false)
@@ -225,7 +228,10 @@ function AdCreativeCreate() {
         { prompt: message || name || 'สร้างแคปชั่นโฆษณาที่น่าสนใจ' },
         withCredentials(),
       )
-      if (res.status === 200) setMessage(res.data.caption)
+      if (res.status === 200) {
+        setMessage(res.data.caption)
+        setCaptionWarnings(res.data.contentWarnings)
+      }
     } finally {
       setIsSuggesting(false)
     }
@@ -511,9 +517,22 @@ function AdCreativeCreate() {
             <textarea
               rows={3}
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) => {
+                setMessage(e.target.value)
+                setCaptionWarnings([])
+              }}
               className="mt-1 w-full resize-y rounded-lg border border-[#8E98A8] px-3 py-2 text-lg text-black outline-none"
             />
+            {captionWarnings.length > 0 && (
+              <ul className="font-thai mt-2 space-y-1 rounded-lg border border-yellow-400/60 bg-yellow-50 p-2 text-sm text-yellow-800">
+                {captionWarnings.map((warning) => (
+                  <li key={warning} className="flex gap-1.5">
+                    <span aria-hidden="true">⚠</span>
+                    <span>{warning}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
 
             <label className="font-thai mt-4 block text-lg font-bold text-black">
               ปุ่มกระตุ้นการกระทำ (CTA)

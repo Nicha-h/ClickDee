@@ -54,6 +54,10 @@ vi.mock('../services/idea-ai.service.js', () => ({
   generateCreativeIdeas: vi.fn().mockResolvedValue({ ideas: [] }),
 }))
 
+vi.mock('../services/creative-ai.service.js', () => ({
+  generateCreativeCaption: vi.fn(),
+}))
+
 vi.mock('../services/user.service.js', () => ({
   findUserById: vi.fn().mockResolvedValue(null),
 }))
@@ -78,6 +82,7 @@ import * as campaignService from '../services/campaign.service.js'
 import * as insightAiService from '../services/insight-ai.service.js'
 import * as ideaAiService from '../services/idea-ai.service.js'
 import * as userService from '../services/user.service.js'
+import * as creativeAiService from '../services/creative-ai.service.js'
 import {
   AiNotConfiguredError,
   AiRateLimitError,
@@ -118,6 +123,64 @@ describe('GET /api/ai/messages', () => {
         pendingAction: null,
         redacted: false,
       },
+    ])
+  })
+})
+
+describe('GET /api/ai/messages content warnings', () => {
+  it("flags a staged budget above the user's stated monthly budget", async () => {
+    vi.mocked(userService.findUserById).mockResolvedValueOnce({
+      budget: '5k-20k',
+    } as never)
+    vi.mocked(aiService.getConversationMessages).mockResolvedValueOnce([
+      {
+        ...sampleAssistantMessage,
+        pendingAction: {
+          id: 'action-1',
+          type: 'CREATE',
+          targetCampaignId: null,
+          payload: { name: 'โปรลาเต้', budget: 500_000 },
+          status: 'PENDING',
+          createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
+      },
+    ] as never)
+    const res = await app.request('/api/ai/messages', {
+      headers: await authHeader(),
+    })
+    expect(res.status).toBe(200)
+    const [message] = await res.json()
+    expect(message.pendingAction.contentWarnings).toEqual([
+      expect.stringMatching(/^Budget \(500,000 THB\)/),
+    ])
+  })
+})
+
+describe('POST /api/ai/campaigns/:id/creative', () => {
+  it('returns the suggested caption with content warnings', async () => {
+    vi.mocked(campaignService.getCampaignById).mockResolvedValueOnce({
+      id: 'campaign-1',
+    } as never)
+    vi.mocked(creativeAiService.generateCreativeCaption).mockResolvedValueOnce(
+      'รับประกันผล 100% สั่งเลยที่ https://evil.example',
+    )
+    const res = await app.request('/api/ai/campaigns/campaign-1/creative', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...csrfHeader,
+        ...(await authHeader()),
+      },
+      body: JSON.stringify({ prompt: 'โปรโมทส่วนลด' }),
+    })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.caption).toBe(
+      'รับประกันผล 100% สั่งเลยที่ https://evil.example',
+    )
+    expect(body.contentWarnings).toEqual([
+      expect.stringMatching(/^Caption contains a link/),
+      expect.stringMatching(/^Caption contains a claim/),
     ])
   })
 })

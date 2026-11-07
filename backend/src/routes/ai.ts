@@ -12,6 +12,7 @@ import {
   ConfirmPendingActionResponseSchema,
   CancelPendingActionResponseSchema,
   PendingActionIdParamSchema,
+  type PendingActionPayload,
 } from '../schemas/pending-ai-action.schema.js'
 import { RecommendationsResponseSchema } from '../schemas/recommendation.schema.js'
 import {
@@ -34,10 +35,7 @@ import {
   isAiConfigured,
 } from '../lib/openai.js'
 import { requireAuth, type AuthVariables } from '../middleware/auth.js'
-import {
-  screenCaptionContent,
-  captionWarningMessages,
-} from '../lib/caption-content-screen.js'
+import { screenAiText, screenProposedAction } from '../lib/ai-content-screen.js'
 import type {
   MessageModel,
   PendingAiActionModel,
@@ -49,10 +47,20 @@ type MessageWithPendingAction = MessageModel & {
   pendingAction?: PendingAiActionModel | null
 }
 
-function serializePendingAction(action: PendingAiActionModel) {
-  const payload = action.payload as Record<string, unknown>
-  const caption =
-    typeof payload.caption === 'string' ? payload.caption : undefined
+// What the content screen needs to know about the viewer, loaded once per
+// request (see loadScreenContext).
+type ScreenContext = { userBudgetBand: string | null }
+
+async function loadScreenContext(userId: string): Promise<ScreenContext> {
+  const user = await userService.findUserById(userId)
+  return { userBudgetBand: user?.budget ?? null }
+}
+
+function serializePendingAction(
+  action: PendingAiActionModel,
+  ctx: ScreenContext,
+) {
+  const payload = action.payload as PendingActionPayload
   return {
     id: action.id,
     type: action.type,
@@ -60,11 +68,14 @@ function serializePendingAction(action: PendingAiActionModel) {
     payload,
     status: action.status,
     createdAt: action.createdAt.toISOString(),
-    contentWarnings: captionWarningMessages(screenCaptionContent(caption)),
+    contentWarnings: screenProposedAction(action.type, payload, ctx),
   }
 }
 
-function serializeMessage(message: MessageWithPendingAction) {
+function serializeMessage(
+  message: MessageWithPendingAction,
+  ctx: ScreenContext,
+) {
   return {
     id: message.id,
     role: message.role === 'USER' ? ('user' as const) : ('assistant' as const),
@@ -73,7 +84,7 @@ function serializeMessage(message: MessageWithPendingAction) {
     closing: message.closing,
     createdAt: message.createdAt.toISOString(),
     pendingAction: message.pendingAction
-      ? serializePendingAction(message.pendingAction)
+      ? serializePendingAction(message.pendingAction, ctx)
       : null,
     redacted: message.redacted,
   }
@@ -95,8 +106,14 @@ const listMessagesRoute = createRoute({
 })
 aiApp.openapi(listMessagesRoute, async (c) => {
   const userId = c.get('userId')
-  const messages = await aiService.getConversationMessages(userId)
-  return c.json(messages.map(serializeMessage), 200)
+  const [messages, ctx] = await Promise.all([
+    aiService.getConversationMessages(userId),
+    loadScreenContext(userId),
+  ])
+  return c.json(
+    messages.map((m) => serializeMessage(m, ctx)),
+    200,
+  )
 })
 
 const getRecommendationsRoute = createRoute({
@@ -286,10 +303,13 @@ aiApp.openapi(sendMessageRoute, async (c) => {
       userId,
       text,
     )
+    const ctx = await loadScreenContext(userId)
     return c.json(
       {
-        userMessage: serializeMessage(userMessage),
-        assistantMessages: assistantMessages.map(serializeMessage),
+        userMessage: serializeMessage(userMessage, ctx),
+        assistantMessages: assistantMessages.map((m) =>
+          serializeMessage(m, ctx),
+        ),
       },
       201,
     )
@@ -362,7 +382,7 @@ aiApp.openapi(generateCreativeRoute, async (c) => {
       campaign,
       prompt,
     )
-    return c.json({ caption }, 200)
+    return c.json({ caption, contentWarnings: screenAiText(caption) }, 200)
   } catch (err) {
     if (err instanceof AiNotConfiguredError) {
       return c.json({ message: 'AI service is not configured yet' }, 503)

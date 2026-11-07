@@ -38,6 +38,9 @@ export const GenerateCreativeSchema = z
 export const GenerateCreativeResponseSchema = z
   .object({
     caption: z.string(),
+    // Non-blocking warnings from lib/ai-content-screen.ts, shown next to the
+    // suggested caption so the user reviews it before using it.
+    contentWarnings: z.array(z.string()),
   })
   .openapi('GenerateCreativeResponse')
 

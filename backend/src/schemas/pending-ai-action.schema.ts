@@ -73,12 +73,13 @@ export const PendingAiActionSchema = z
     payload: PendingActionPayloadSchema,
     status: PendingActionStatusEnum,
     createdAt: z.iso.datetime(),
-    // Non-blocking content warnings computed at serialization time from
-    // payload.caption (see lib/caption-content-screen.ts) — surfaced so the
-    // human confirming this action can spot a link or injected-instruction-
-    // like phrasing before clicking confirm. Never persisted; always
-    // reflects the current payload, including after a research-driven
-    // caption revision.
+    // Non-blocking content warnings computed at serialization time from the
+    // payload (see lib/ai-content-screen.ts): links, injected-instruction-
+    // like phrasing, markup or prohibited ad claims in name/caption, a
+    // budget above the user's stated monthly budget, and past/inverted
+    // dates — surfaced so the human confirming this action can spot them
+    // before clicking confirm. Never persisted; always reflects the current
+    // payload, including after a research-driven caption revision.
     contentWarnings: z.array(z.string()),
   })
   .openapi('PendingAiAction')
