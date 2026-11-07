@@ -33,6 +33,7 @@ import {
 } from '@/api/generated/client'
 import { toCampaignItem, fetchCampaignThumbnail } from '@/lib/campaignAdapters'
 import { getUserId, withCredentials } from '@/lib/userId'
+import { useToast } from '@/lib/toastContext'
 import { isShowcaseAccount } from '@/lib/showcaseAccount'
 
 {
@@ -351,6 +352,7 @@ function CampaignCard({
 
 function Campaign() {
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [activeFilter, setActiveFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [userId] = useState(() => getUserId())
@@ -412,6 +414,7 @@ function Campaign() {
       if (res.status === 204) {
         setApiCampaigns((prev) => prev.filter((c) => c.id !== deleteTargetId))
         setDeleteTargetId(null)
+        showToast('ลบแคมเปญเรียบร้อยแล้ว')
       }
     } finally {
       setIsDeleting(false)

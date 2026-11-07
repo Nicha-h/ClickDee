@@ -68,6 +68,7 @@ import type {
 import { toCampaignItem, fetchCampaignThumbnail } from '@/lib/campaignAdapters'
 import { useGoBack } from '@/components/useGoBack'
 import { withCredentials } from '@/lib/userId'
+import { useToast } from '@/lib/toastContext'
 import { resolveAssetUrl } from '@/lib/assetUrl'
 
 type ReportStatus = 'active' | 'paused' | 'stopped'
@@ -282,6 +283,7 @@ function CreativeDetail({ creative }: { creative: AdCreative }) {
 }
 
 function AdSetsSection({ campaignId }: { campaignId: string }) {
+  const { showToast } = useToast()
   const [items, setItems] = useState<AdSetWithChildren[] | null>(null)
   const [expandedAdSets, setExpandedAdSets] = useState<Record<string, boolean>>(
     {},
@@ -316,6 +318,7 @@ function AdSetsSection({ campaignId }: { campaignId: string }) {
           prev ? prev.filter((item) => item.adSet.id !== deleteAdSetId) : prev,
         )
         setDeleteAdSetId(null)
+        showToast('ลบ Ad Set เรียบร้อยแล้ว')
       }
     } finally {
       setIsDeleting(false)
@@ -349,6 +352,7 @@ function AdSetsSection({ campaignId }: { campaignId: string }) {
             : prev,
         )
         setDeleteCreativeTarget(null)
+        showToast('ลบครีเอทีฟเรียบร้อยแล้ว')
       } else {
         setDeleteCreativeError(res.data.message)
       }

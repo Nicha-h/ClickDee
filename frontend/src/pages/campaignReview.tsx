@@ -31,6 +31,7 @@ import type {
 import { pendingActionSummary } from '@/lib/pendingAction'
 import { campaignSummaryRows } from '@/lib/campaignAdapters'
 import { withCredentials } from '@/lib/userId'
+import { useToast } from '@/lib/toastContext'
 
 // Illustrative-only content: audience sizing, per-channel budget split, a
 // reach/click/order forecast, and creative previews all require real
@@ -175,6 +176,7 @@ function PendingActionReview({
 
 function DraftCampaignReview({ campaignId }: { campaignId: string }) {
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [campaign, setCampaign] = useState<ApiCampaign | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isResolving, setIsResolving] = useState(false)
@@ -243,6 +245,7 @@ function DraftCampaignReview({ campaignId }: { campaignId: string }) {
       const res = await deleteApiCampaignsId(campaignId, withCredentials())
       if (res.status === 204) {
         setConfirmingDelete(false)
+        showToast('ลบแคมเปญเรียบร้อยแล้ว')
         navigate('/campaign')
       }
     } finally {

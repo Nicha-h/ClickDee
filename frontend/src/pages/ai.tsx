@@ -31,6 +31,7 @@ import type {
   PendingAiAction,
 } from '@/api/generated/client'
 import { getUserId, withCredentials } from '@/lib/userId'
+import { useToast } from '@/lib/toastContext'
 import { pendingActionSummary } from '@/lib/pendingAction'
 
 type ChatMessage = {
@@ -235,6 +236,7 @@ function PendingActionCard({
 }) {
   const [isResolving, setIsResolving] = useState(false)
   const [publish, setPublish] = useState(false)
+  const { showToast } = useToast()
   const [error, setError] = useState<string | null>(null)
   const { label, rows } = pendingActionSummary(action)
 
@@ -248,6 +250,7 @@ function PendingActionCard({
         withCredentials(),
       )
       if (res.status === 200) {
+        if (action.type === 'DELETE') showToast('ลบแคมเปญเรียบร้อยแล้ว')
         onResolved({ status: 'CONFIRMED', campaignId: res.data.campaignId })
       } else {
         setError('ไม่สามารถยืนยันได้ กรุณาลองใหม่อีกครั้ง')

@@ -5,13 +5,16 @@ import './index.css'
 import App from './App.tsx'
 import { AuthProvider } from '@/lib/authContext'
 import { SubscriptionProvider } from '@/lib/subscriptionContext'
+import { ToastProvider } from '@/lib/toastContext'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <SubscriptionProvider>
-          <App />
+          <ToastProvider>
+            <App />
+          </ToastProvider>
         </SubscriptionProvider>
       </AuthProvider>
     </BrowserRouter>

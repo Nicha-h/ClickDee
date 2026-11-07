@@ -11,6 +11,7 @@ import {
 } from '@/api/generated/client'
 import type { AiMemoryItem } from '@/api/generated/client'
 import { withCredentials } from '@/lib/userId'
+import { useToast } from '@/lib/toastContext'
 
 const markdownComponents: Components = {
   p: ({ children }) => (
@@ -99,6 +100,7 @@ function AiMemoryEntry({
 }
 
 function AiMemoryCard() {
+  const { showToast } = useToast()
   const [items, setItems] = useState<AiMemoryItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [clearAllOpen, setClearAllOpen] = useState(false)
@@ -113,13 +115,15 @@ function AiMemoryCard() {
 
   const handleDelete = async (id: string) => {
     setItems((prev) => prev.filter((item) => item.id !== id))
-    await deleteApiAiMemoryId(id, withCredentials())
+    const res = await deleteApiAiMemoryId(id, withCredentials())
+    if (res.status === 204) showToast('ลบข้อมูลเรียบร้อยแล้ว')
   }
 
   const handleClearAll = async () => {
     setClearAllOpen(false)
     setItems([])
-    await deleteApiAiMemory(withCredentials())
+    const res = await deleteApiAiMemory(withCredentials())
+    if (res.status === 204) showToast('ลบข้อมูลทั้งหมดเรียบร้อยแล้ว')
   }
 
   return (

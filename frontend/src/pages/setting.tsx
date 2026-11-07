@@ -10,6 +10,7 @@ import {
   postApiAuthLogout,
 } from '@/api/generated/client'
 import { clearUserId, getUserId, withCredentials } from '@/lib/userId'
+import { useToast } from '@/lib/toastContext'
 import { TIERS } from '@/data/tiers'
 import { useSubscription } from '@/lib/subscriptionContext'
 
@@ -30,6 +31,7 @@ const notifyToggles: { key: NotifyKey; label: string; desc: string }[] = [
 
 function Setting() {
   const { tier, setTier } = useSubscription()
+  const { showToast } = useToast()
   const [notifySettings, setNotifySettings] = useState<
     Record<NotifyKey, boolean>
   >({
@@ -83,6 +85,7 @@ function Setting() {
         return
       }
       clearUserId()
+      showToast('ลบบัญชีเรียบร้อยแล้ว')
       navigate('/login')
     } catch {
       setDeleteError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')

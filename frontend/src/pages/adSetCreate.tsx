@@ -20,6 +20,7 @@ import type {
   CreateAdSetInputBillingEvent as BillingEvent,
 } from '@/api/generated/client'
 import { withCredentials } from '@/lib/userId'
+import { useToast } from '@/lib/toastContext'
 import { useGoBack } from '@/components/useGoBack'
 import ConfirmDialog from '@/components/confirmDialog'
 
@@ -46,6 +47,7 @@ function AdSetCreate() {
   const { campaignId, adSetId } = useParams()
   const isEditMode = !!adSetId
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const goBack = useGoBack(`/campaign/${campaignId}/report`)
   const [campaign, setCampaign] = useState<ApiCampaign | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -238,6 +240,7 @@ function AdSetCreate() {
           prev ? prev.filter((c) => c.id !== deleteCreativeId) : prev,
         )
         setDeleteCreativeId(null)
+        showToast('ลบครีเอทีฟเรียบร้อยแล้ว')
       } else {
         setDeleteCreativeError(res.data.message)
       }
@@ -256,6 +259,7 @@ function AdSetCreate() {
         withCredentials(),
       )
       if (res.status === 204) {
+        showToast('ลบ Ad Set เรียบร้อยแล้ว')
         navigate(`/campaign/${campaignId}/report`)
       }
     } finally {
