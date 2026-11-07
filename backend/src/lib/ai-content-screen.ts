@@ -42,13 +42,14 @@ const PROHIBITED_CLAIM_TH_RE =
   /รับประกันผล|รักษาหายขาด|หายขาด|ได้ผล\s*100\s*%|ลด(?:น้ำหนัก)?\s*\d+\s*(?:กิโล|กก)|รวยเร็ว|รวยทางลัด/
 
 // User-facing copy is Thai only — the product has no English UI for now.
+// Kept short: the frontend's ContentWarnings shows one "กรุณาตรวจสอบก่อนยืนยัน"
+// header above the list, so no message repeats it.
 const TEXT_WARNING_MESSAGES: Record<TextWarningCode, string> = {
-  LINK: 'มีลิงก์อยู่ในข้อความ ข้อความโฆษณาไม่สามารถใช้ลิงก์ได้ (ให้ใส่ลิงก์ในช่องปุ่ม CTA/URL แทน) กรุณาตรวจสอบก่อนยืนยัน',
-  INSTRUCTION_LIKE:
-    'มีข้อความที่ดูเหมือนคำสั่งที่ถูกแทรกเข้ามา ไม่ใช่ข้อความโฆษณา กรุณาตรวจสอบก่อนยืนยัน',
-  MARKUP: 'มีโค้ด HTML ปนอยู่ในข้อความ กรุณาตรวจสอบก่อนยืนยัน',
+  LINK: 'มีลิงก์ในข้อความ (ให้ใส่ลิงก์ในช่องปุ่ม CTA/URL แทน)',
+  INSTRUCTION_LIKE: 'มีข้อความที่ดูเหมือนคำสั่งแทรกเข้ามา ไม่ใช่ข้อความโฆษณา',
+  MARKUP: 'มีโค้ด HTML ปนอยู่ในข้อความ',
   PROHIBITED_CLAIM:
-    'มีคำกล่าวอ้างที่นโยบายโฆษณาของ Meta มักไม่อนุญาต (เช่น รับประกันผล รักษาหายขาด ลดน้ำหนักเกินจริง รวยเร็ว) กรุณาตรวจสอบก่อนยืนยัน',
+    'มีคำกล่าวอ้างที่ Meta มักไม่อนุญาต เช่น รับประกันผล หรือลดน้ำหนักเกินจริง',
 }
 
 export function screenAiTextCodes(
@@ -108,7 +109,7 @@ export function screenProposedAction(
   if (payload.budget !== undefined && bandMax !== undefined) {
     if (payload.budget > bandMax) {
       warnings.push(
-        `งบประมาณ (${payload.budget.toLocaleString('en-US')} บาท) สูงกว่างบโฆษณาต่อเดือนที่คุณระบุไว้ตอนสมัคร (ไม่เกิน ${bandMax.toLocaleString('en-US')} บาท) กรุณาตรวจสอบก่อนยืนยัน`,
+        `งบประมาณ (${payload.budget.toLocaleString('en-US')} บาท) สูงกว่างบโฆษณาต่อเดือนที่คุณระบุไว้ตอนสมัคร (ไม่เกิน ${bandMax.toLocaleString('en-US')} บาท)`,
       )
     }
   }
@@ -116,10 +117,10 @@ export function screenProposedAction(
   const start = payload.startDate?.slice(0, 10)
   const end = payload.endDate?.slice(0, 10)
   if (start && start < bangkokDate(now)) {
-    warnings.push('วันเริ่มต้นเป็นวันที่ผ่านมาแล้ว กรุณาตรวจสอบก่อนยืนยัน')
+    warnings.push('วันเริ่มต้นเป็นวันที่ผ่านมาแล้ว')
   }
   if (start && end && end < start) {
-    warnings.push('วันสิ้นสุดอยู่ก่อนวันเริ่มต้น กรุณาตรวจสอบก่อนยืนยัน')
+    warnings.push('วันสิ้นสุดอยู่ก่อนวันเริ่มต้น')
   }
 
   return warnings

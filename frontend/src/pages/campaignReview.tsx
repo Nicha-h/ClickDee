@@ -32,6 +32,7 @@ import { pendingActionSummary } from '@/lib/pendingAction'
 import { campaignSummaryRows } from '@/lib/campaignAdapters'
 import { withCredentials } from '@/lib/userId'
 import { useToast } from '@/lib/toastContext'
+import ContentWarnings from '@/components/contentWarnings'
 
 // Illustrative-only content: audience sizing, per-channel budget split, a
 // reach/click/order forecast, and creative previews all require real
@@ -374,16 +375,11 @@ function CampaignReviewLayout({
                 ))}
               </dl>
             </div>
-            {contentWarnings && contentWarnings.length > 0 && (
-              <ul className="font-thai mt-4 space-y-1 rounded-lg border border-yellow-400/60 bg-yellow-50 p-3 text-base text-yellow-800">
-                {contentWarnings.map((warning) => (
-                  <li key={warning} className="flex gap-1.5">
-                    <span aria-hidden="true">⚠</span>
-                    <span>{warning}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <ContentWarnings
+              warnings={contentWarnings ?? []}
+              large
+              className="mt-4"
+            />
           </div>
 
           <div className="rounded-xl border border-black/20 bg-white p-5 shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)]">

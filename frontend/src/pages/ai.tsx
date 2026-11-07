@@ -32,6 +32,7 @@ import type {
 } from '@/api/generated/client'
 import { getUserId, withCredentials } from '@/lib/userId'
 import { useToast } from '@/lib/toastContext'
+import ContentWarnings from '@/components/contentWarnings'
 import { pendingActionSummary } from '@/lib/pendingAction'
 
 type ChatMessage = {
@@ -292,16 +293,7 @@ function PendingActionCard({
           ))}
         </dl>
       )}
-      {action.contentWarnings.length > 0 && (
-        <ul className="font-thai mt-3 space-y-1 rounded-lg border border-yellow-400/60 bg-yellow-50 p-2 text-sm text-yellow-800">
-          {action.contentWarnings.map((warning) => (
-            <li key={warning} className="flex gap-1.5">
-              <span aria-hidden="true">⚠</span>
-              <span>{warning}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+      <ContentWarnings warnings={action.contentWarnings} className="mt-3" />
       {action.type !== 'DELETE' && (
         <label className="font-thai mt-3 flex items-center gap-2 text-base text-black">
           <input

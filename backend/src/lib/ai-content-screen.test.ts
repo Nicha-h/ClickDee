@@ -148,7 +148,7 @@ describe('screenProposedAction', () => {
   it('flags a start date in the past (Bangkok calendar day)', () => {
     expect(
       screenProposedAction('CREATE', { startDate: '2026-11-06' }, { now }),
-    ).toEqual(['วันเริ่มต้นเป็นวันที่ผ่านมาแล้ว กรุณาตรวจสอบก่อนยืนยัน'])
+    ).toEqual(['วันเริ่มต้นเป็นวันที่ผ่านมาแล้ว'])
     expect(
       screenProposedAction('CREATE', { startDate: '2026-11-07' }, { now }),
     ).toEqual([])
@@ -161,7 +161,7 @@ describe('screenProposedAction', () => {
         { startDate: '2026-12-10', endDate: '2026-12-01' },
         { now },
       ),
-    ).toEqual(['วันสิ้นสุดอยู่ก่อนวันเริ่มต้น กรุณาตรวจสอบก่อนยืนยัน'])
+    ).toEqual(['วันสิ้นสุดอยู่ก่อนวันเริ่มต้น'])
   })
 
   it('returns nothing for a DELETE', () => {

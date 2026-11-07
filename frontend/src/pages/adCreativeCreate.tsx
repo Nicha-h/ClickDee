@@ -25,6 +25,7 @@ import {
 } from '@/api/generated/client'
 import type { CreateAdCreativeInput } from '@/api/generated/client'
 import { withCredentials } from '@/lib/userId'
+import ContentWarnings from '@/components/contentWarnings'
 import { useGoBack } from '@/components/useGoBack'
 import { CTA_LABELS } from '@/lib/adCreativeLabels'
 import { resolveAssetUrl } from '@/lib/assetUrl'
@@ -523,16 +524,7 @@ function AdCreativeCreate() {
               }}
               className="mt-1 w-full resize-y rounded-lg border border-[#8E98A8] px-3 py-2 text-lg text-black outline-none"
             />
-            {captionWarnings.length > 0 && (
-              <ul className="font-thai mt-2 space-y-1 rounded-lg border border-yellow-400/60 bg-yellow-50 p-2 text-sm text-yellow-800">
-                {captionWarnings.map((warning) => (
-                  <li key={warning} className="flex gap-1.5">
-                    <span aria-hidden="true">⚠</span>
-                    <span>{warning}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <ContentWarnings warnings={captionWarnings} className="mt-2" />
 
             <label className="font-thai mt-4 block text-lg font-bold text-black">
               ปุ่มกระตุ้นการกระทำ (CTA)
