@@ -299,10 +299,8 @@ aiApp.openapi(sendMessageRoute, async (c) => {
   const userId = c.get('userId')
   const { text } = c.req.valid('json')
   try {
-    const { userMessage, assistantMessages } = await aiService.sendMessage(
-      userId,
-      text,
-    )
+    const { userMessage, assistantMessages, aiUnavailable } =
+      await aiService.sendMessage(userId, text)
     const ctx = await loadScreenContext(userId)
     return c.json(
       {
@@ -310,6 +308,7 @@ aiApp.openapi(sendMessageRoute, async (c) => {
         assistantMessages: assistantMessages.map((m) =>
           serializeMessage(m, ctx),
         ),
+        aiUnavailable,
       },
       201,
     )

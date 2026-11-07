@@ -747,11 +747,15 @@ function CampaignReportView({
 
   useEffect(() => {
     if (campaign.source !== 'api') return
-    getApiAiCampaignsIdInsights(campaign.id, withCredentials()).then((res) => {
-      if (res.status === 200) {
-        setInsightsState({ status: 'loaded', insights: res.data.insights })
-      }
-    })
+    getApiAiCampaignsIdInsights(campaign.id, withCredentials())
+      .then((res) => {
+        if (res.status === 200) {
+          setInsightsState({ status: 'loaded', insights: res.data.insights })
+        }
+      })
+      // Supplementary content — the backend already fails soft on AI errors;
+      // this only stops a server-down load from becoming an unhandled rejection.
+      .catch(() => {})
   }, [campaign.id, campaign.source])
 
   // Real Meta Insights (distinct from the AI-written prose above). Reads

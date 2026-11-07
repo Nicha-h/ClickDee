@@ -161,11 +161,15 @@ function Overview() {
   useEffect(() => {
     const userId = getUserId()
     if (!userId) return
-    getApiAiInsights(withCredentials()).then((res) => {
-      if (res.status === 200) {
-        setInsightsState({ status: 'loaded', insights: res.data.insights })
-      }
-    })
+    getApiAiInsights(withCredentials())
+      .then((res) => {
+        if (res.status === 200) {
+          setInsightsState({ status: 'loaded', insights: res.data.insights })
+        }
+      })
+      // Supplementary content — the backend already fails soft on AI errors;
+      // this only stops a server-down load from becoming an unhandled rejection.
+      .catch(() => {})
   }, [])
 
   useEffect(() => {

@@ -1242,6 +1242,7 @@ export interface SendAiMessageResponse {
   userMessage: AiMessage;
   /** @minItems 1 */
   assistantMessages: AiMessage[];
+  aiUnavailable: boolean;
 }
 
 export interface SendAiMessageInput {

@@ -32,6 +32,7 @@ vi.mock('../services/ai.service.js', () => ({
   sendMessage: vi.fn().mockResolvedValue({
     userMessage: sampleUserMessage,
     assistantMessages: [sampleAssistantMessage],
+    aiUnavailable: false,
   }),
 }))
 
@@ -75,6 +76,7 @@ vi.mock('../lib/openai.js', async () => {
   }
 })
 
+import { APIError } from 'openai'
 import { app } from '../app.js'
 import * as aiService from '../services/ai.service.js'
 import * as pendingActionService from '../services/pending-ai-action.service.js'
@@ -183,6 +185,27 @@ describe('POST /api/ai/campaigns/:id/creative', () => {
       expect.stringMatching(/^แคปชั่น: มีคำกล่าวอ้าง/),
     ])
   })
+
+  it('maps a raw provider error to 503 instead of a bare 500', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(campaignService.getCampaignById).mockResolvedValueOnce({
+      id: 'campaign-1',
+    } as never)
+    vi.mocked(creativeAiService.generateCreativeCaption).mockRejectedValueOnce(
+      new APIError(400, { message: 'bad' }, 'bad', new Headers()),
+    )
+    const res = await app.request('/api/ai/campaigns/campaign-1/creative', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...csrfHeader,
+        ...(await authHeader()),
+      },
+      body: JSON.stringify({ prompt: 'โปรโมทส่วนลด' }),
+    })
+    expect(res.status).toBe(503)
+    errorSpy.mockRestore()
+  })
 })
 
 describe('POST /api/ai/messages', () => {
@@ -225,6 +248,18 @@ describe('POST /api/ai/messages', () => {
     expect(body.userMessage.text).toBe('สวัสดี')
     expect(body.assistantMessages).toHaveLength(1)
     expect(body.assistantMessages[0].role).toBe('assistant')
+    expect(body.aiUnavailable).toBe(false)
+  })
+
+  it('passes through aiUnavailable when the AI fell back to an apology', async () => {
+    vi.mocked(aiService.sendMessage).mockResolvedValueOnce({
+      userMessage: sampleUserMessage,
+      assistantMessages: [sampleAssistantMessage],
+      aiUnavailable: true,
+    } as never)
+    const res = await sendRequest({ text: 'สวัสดี' })
+    expect(res.status).toBe(201)
+    expect((await res.json()).aiUnavailable).toBe(true)
   })
 
   it('maps AiNotConfiguredError to 503', async () => {

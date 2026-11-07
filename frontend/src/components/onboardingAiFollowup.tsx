@@ -4,6 +4,8 @@ import OnboardingProgress from '@/components/onboardingProgress'
 import OnboardingChoiceCard from '@/components/onboardingChoiceCard'
 import { postApiOnboardingFollowupQuestion } from '@/api/generated/client'
 import type { FollowupQuestionRequestBusinessProfile } from '@/api/generated/client'
+import { AI_FOLLOWUP_SKIPPED_MESSAGE } from '@/lib/aiError'
+import { useToast } from '@/lib/toastContext'
 
 export type FollowupQa = { question: string; answer: string }
 
@@ -37,6 +39,7 @@ function OnboardingAiFollowup({
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null)
   const [otherText, setOtherText] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const { showToast } = useToast()
 
   useEffect(() => {
     if (initialQuestion === null) {
@@ -122,6 +125,7 @@ function OnboardingAiFollowup({
           choices: res.data.choices,
         })
       } else {
+        if (res.status !== 200) showToast(AI_FOLLOWUP_SKIPPED_MESSAGE, 'error')
         onComplete(nextQas, true)
       }
     } catch (err) {
@@ -129,6 +133,7 @@ function OnboardingAiFollowup({
         'Onboarding follow-up question request failed; ending the AI follow-up flow early.',
         err,
       )
+      showToast(AI_FOLLOWUP_SKIPPED_MESSAGE, 'error')
       onComplete(nextQas, true)
     } finally {
       setIsLoading(false)

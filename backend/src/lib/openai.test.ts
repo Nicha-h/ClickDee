@@ -35,6 +35,7 @@ import {
   RateLimitError,
   APIConnectionTimeoutError,
   InternalServerError,
+  AuthenticationError,
 } from 'openai'
 import {
   createChatCompletion,
@@ -68,6 +69,15 @@ function internalServerError() {
     503,
     { message: 'no body' },
     '503 status code (no body)',
+    new Headers(),
+  )
+}
+
+function authError() {
+  return new AuthenticationError(
+    401,
+    { message: 'Invalid API Key' },
+    'Invalid API Key',
     new Headers(),
   )
 }
@@ -184,6 +194,37 @@ describe('createChatCompletion', () => {
     expect(createMock.mock.calls[1][0]).toMatchObject({
       model: 'gemini-3.6-flash',
     })
+  })
+
+  it('cascades to the next tier when a provider rejects its key', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    createMock
+      .mockImplementationOnce(() => {
+        throw authError()
+      })
+      .mockResolvedValueOnce({ id: 'ok' })
+
+    const result = await createChatCompletion(MESSAGES)
+
+    expect(result).toEqual({ id: 'ok' })
+    expect(createMock.mock.calls[1][0]).toMatchObject({
+      model: 'gemini-3.6-flash',
+    })
+    expect(errorSpy).toHaveBeenCalled()
+    errorSpy.mockRestore()
+  })
+
+  it('throws AllTiersExhaustedError when every key is rejected', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    createMock.mockImplementation(() => {
+      throw authError()
+    })
+
+    await expect(createChatCompletion(MESSAGES)).rejects.toBeInstanceOf(
+      AllTiersExhaustedError,
+    )
+    expect(createMock).toHaveBeenCalledTimes(6)
+    errorSpy.mockRestore()
   })
 
   it('starts the next request from the last-successful tier, not the top', async () => {

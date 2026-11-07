@@ -32,6 +32,7 @@ import type {
 } from '@/api/generated/client'
 import { getUserId, withCredentials } from '@/lib/userId'
 import { useToast } from '@/lib/toastContext'
+import { aiErrorMessage } from '@/lib/aiError'
 import ContentWarnings from '@/components/contentWarnings'
 import { pendingActionSummary } from '@/lib/pendingAction'
 
@@ -78,18 +79,10 @@ function greetingMessage(): ChatMessage {
 }
 
 function errorChatMessage(status: number): ChatMessage {
-  const text =
-    status === 429
-      ? 'ตอนนี้มีคนใช้งานเยอะ กรุณาลองใหม่อีกครั้งค่ะ'
-      : status === 422
-        ? 'ข้อความนี้ถูกบล็อกโดยระบบตรวจสอบความปลอดภัย กรุณาลองใหม่อีกครั้งค่ะ'
-        : status === 503
-          ? 'ระบบ AI ยังไม่พร้อมใช้งานในขณะนี้ค่ะ'
-          : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้งค่ะ'
   return {
     id: `error-${Date.now()}`,
     sender: 'ai',
-    text,
+    text: aiErrorMessage(status),
     time: formatTime(new Date().toISOString()),
   }
 }
@@ -495,6 +488,7 @@ function Ai() {
   const [userId] = useState(() => getUserId())
   const [isSending, setIsSending] = useState(false)
   const isLoading = useSimulatedLoading()
+  const { showToast } = useToast()
 
   useEffect(() => {
     if (!userId) return
@@ -555,8 +549,14 @@ function Ai() {
           ? res.data.assistantMessages.map(toChatMessage)
           : [errorChatMessage(res.status)]),
       ])
+      if (res.status !== 201) {
+        showToast(aiErrorMessage(res.status), 'error')
+      } else if (res.data.aiUnavailable) {
+        showToast(aiErrorMessage(503), 'error')
+      }
     } catch {
       setMessages((prev) => [...prev, errorChatMessage(0)])
+      showToast(aiErrorMessage(0), 'error')
     } finally {
       setIsSending(false)
     }

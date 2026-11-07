@@ -187,23 +187,31 @@ function Home() {
   useEffect(() => {
     const userId = getUserId()
     if (!userId) return
-    getApiAiRecommendations(withCredentials()).then((res) => {
-      if (res.status === 200) {
-        setRecommendationsState({
-          status: 'loaded',
-          hasCampaigns: res.data.hasCampaigns,
-          recommendations: res.data.recommendations,
-        })
-      }
-    })
+    getApiAiRecommendations(withCredentials())
+      .then((res) => {
+        if (res.status === 200) {
+          setRecommendationsState({
+            status: 'loaded',
+            hasCampaigns: res.data.hasCampaigns,
+            recommendations: res.data.recommendations,
+          })
+        }
+      })
+      // Supplementary content — the backend already fails soft on AI errors;
+      // this only stops a server-down load from becoming an unhandled rejection.
+      .catch(() => {})
   }, [])
 
   useEffect(() => {
     const userId = getUserId()
     if (!userId) return
-    getApiAiStatus(withCredentials()).then((res) => {
-      if (res.status === 200) setAiStatus(res.data.status)
-    })
+    getApiAiStatus(withCredentials())
+      .then((res) => {
+        if (res.status === 200) setAiStatus(res.data.status)
+      })
+      // Supplementary content — the backend already fails soft on AI errors;
+      // this only stops a server-down load from becoming an unhandled rejection.
+      .catch(() => {})
   }, [])
 
   const showRecommendations =

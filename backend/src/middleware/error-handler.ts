@@ -1,5 +1,7 @@
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import { HTTPException } from 'hono/http-exception'
+import { APIError } from 'openai'
+import { AiNotConfiguredError, AiRateLimitError } from '../lib/openai.js'
 import {
   MetaApiError,
   MetaTokenExpiredError,
@@ -83,6 +85,23 @@ export function registerErrorHandlers(app: OpenAPIHono) {
       err instanceof MetaPublishValidationError
     ) {
       return c.json({ message: err.message }, 400)
+    }
+    // AI failures a route didn't map itself: an exhausted cascade is "busy",
+    // and anything the provider SDK threw (bad key, malformed request, …) is
+    // "AI unavailable" — never a bare 500, so the frontend can tell the user
+    // the AI is down rather than that the app is broken.
+    if (err instanceof AiRateLimitError) {
+      return c.json(
+        { message: 'AI is busy right now, please try again shortly' },
+        429,
+      )
+    }
+    if (err instanceof AiNotConfiguredError) {
+      return c.json({ message: 'AI service is not configured yet' }, 503)
+    }
+    if (err instanceof APIError) {
+      console.error(err)
+      return c.json({ message: 'AI service unavailable' }, 503)
     }
     console.error(err)
     return c.json({ message: 'Internal Server Error' }, 500)

@@ -617,6 +617,7 @@ export async function sendMessage(userId: string, rawText: string) {
 
   const aiMemory = await getAiMemoryQas(userId)
   let reply: AssistantReply
+  let aiUnavailable = false
   try {
     reply = await generateAssistantReply(
       userId,
@@ -637,6 +638,7 @@ export async function sendMessage(userId: string, rawText: string) {
       err,
     )
     reply = { bubbles: [FALLBACK_REPLY_TEXT], pendingAction: null }
+    aiUnavailable = true
   }
   const { bubbles: bubbleTexts, pendingAction } = reply
 
@@ -678,5 +680,6 @@ export async function sendMessage(userId: string, rawText: string) {
       pendingAction: null as PendingAiActionModel | null,
     },
     assistantMessages,
+    aiUnavailable,
   }
 }

@@ -29,6 +29,8 @@ import ContentWarnings from '@/components/contentWarnings'
 import { useGoBack } from '@/components/useGoBack'
 import { CTA_LABELS } from '@/lib/adCreativeLabels'
 import { resolveAssetUrl } from '@/lib/assetUrl'
+import { aiErrorMessage } from '@/lib/aiError'
+import { useToast } from '@/lib/toastContext'
 
 type Format =
   | typeof CreateImagePostCreativeInputFormat.IMAGE_POST
@@ -147,6 +149,7 @@ function AdCreativeCreate() {
   const [showPreview, setShowPreview] = useState(false)
 
   const [isSuggesting, setIsSuggesting] = useState(false)
+  const { showToast } = useToast()
   // Non-blocking warnings the backend's content screen attached to the
   // AI-suggested caption; cleared as soon as the user edits the text.
   const [captionWarnings, setCaptionWarnings] = useState<string[]>([])
@@ -232,7 +235,11 @@ function AdCreativeCreate() {
       if (res.status === 200) {
         setMessage(res.data.caption)
         setCaptionWarnings(res.data.contentWarnings)
+      } else {
+        showToast(aiErrorMessage(res.status), 'error')
       }
+    } catch {
+      showToast(aiErrorMessage(0), 'error')
     } finally {
       setIsSuggesting(false)
     }

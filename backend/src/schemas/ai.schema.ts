@@ -26,6 +26,9 @@ export const SendAiMessageResponseSchema = z
   .object({
     userMessage: AiMessageSchema,
     assistantMessages: z.array(AiMessageSchema).min(1),
+    // True when the AI couldn't answer and assistantMessages holds the saved
+    // apology instead — the frontend shows its error toast on this.
+    aiUnavailable: z.boolean(),
   })
   .openapi('SendAiMessageResponse')
 

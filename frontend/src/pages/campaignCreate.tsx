@@ -30,9 +30,13 @@ function CampaignCreate() {
   useEffect(() => {
     const userId = getUserId()
     if (!userId) return
-    getApiAiCampaignIdeas(withCredentials()).then((res) => {
-      if (res.status === 200) setIdeas(res.data.ideas)
-    })
+    getApiAiCampaignIdeas(withCredentials())
+      .then((res) => {
+        if (res.status === 200) setIdeas(res.data.ideas)
+      })
+      // Supplementary content — the backend already fails soft on AI errors;
+      // this only stops a server-down load from becoming an unhandled rejection.
+      .catch(() => {})
   }, [])
 
   const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {

@@ -2,6 +2,8 @@ import OpenAI, {
   RateLimitError,
   APIConnectionError,
   InternalServerError,
+  AuthenticationError,
+  PermissionDeniedError,
   type APIError,
 } from 'openai'
 import { env } from '../config/env.js'
@@ -115,7 +117,10 @@ type ChatParams = Omit<
 // error (including a timeout), or a 5xx from the provider, the model is put
 // on cooldown and the walk continues to the next entry for this same
 // request — all three are availability problems, not request problems, so
-// the next tier is worth a try. Any other error (including a content-filter
+// the next tier is worth a try. A 401/403 (expired or revoked key) is
+// cascaded the same way: it's a broken provider, not a broken request, so it
+// shouldn't fail a call the other provider could still serve — it's logged
+// with console.error since a dead key needs a human. Any other error (including a content-filter
 // block, which surfaces as a normal 200 with finish_reason rather than an
 // exception) is not an availability problem, so it is not cascaded — it
 // rethrows immediately.
@@ -149,11 +154,20 @@ export async function createChatCompletion(
         console.debug(`[ai] served by ${entry.provider}/${entry.model}`)
         return result
       } catch (err) {
+        const isAuthError =
+          err instanceof AuthenticationError ||
+          err instanceof PermissionDeniedError
         const isAvailabilityError =
+          isAuthError ||
           err instanceof RateLimitError ||
           err instanceof APIConnectionError ||
           err instanceof InternalServerError
         if (!isAvailabilityError) throw err
+        if (isAuthError) {
+          console.error(
+            `[ai] ${entry.provider} rejected its API key (${err.status}) — check ${entry.provider.toUpperCase()}_API_KEY`,
+          )
+        }
         // Only RateLimitError carries a meaningful Retry-After; a timeout or
         // 5xx has no such signal, so it just takes the default cooldown.
         const cooldownMs =

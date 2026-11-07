@@ -4,19 +4,14 @@ import { ChevronLeft, Sparkles } from 'lucide-react'
 import StepIndicator from '@/components/stepIndicator'
 import { postApiAiMessages } from '@/api/generated/client'
 import { getUserId, withCredentials } from '@/lib/userId'
-
-function errorReplyFor(status: number): string {
-  if (status === 429) return 'ตอนนี้มีคนใช้งานเยอะ กรุณาลองใหม่อีกครั้งค่ะ'
-  if (status === 422)
-    return 'ข้อความนี้ถูกบล็อกโดยระบบตรวจสอบความปลอดภัย กรุณาลองใหม่อีกครั้งค่ะ'
-  if (status === 503) return 'ระบบ AI ยังไม่พร้อมใช้งานในขณะนี้ค่ะ'
-  return 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้งค่ะ'
-}
+import { aiErrorMessage } from '@/lib/aiError'
+import { useToast } from '@/lib/toastContext'
 
 function CampaignProcessing() {
   const navigate = useNavigate()
   const location = useLocation()
   const prompt = (location.state as { prompt?: string } | null)?.prompt ?? ''
+  const { showToast } = useToast()
 
   useEffect(() => {
     if (!prompt.trim() || !getUserId()) {
@@ -29,6 +24,9 @@ function CampaignProcessing() {
       .then((res) => {
         if (cancelled) return
         if (res.status === 201) {
+          if (res.data.aiUnavailable) {
+            showToast(aiErrorMessage(503), 'error')
+          }
           const staged = res.data.assistantMessages.find(
             (m) =>
               m.pendingAction?.status === 'PENDING' &&
@@ -51,24 +49,26 @@ function CampaignProcessing() {
             state: { prompt, aiReply },
           })
         } else {
+          showToast(aiErrorMessage(res.status), 'error')
           navigate('/campaign/new', {
             replace: true,
-            state: { prompt, aiReply: errorReplyFor(res.status) },
+            state: { prompt, aiReply: aiErrorMessage(res.status) },
           })
         }
       })
       .catch(() => {
         if (cancelled) return
+        showToast(aiErrorMessage(0), 'error')
         navigate('/campaign/new', {
           replace: true,
-          state: { prompt, aiReply: errorReplyFor(0) },
+          state: { prompt, aiReply: aiErrorMessage(0) },
         })
       })
 
     return () => {
       cancelled = true
     }
-  }, [navigate, prompt])
+  }, [navigate, prompt, showToast])
 
   return (
     <div className="min-h-full min-w-full py-10">

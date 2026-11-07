@@ -6,12 +6,14 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import Toast from '@/components/toast'
+import Toast, { type ToastVariant } from '@/components/toast'
 
 const TOAST_DURATION_MS = 3000
+// Errors stay up longer — the user needs time to read what went wrong.
+const ERROR_TOAST_DURATION_MS = 5000
 
 interface ToastContextValue {
-  showToast: (message: string) => void
+  showToast: (message: string, variant?: ToastVariant) => void
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null)
@@ -20,17 +22,25 @@ const ToastContext = createContext<ToastContextValue | null>(null)
 // navigate() — e.g. deleting a campaign from its review page — survives the
 // page change. One toast at a time; a new one replaces the current one.
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toast, setToast] = useState<{ id: number; message: string } | null>(
-    null,
-  )
+  const [toast, setToast] = useState<{
+    id: number
+    message: string
+    variant: ToastVariant
+  } | null>(null)
 
-  const showToast = useCallback((message: string) => {
-    setToast({ id: Date.now(), message })
-  }, [])
+  const showToast = useCallback(
+    (message: string, variant: ToastVariant = 'success') => {
+      setToast({ id: Date.now(), message, variant })
+    },
+    [],
+  )
 
   useEffect(() => {
     if (!toast) return
-    const timer = setTimeout(() => setToast(null), TOAST_DURATION_MS)
+    const timer = setTimeout(
+      () => setToast(null),
+      toast.variant === 'error' ? ERROR_TOAST_DURATION_MS : TOAST_DURATION_MS,
+    )
     return () => clearTimeout(timer)
   }, [toast])
 
@@ -41,6 +51,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         <Toast
           key={toast.id}
           message={toast.message}
+          variant={toast.variant}
           onClose={() => setToast(null)}
         />
       )}

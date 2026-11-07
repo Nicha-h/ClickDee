@@ -6,6 +6,8 @@ import type { OnboardingAnswers } from '@/components/onboardingWizard'
 import { ONBOARDING_STEPS } from '@/data/onboarding'
 import { postApiOnboardingFollowupQuestion } from '@/api/generated/client'
 import type { FollowupQuestionRequestBusinessProfile } from '@/api/generated/client'
+import { AI_FOLLOWUP_SKIPPED_MESSAGE } from '@/lib/aiError'
+import { useToast } from '@/lib/toastContext'
 
 const MIN_DISPLAY_MS = 1200
 
@@ -61,6 +63,7 @@ function delay(ms: number) {
 
 function OnboardingProcessing() {
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const location = useLocation()
   const { answers, email, password } =
     (location.state as ProcessingState | null) ?? {}
@@ -81,6 +84,7 @@ function OnboardingProcessing() {
             console.error(
               `Onboarding follow-up question request failed (status ${res.status}); skipping AI follow-up.`,
             )
+            showToast(AI_FOLLOWUP_SKIPPED_MESSAGE, 'error')
             return {
               done: true,
               question: null,
@@ -101,6 +105,7 @@ function OnboardingProcessing() {
               'Onboarding follow-up question request failed; skipping AI follow-up.',
               err,
             )
+            showToast(AI_FOLLOWUP_SKIPPED_MESSAGE, 'error')
             return {
               done: true,
               question: null,
