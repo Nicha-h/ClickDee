@@ -24,3 +24,6 @@ yarn-error.log*
 
 # pnpm workspace uses only the root pnpm-lock.yaml
 package-lock.json
+
+# private notes (security architecture etc.) — not published
+/docs/

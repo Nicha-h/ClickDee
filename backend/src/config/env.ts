@@ -40,6 +40,29 @@ const EnvSchema = z.object({
   AUTH_JWT_SECRET: z.string().min(32),
   AI_MEMORY_ENCRYPTION_KEY: z.string().min(32),
   MAX_FOLLOWUP_QUESTIONS: z.coerce.number().int().positive().default(5),
+  // Global (all-clients) daily cap on the public, unauthenticated
+  // onboarding follow-up route — bounds AI spend even if an abuser rotates
+  // IPs past the per-IP limiter.
+  FOLLOWUP_DAILY_CAP: z.coerce.number().int().positive().default(500),
+  // Comma-separated browser origins allowed by CORS on /api/*.
+  CORS_ORIGINS: z
+    .string()
+    .default('http://localhost:5173')
+    .transform((v) =>
+      v
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean),
+    )
+    .pipe(z.array(z.url()).min(1)),
+  // Set to true only when running behind our own reverse proxy (see
+  // docker/nginx.conf), so the rate limiter trusts its X-Real-IP header.
+  // Same string-enum pattern as META_SIMULATE_PUBLISH below.
+  TRUST_PROXY: z
+    .enum(['true', 'false'])
+    .optional()
+    .default('false')
+    .transform((v) => v === 'true'),
   // Live-AI-call test budget guard (lib/ai-live-test-guard.ts) — bounds how
   // many real provider calls an opt-in live test run may make, so a bug that
   // turns one intended call into a retry storm can't eat a whole day's quota.

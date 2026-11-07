@@ -2,6 +2,8 @@ import { OpenAPIHono } from '@hono/zod-openapi'
 import { swaggerUI } from '@hono/swagger-ui'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { cors } from 'hono/cors'
+import { secureHeaders } from 'hono/secure-headers'
+import { env } from './config/env.js'
 import { registerErrorHandlers } from './middleware/error-handler.js'
 import { healthApp } from './routes/health.js'
 import { campaignsApp } from './routes/campaigns.js'
@@ -21,8 +23,21 @@ export const app = new OpenAPIHono()
 
 app.use(
   '/api/*',
-  cors({ origin: ['http://localhost:5173'], credentials: true }),
+  cors({ origin: env.CORS_ORIGINS, credentials: true }),
+  // JSON-only responses: nothing should ever load or frame them.
+  secureHeaders({
+    contentSecurityPolicy: {
+      defaultSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+    },
+  }),
 )
+// Placeholder images are loaded cross-origin by the dev frontend
+// (localhost:5173 -> :3000), which the default CORP 'same-origin' blocks.
+app.use('/static/*', secureHeaders({ crossOriginResourcePolicy: 'cross-origin' }))
+// Swagger UI pulls its assets from a CDN, so no CSP here — defaults only.
+app.use('/docs', secureHeaders())
+app.use('/openapi.json', secureHeaders())
 
 // Serves backend-owned static assets (e.g. seed-script placeholder images
 // that can't reuse the frontend's bundled JS-module assets) from

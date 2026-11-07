@@ -70,6 +70,9 @@ RUN chmod +x /entrypoint.sh
 
 ENV NODE_ENV=production
 ENV PORT=3000
+# The backend is only reachable through nginx (port 3000 isn't exposed),
+# which overwrites X-Real-IP — safe for the rate limiter to trust it.
+ENV TRUST_PROXY=true
 
 EXPOSE 8080
 
