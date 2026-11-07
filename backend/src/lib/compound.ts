@@ -1,7 +1,10 @@
+import type OpenAI from 'openai'
 import { env } from '../config/env.js'
 import { getGroqClient } from './openai.js'
 import { distillCaptionRequest, type DistillCaptionInput } from './distiller.js'
 import { getCachedResearch, setCachedResearch } from './compound-cache.js'
+
+const RESEARCH_TIMEOUT_MS = 45_000
 
 const RESEARCH_SYSTEM_PROMPT = `You are a research assistant for a Thai SME marketing platform. Given a topic, research current trends, relevant weather if applicable, and any other timely context useful for writing an ad caption. Be concise. Cite sources where possible.`
 
@@ -31,13 +34,23 @@ export async function researchForCaption(
 
   try {
     const client = getGroqClient()
-    const completion = await client.chat.completions.create({
-      model: env.GROQ_COMPOUND_MODEL,
-      messages: [
-        { role: 'system', content: RESEARCH_SYSTEM_PROMPT },
-        { role: 'user', content: distilled.researchQuery },
-      ],
-    })
+    const completion = await client.chat.completions.create(
+      {
+        model: env.GROQ_COMPOUND_MODEL,
+        messages: [
+          { role: 'system', content: RESEARCH_SYSTEM_PROMPT },
+          { role: 'user', content: distilled.researchQuery },
+        ],
+        // Groq's server-side web search (runs inside this one call). It isn't
+        // in the OpenAI SDK's tool union, hence the cast.
+        tools: [
+          { type: 'browser_search' },
+        ] as unknown as OpenAI.Chat.ChatCompletionTool[],
+      },
+      // A web search routinely takes ~15s and can run past the shared
+      // client's 30s timeout.
+      { timeout: RESEARCH_TIMEOUT_MS },
+    )
     const findings = completion.choices[0]?.message?.content
     if (!findings) {
       console.error('[compound] model returned empty content')

@@ -30,7 +30,7 @@ const CHAIN: ChainEntry[] = [
   { provider: 'gemini', model: 'gemini-3.5-flash' },
   { provider: 'groq', model: 'openai/gpt-oss-20b' },
   { provider: 'groq', model: 'openai/gpt-oss-120b' },
-  { provider: 'groq', model: 'qwen/qwen3.6-27b' },
+  { provider: 'groq', model: 'qwen/qwen3.8-27b' },
 ]
 
 const DEFAULT_COOLDOWN_MS = 60_000

@@ -89,7 +89,11 @@ describe('researchForCaption', () => {
 
     expect(result).toBe('fresh findings')
     expect(createMock).toHaveBeenCalledWith(
-      expect.objectContaining({ model: env.GROQ_COMPOUND_MODEL }),
+      expect.objectContaining({
+        model: env.GROQ_COMPOUND_MODEL,
+        tools: [{ type: 'browser_search' }],
+      }),
+      expect.objectContaining({ timeout: expect.any(Number) }),
     )
     expect(setCachedResearchMock).toHaveBeenCalledWith(
       'abc123',

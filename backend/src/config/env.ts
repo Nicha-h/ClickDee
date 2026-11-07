@@ -14,11 +14,14 @@ const EnvSchema = z.object({
   GROQ_API_KEY: z.string().min(1).optional(),
   GROQ_BASE_URL: z.url().default('https://api.groq.com/openai/v1'),
   // Research model for the Distiller -> Compound -> Formatter caption
-  // pipeline (see lib/compound.ts). Unlike the pinned cascade CHAIN in
-  // lib/openai.ts, this is env-overridable: Compound isn't cooldown-tracked
-  // per-id the way cascade tiers are, so an alias/version bump here carries
-  // none of that tracking risk.
-  GROQ_COMPOUND_MODEL: z.string().min(1).default('groq/compound'),
+  // pipeline (see lib/compound.ts). Groq decommissioned its `groq/compound`
+  // system on 2026-09-21 with no replacement id, so research now runs on a
+  // GPT-OSS model with Groq's built-in `browser_search` tool — the "Compound"
+  // names are kept for the stage, not the model. Unlike the pinned cascade
+  // CHAIN in lib/openai.ts, this is env-overridable: it isn't cooldown-tracked
+  // per-id the way cascade tiers are, so a version bump here carries none of
+  // that tracking risk. Must be a model that supports browser_search.
+  GROQ_COMPOUND_MODEL: z.string().min(1).default('openai/gpt-oss-20b'),
   COMPOUND_CACHE_DEFAULT_TTL_SECONDS: z.coerce
     .number()
     .int()
