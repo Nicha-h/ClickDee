@@ -6,18 +6,25 @@ import {
 import * as onboardingAiService from '../services/onboarding-ai.service.js'
 import { AiNotConfiguredError, AiRateLimitError } from '../lib/openai.js'
 import { rateLimit } from '../middleware/rate-limit.js'
+import { env } from '../config/env.js'
 
 const ErrorSchema = z.object({ message: z.string() }).openapi('Error')
 
 export const onboardingApp = new OpenAPIHono()
 
 const followupLimiter = rateLimit({ windowMs: 5 * 60 * 1000, max: 20 })
+// Runs after the per-IP limiter, so per-IP rejections don't eat the budget.
+const followupDailyCap = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000,
+  max: env.FOLLOWUP_DAILY_CAP,
+  key: () => 'global',
+})
 
 const followupQuestionRoute = createRoute({
   method: 'post',
   path: '/followup-question',
   tags: ['Onboarding'],
-  middleware: [followupLimiter] as const,
+  middleware: [followupLimiter, followupDailyCap] as const,
   request: {
     body: {
       content: {
