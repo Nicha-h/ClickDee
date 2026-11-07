@@ -77,12 +77,12 @@ describe('screenAiTextCodes', () => {
 
 describe('screenAiText', () => {
   it('prefixes messages with the field name', () => {
-    const [message] = screenAiText('see https://x.example', 'Name')
-    expect(message).toMatch(/^Name contains a link/)
+    const [message] = screenAiText('see https://x.example', 'ชื่อแคมเปญ')
+    expect(message).toMatch(/^ชื่อแคมเปญ: มีลิงก์/)
   })
 
-  it('defaults the field to Caption', () => {
-    expect(screenAiText('<a href="x">')[0]).toMatch(/^Caption .*markup/)
+  it('defaults the field to แคปชั่น', () => {
+    expect(screenAiText('<a href="x">')[0]).toMatch(/^แคปชั่น: .*HTML/)
   })
 })
 
@@ -112,8 +112,8 @@ describe('screenProposedAction', () => {
       { now },
     )
     expect(warnings).toHaveLength(2)
-    expect(warnings[0]).toMatch(/^Name /)
-    expect(warnings[1]).toMatch(/^Caption /)
+    expect(warnings[0]).toMatch(/^ชื่อแคมเปญ: /)
+    expect(warnings[1]).toMatch(/^แคปชั่น: /)
   })
 
   it('flags a budget above the stated monthly band, not at it', () => {
@@ -123,7 +123,7 @@ describe('screenProposedAction', () => {
       { userBudgetBand: '5k-20k', now },
     )
     expect(over).toHaveLength(1)
-    expect(over[0]).toMatch(/Budget \(20,001 THB\).*20,000 THB/)
+    expect(over[0]).toMatch(/งบประมาณ \(20,001 บาท\).*ไม่เกิน 20,000 บาท/)
     expect(
       screenProposedAction(
         'CREATE',
@@ -148,7 +148,7 @@ describe('screenProposedAction', () => {
   it('flags a start date in the past (Bangkok calendar day)', () => {
     expect(
       screenProposedAction('CREATE', { startDate: '2026-11-06' }, { now }),
-    ).toEqual(['Start date is in the past; review before confirming.'])
+    ).toEqual(['วันเริ่มต้นเป็นวันที่ผ่านมาแล้ว กรุณาตรวจสอบก่อนยืนยัน'])
     expect(
       screenProposedAction('CREATE', { startDate: '2026-11-07' }, { now }),
     ).toEqual([])
@@ -161,7 +161,7 @@ describe('screenProposedAction', () => {
         { startDate: '2026-12-10', endDate: '2026-12-01' },
         { now },
       ),
-    ).toEqual(['End date is before the start date; review before confirming.'])
+    ).toEqual(['วันสิ้นสุดอยู่ก่อนวันเริ่มต้น กรุณาตรวจสอบก่อนยืนยัน'])
   })
 
   it('returns nothing for a DELETE', () => {

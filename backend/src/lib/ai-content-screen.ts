@@ -41,13 +41,14 @@ const PROHIBITED_CLAIM_EN_RE =
 const PROHIBITED_CLAIM_TH_RE =
   /รับประกันผล|รักษาหายขาด|หายขาด|ได้ผล\s*100\s*%|ลด(?:น้ำหนัก)?\s*\d+\s*(?:กิโล|กก)|รวยเร็ว|รวยทางลัด/
 
+// User-facing copy is Thai only — the product has no English UI for now.
 const TEXT_WARNING_MESSAGES: Record<TextWarningCode, string> = {
-  LINK: 'contains a link — ad copy has no working links outside the dedicated CTA/URL fields; review before confirming.',
+  LINK: 'มีลิงก์อยู่ในข้อความ ข้อความโฆษณาไม่สามารถใช้ลิงก์ได้ (ให้ใส่ลิงก์ในช่องปุ่ม CTA/URL แทน) กรุณาตรวจสอบก่อนยืนยัน',
   INSTRUCTION_LIKE:
-    'contains phrasing that reads like an injected instruction rather than ad copy; review before confirming.',
-  MARKUP: 'contains HTML-like markup; review before confirming.',
+    'มีข้อความที่ดูเหมือนคำสั่งที่ถูกแทรกเข้ามา ไม่ใช่ข้อความโฆษณา กรุณาตรวจสอบก่อนยืนยัน',
+  MARKUP: 'มีโค้ด HTML ปนอยู่ในข้อความ กรุณาตรวจสอบก่อนยืนยัน',
   PROHIBITED_CLAIM:
-    'contains a claim Meta ad policies typically reject (guaranteed results, cures, extreme weight loss, get-rich-quick); review before confirming.',
+    'มีคำกล่าวอ้างที่นโยบายโฆษณาของ Meta มักไม่อนุญาต (เช่น รับประกันผล รักษาหายขาด ลดน้ำหนักเกินจริง รวยเร็ว) กรุณาตรวจสอบก่อนยืนยัน',
 }
 
 export function screenAiTextCodes(
@@ -66,10 +67,10 @@ export function screenAiTextCodes(
 
 export function screenAiText(
   text: string | null | undefined,
-  field = 'Caption',
+  field = 'แคปชั่น',
 ): string[] {
   return screenAiTextCodes(text).map(
-    (code) => `${field} ${TEXT_WARNING_MESSAGES[code]}`,
+    (code) => `${field}: ${TEXT_WARNING_MESSAGES[code]}`,
   )
 }
 
@@ -99,15 +100,15 @@ export function screenProposedAction(
   if (type === 'DELETE') return []
 
   const warnings = [
-    ...screenAiText(payload.name, 'Name'),
-    ...screenAiText(payload.caption, 'Caption'),
+    ...screenAiText(payload.name, 'ชื่อแคมเปญ'),
+    ...screenAiText(payload.caption, 'แคปชั่น'),
   ]
 
   const bandMax = userBudgetBand ? BUDGET_BAND_MAX[userBudgetBand] : undefined
   if (payload.budget !== undefined && bandMax !== undefined) {
     if (payload.budget > bandMax) {
       warnings.push(
-        `Budget (${payload.budget.toLocaleString('en-US')} THB) is higher than the monthly ad budget you gave during onboarding (up to ${bandMax.toLocaleString('en-US')} THB); review before confirming.`,
+        `งบประมาณ (${payload.budget.toLocaleString('en-US')} บาท) สูงกว่างบโฆษณาต่อเดือนที่คุณระบุไว้ตอนสมัคร (ไม่เกิน ${bandMax.toLocaleString('en-US')} บาท) กรุณาตรวจสอบก่อนยืนยัน`,
       )
     }
   }
@@ -115,12 +116,10 @@ export function screenProposedAction(
   const start = payload.startDate?.slice(0, 10)
   const end = payload.endDate?.slice(0, 10)
   if (start && start < bangkokDate(now)) {
-    warnings.push('Start date is in the past; review before confirming.')
+    warnings.push('วันเริ่มต้นเป็นวันที่ผ่านมาแล้ว กรุณาตรวจสอบก่อนยืนยัน')
   }
   if (start && end && end < start) {
-    warnings.push(
-      'End date is before the start date; review before confirming.',
-    )
+    warnings.push('วันสิ้นสุดอยู่ก่อนวันเริ่มต้น กรุณาตรวจสอบก่อนยืนยัน')
   }
 
   return warnings

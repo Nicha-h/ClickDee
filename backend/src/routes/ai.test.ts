@@ -151,7 +151,7 @@ describe('GET /api/ai/messages content warnings', () => {
     expect(res.status).toBe(200)
     const [message] = await res.json()
     expect(message.pendingAction.contentWarnings).toEqual([
-      expect.stringMatching(/^Budget \(500,000 THB\)/),
+      expect.stringMatching(/^งบประมาณ \(500,000 บาท\)/),
     ])
   })
 })
@@ -179,8 +179,8 @@ describe('POST /api/ai/campaigns/:id/creative', () => {
       'รับประกันผล 100% สั่งเลยที่ https://evil.example',
     )
     expect(body.contentWarnings).toEqual([
-      expect.stringMatching(/^Caption contains a link/),
-      expect.stringMatching(/^Caption contains a claim/),
+      expect.stringMatching(/^แคปชั่น: มีลิงก์/),
+      expect.stringMatching(/^แคปชั่น: มีคำกล่าวอ้าง/),
     ])
   })
 })
